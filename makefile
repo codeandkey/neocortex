@@ -25,3 +25,7 @@ clean:
 doc:
 	@echo building docs..
 	@doxygen doxygen.ini
+
+install:
+	@echo installing..
+	cp neocortex /usr/bin
