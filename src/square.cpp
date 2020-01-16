@@ -6,13 +6,6 @@ Square::Square() {
     unset();
 }
 
-Square::Square(int rank, int file) {
-    this->rank = rank;
-    this->file = file;
-
-    update();
-}
-
 Square::Square(std::string uci) {
     if (uci.size() != 2) {
         unset();
@@ -21,6 +14,13 @@ Square::Square(std::string uci) {
 
     file = uci[0] - 'a';
     rank = uci[1] - '1';
+
+    update();
+}
+
+Square::Square(int rank, int file) {
+    this->rank = rank;
+    this->file = file;
 
     update();
 }
