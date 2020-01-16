@@ -1,5 +1,5 @@
 CXX      = g++
-CXXFLAGS = -std=c++11 -Wall -Werror -pedantic -g
+CXXFLAGS = -std=c++11 -Wall -Werror -g
 LDFLAGS  =
 OUTPUT   = neocortex
 
