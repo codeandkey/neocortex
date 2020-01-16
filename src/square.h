@@ -17,8 +17,8 @@ namespace nc {
         /**
          * Initializes a square at a particular location.
          *
-         * @param rank Square rank (1 -> 8 inclusive)
-         * @param file Square file (1 -> 8 inclusive)
+         * @param rank Square rank (0 -> 7 inclusive)
+         * @param file Square file (0 -> 7 inclusive)
          */
         Square(int rank, int file);
 
@@ -41,16 +41,30 @@ namespace nc {
         /**
          * Gets the square rank.
          *
-         * @return rank from 1 to 8 or -1 if null.
+         * @return rank from 0 to 7 or -1 if null.
          */
         int get_rank();
 
         /**
          * Gets the square file.
          *
-         * @return rank from 1 to 8 or -1 if null.
+         * @return rank from 0 to 7 or -1 if null.
          */
         int get_file();
+
+        /**
+         * Gets the diagonal.
+         *
+         * @return Diagonal index.
+         */
+        int get_diag();
+
+        /**
+         * Gets the antidiagonal.
+         *
+         * @return Antidiagonal index.
+         */
+        int get_antidiag();
 
         /**
          * Gets the array index for the square.
@@ -68,14 +82,26 @@ namespace nc {
         bool is_valid();
 
         /**
+         * Gets the square in a printable format.
+         *
+         * @return the Square in string format.
+         */
+        std::string to_string();
+
+        /**
          * Shorthand for is_valid()
          */
         operator bool();
 
         /**
-         * Shorthand for get_index()
+         * Shorthand for index()
          */
         operator int();
+
+        /**
+         * Shorthand for to_string()
+         */
+        operator std::string();
 
     private:
         int index, rank, file;
@@ -84,5 +110,10 @@ namespace nc {
          * Private: updates the index from the rank and file, and verifies that the coordinates make sense.
          */
         void update();
+
+        /**
+         * Private: initializes the square to NULL
+         */
+        void unset();
     };
 }

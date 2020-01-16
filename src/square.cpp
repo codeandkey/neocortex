@@ -3,7 +3,7 @@
 using namespace nc;
 
 Square::Square() {
-    index = rank = file = -1;
+    unset();
 }
 
 Square::Square(int rank, int file) {
@@ -15,12 +15,12 @@ Square::Square(int rank, int file) {
 
 Square::Square(std::string uci) {
     if (uci.size() != 2) {
-        index = rank = file = -1;
+        unset();
         return;
     }
 
-    file = uci[0] + 1 - 'a';
-    rank = uci[1] + 1 - '1';
+    file = uci[0] - 'a';
+    rank = uci[1] - '1';
 
     update();
 }
@@ -40,6 +40,14 @@ int Square::get_file() {
     return file;
 }
 
+int Square::get_diag() {
+    return rank - file + 7;
+}
+
+int Square::get_antidiag() {
+    return rank + file;
+}
+
 int Square::get_index() {
     return index;
 }
@@ -57,9 +65,28 @@ Square::operator bool() {
 }
 
 void Square::update() {
-    if (rank < 1 || rank > 8 || file < 1 || file > 8) {
-        index = rank = file = -1;
+    if (rank < 0 || rank > 7 || file < 0 || file > 7) {
+        unset();
+        return;
     }
 
-    index = (rank - 1) * 8 + file - 1;
+    index = rank * 8 + file;
+}
+
+void Square::unset() {
+    index = rank = file = -1;
+}
+
+std::string Square::to_string() {
+    if (index < 0) return "-";
+
+    std::string out;
+    out += (file + 'a');
+    out += (rank + '1');
+
+    return out;
+}
+
+Square::operator std::string() {
+    return to_string();
 }
