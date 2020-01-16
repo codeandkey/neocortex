@@ -28,4 +28,4 @@ namespace nc {
 #define nc_error(fmt, ...) nc::log_basic(nc::LogLevel::ERROR, __func__, fmt, ##__VA_ARGS__)
 #define nc_warning(fmt, ...) nc::log_basic(nc::LogLevel::WARNING, __func__, fmt, ##__VA_ARGS__)
 #define nc_info(fmt, ...) nc::log_basic(nc::LogLevel::INFO, __func__, fmt, ##__VA_ARGS__)
-#define nc_debug(x, ...) nc::log_basic(nc::LogLevel::DEBUG, __func__, fmt, ##__VA_ARGS__)
+#define nc_debug(fmt, ...) nc::log_basic(nc::LogLevel::DEBUG, __func__, fmt, ##__VA_ARGS__)
