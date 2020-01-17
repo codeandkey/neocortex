@@ -5,8 +5,12 @@ using namespace nc;
 static u8 _nc_sliding_attacks[8][64];       /* [pos][rocc] */
 static u64 _nc_rank_attacks[8][8][64];      /* [rank][pos][rocc] */
 static u64 _nc_file_attacks[8][8][64];      /* [file][pos][rocc] */
-static u64 _nc_diag_attacks[15][8][64];      /* [diag][rank][rocc] */
+static u64 _nc_diag_attacks[15][8][64];     /* [diag][rank][rocc] */
 static u64 _nc_antidiag_attacks[15][8][64]; /* [antidiag][rank][rocc] */
+static u64 _nc_knight_attacks[64];          /* [square] */
+static u64 _nc_king_attacks[64];            /* [square] */
+static u64 _nc_white_pawn_attacks[64];      /* [square] */
+static u64 _nc_black_pawn_attacks[64];      /* [square] */
 
 void lookup::init() {
     /* Initialize sliding attacks. */
@@ -119,6 +123,85 @@ void lookup::init() {
         }
     }
 
+    /* Initialize knight attacks */
+    for (int r = 0; r < 8; ++r) {
+        for (int f = 0; f < 8; ++f) {
+            u64 mask = 0;
+
+            for (int a = -1; a <= 1; a += 2) {
+                for (int b = -2; b <= 2; b += 4) {
+                    int ar = r + a;
+                    int af = f + b;
+
+                    if (ar >= 0 && ar < 8 && af >= 0 && af < 8) {
+                        mask |= ((u64) 1 << (ar*8+af));
+                    }
+
+                    int br = r + b;
+                    int bf = f + a;
+
+                    if (br >= 0 && br < 8 && bf >= 0 && bf < 8) {
+                        mask |= ((u64) 1 << (br*8+bf));
+                    }
+                }
+            }
+
+            _nc_knight_attacks[r*8+f] = mask;
+        }
+    }
+
+    /* Generate king attacks */
+    for (int r = 0; r < 8; ++r) {
+        for (int f = 0; f < 8 ; ++f) {
+            u64 mask = 0;
+
+            for (int x = -1; x <= 1; ++x) {
+                for (int y = -1; y <= 1; ++y) {
+                    if (!x && !y) continue;
+
+                    int df = f + x, dr = r + y;
+                    if (df < 0 || df >= 8 || dr < 0 || dr >= 8) continue;
+
+                    mask |= ((u64) 1 << (dr * 8 + df));
+                }
+            }
+
+            _nc_king_attacks[r * 8 + f] = mask;
+        }
+    }
+
+    /* Generate white pawn attacks */
+    for (int r = 0; r < 8; ++r) {
+        for (int f = 0; f < 8 ; ++f) {
+            u64 mask = 0;
+
+            for (int x = -1; x <= 1; ++x) {
+                int df = f + x, dr = r + 1;
+                if (df < 0 || df >= 8 || dr < 0 || dr >= 8) continue;
+
+                mask |= ((u64) 1 << (dr * 8 + df));
+            }
+
+            _nc_white_pawn_attacks[r * 8 + f] = mask;
+        }
+    }
+
+    /* Generate black pawn attacks */
+    for (int r = 0; r < 8; ++r) {
+        for (int f = 0; f < 8 ; ++f) {
+            u64 mask = 0;
+
+            for (int x = -1; x <= 1; ++x) {
+                int df = f + x, dr = r - 1;
+                if (df < 0 || df >= 8 || dr < 0 || dr >= 8) continue;
+
+                mask |= ((u64) 1 << (dr * 8 + df));
+            }
+
+            _nc_black_pawn_attacks[r * 8 + f] = mask;
+        }
+    }
+
     /* All done! */
 }
 
@@ -156,4 +239,20 @@ u64 lookup::bishop_attack(Square s, Occtable* occ) {
 
 u64 lookup::queen_attack(Square s, Occtable* occ) {
     return lookup::rook_attack(s, occ) | lookup::bishop_attack(s, occ);
+}
+
+u64 lookup::knight_attack(Square from) {
+    return _nc_knight_attacks[from.get_index()];
+}
+
+u64 lookup::king_attack(Square from) {
+    return _nc_king_attacks[from.get_index()];
+}
+
+u64 lookup::white_pawn_attack(Square from) {
+    return _nc_white_pawn_attacks[from.get_index()];
+}
+
+u64 lookup::black_pawn_attack(Square from) {
+    return _nc_black_pawn_attacks[from.get_index()];
 }

@@ -97,5 +97,33 @@ namespace nc {
          * @return Board attack mask.
          */
         u64 queen_attack(Square s, Occtable* occ);
+
+        /**
+         * Looks up a knight attack mask.
+         *
+         * @return Board attack mask.
+         */
+        u64 knight_attack(Square s);
+
+        /**
+         * Looks up a king attack mask.
+         *
+         * @return Board attack mask.
+         */
+        u64 king_attack(Square s);
+
+        /**
+         * Looks up a white pawn attack mask.
+         *
+         * @return Board attack mask.
+         */
+        u64 white_pawn_attack(Square s);
+
+        /**
+         * Looks up a black pawn attack mask.
+         *
+         * @return Board attack mask.
+         */
+        u64 black_pawn_attack(Square s);
     }
 }
