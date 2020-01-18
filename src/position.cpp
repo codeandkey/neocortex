@@ -2,6 +2,7 @@
 #include "lookup.h"
 
 #include <stdexcept>
+#include <bit>
 
 using namespace nc;
 
@@ -10,6 +11,13 @@ Position::Position() {
     white_in_check = black_in_check = false;
     w_kingside = w_queenside = b_kingside = b_queenside = true;
     color_to_move = 'w';
+
+    /* We don't actually need to set the king masks as there are no possible checks on the first move. */
+    white_king_mask = ((u64) 1 << 4);
+    black_king_mask = ((u64) 1 << 60);
+
+    white_attack_mask = get_color_attack_mask('w');
+    black_attack_mask = get_color_attack_mask('b');
 
     halfmove_clock = 0;
     fullmove_number = 1;
@@ -433,7 +441,6 @@ Position::Transition Position::make_basic_pseudolegal_move(Square from, Square t
         ++result.fullmove_number;
     }
 
-
     /* Update color to move */
     result.color_to_move = (color_to_move == 'w') ? 'b' : 'w';
 
@@ -442,23 +449,20 @@ Position::Transition Position::make_basic_pseudolegal_move(Square from, Square t
         result.board[to.get_index()].set(color_to_move, promote_type);
     }
 
+    /* Update king mask */
+    if (pfrom->get_type() == 'k') {
+        if (pfrom->get_color() == 'w') {
+            result.white_king_mask = ((u64) 1 << (to.get_index()));
+        } else {
+            result.black_king_mask = ((u64) 1 << (to.get_index()));
+        }
+    }
+
     return Position::Transition(move, result);
 }
 
 bool Position::get_color_in_check(char col) {
-    /* Make a bitmask for the king. */
-    u64 king_mask = 0;
-
-    for (int r = 0; r < 8; ++r) {
-        for (int f = 0; f < 8; ++f) {
-            Piece* p = board + Square(r, f).get_index();
-
-            if (p->get_type() == 'k' && p->get_color() == col) {
-                king_mask = ((u64) 1 << (r * 8 + f));
-                break;
-            }
-        }
-    }
+    u64 king_mask = (col == 'w') ? white_king_mask : black_king_mask;
 
     /* Construct an attack mask and see if it intersects with the king mask. */
     u64 attack_mask = 0;
@@ -495,14 +499,153 @@ bool Position::get_color_in_check(char col) {
                 }
             }
 
-            /* Check for mask intersection. */
-            if (attack_mask & king_mask) {
-                return true;
+        }
+    }
+
+    /* Don't exit early, we will want to reuse the attack masks in eval. */
+    if (col == 'w') {
+        black_attack_mask = attack_mask;
+    } else {
+        white_attack_mask = attack_mask;
+    }
+
+    return (attack_mask & king_mask);
+}
+
+u64 Position::get_color_attack_mask(char col) {
+    u64 attack_mask = 0;
+
+    for (int r = 0; r < 8; ++r) {
+        for (int f = 0; f < 8; ++f) {
+            Square dst(r, f);
+            Piece* p = board + dst.get_index();
+
+            if (p->get_color() == col) {
+                switch (p->get_type()) {
+                case 'k':
+                    attack_mask |= lookup::king_attack(dst);
+                    break;
+                case 'q':
+                    attack_mask |= lookup::queen_attack(dst, &occ);
+                    break;
+                case 'b':
+                    attack_mask |= lookup::bishop_attack(dst, &occ);
+                    break;
+                case 'n':
+                    attack_mask |= lookup::knight_attack(dst);
+                    break;
+                case 'r':
+                    attack_mask |= lookup::rook_attack(dst, &occ);
+                    break;
+                case 'p':
+                    if (col == 'w') {
+                        attack_mask |= lookup::black_pawn_attack(dst);
+                    } else {
+                        attack_mask |= lookup::white_pawn_attack(dst);
+                    }
+                    break;
+                }
             }
         }
     }
 
-    return false;
+    return attack_mask;
+}
+
+float Position::get_eval() {
+    float phase = eval_get_phase();
+    float eval_result = 0.0f;
+
+    /* Like development in the opening. */
+    eval_result += (1.0f - phase) * (eval_development('w') - eval_development('b'));
+
+    /* Like material throughout the game. */
+    eval_result += (eval_material('w') - eval_material('b'));
+
+    /* Like center control from the opening to the middlegame. */
+    if (phase <= 0.5) {
+        eval_result += ((0.5f - phase) * 2.0f) * (eval_center('w') - eval_development('b'));
+    }
+
+    return eval_result;
+}
+
+float Position::eval_get_phase() {
+    /* Count total non-pawn material. */
+    float npm = 0.0f;
+
+    for (int i = 0; i < 64; ++i) {
+        switch (board[i].get_type()) {
+        case 'k':
+        case 'p':
+            break;
+        default:
+            npm += eval_get_piece_value(board[i].get_type());
+        }
+    }
+
+    return 1.0f - (npm / NPM_TOTAL);
+}
+
+float Position::eval_center(char c) {
+    static constexpr u64 CENTER_MASK = ((1ULL << 35) | (1ULL << 36) | (1ULL << 27) | (1ULL << 28));
+
+    u64 mask = (c == 'w') ? white_attack_mask : black_attack_mask;
+
+    return __builtin_popcountll(CENTER_MASK & mask) / 4.0f;
+}
+
+float Position::eval_development(char c) {
+    int r = (c == 'w') ? 2 : 4;
+    float total = 0.0f;
+
+    for (int a = 0; a < 2; ++a) {
+        for (int f = 0; f < 8; ++f) {
+            switch (board[(r+a)*8+f].get_type()) {
+            case 'b':
+            case 'n':
+            case 'r':
+            case 'q':
+                total += 1.0f;
+                break;
+            }
+        }
+    }
+
+    return total;
+}
+
+float Position::eval_get_piece_value(char p) {
+    switch (p) {
+    case 'p':
+        return MAT_PAWN;
+    case 'b':
+        return MAT_BISHOP;
+    case 'n':
+        return MAT_KNIGHT;
+    case 'r':
+        return MAT_ROOK;
+    case 'q':
+        return MAT_QUEEN;
+    default:
+        return 0.0f;
+    }
+}
+
+float Position::eval_material(char c) {
+    float total = 0.0f;
+
+    for (int i = 0; i < 64; ++i) {
+        if (board[i].get_color() == c) {
+            total += eval_get_piece_value(board[i].get_type());
+        }
+    }
+
+    return total;
+}
+
+char Position::colorflip(char c) {
+    return (c == 'w') ? 'b' : 'w';
 }
 
 Position::Transition::Transition(Move _move, Position _result, bool _check, bool _mate) : move(_move) {

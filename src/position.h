@@ -140,7 +140,36 @@ namespace nc {
          */
         bool get_color_in_check(char col);
 
+        /**
+         * Gets a mask of squares attacked by a color.
+         *
+         * @param col
+         * @return Board attack mask
+         */
+        u64 get_color_attack_mask(char col);
+
+        /**
+         * Gets the heuristic evaluation of this position.
+         * Does NOT perform a move search, that is done in Search.
+         *
+         * @return Evaluation
+         */
+        float get_eval();
+
     protected:
+        /* Some static board eval consts. */
+        static constexpr float MAT_PAWN = 1.0f;
+        static constexpr float MAT_BISHOP = 3.0f;
+        static constexpr float MAT_KNIGHT = 3.0f;
+        static constexpr float MAT_ROOK = 5.0f;
+        static constexpr float MAT_QUEEN = 7.0f;
+
+        /* Keep const non-pawn material total. */
+        static constexpr float NPM_TOTAL = (4 * MAT_BISHOP) +
+                                       (4 * MAT_KNIGHT) +
+                                       (4 * MAT_ROOK) +
+                                       (2 * MAT_QUEEN);
+
         bool white_in_check, black_in_check;
         bool w_kingside, w_queenside, b_kingside, b_queenside;
         Square en_passant_target;
@@ -148,6 +177,8 @@ namespace nc {
         Piece board[64];
         int halfmove_clock, fullmove_number;
         Occtable occ;
+        u64 white_king_mask, black_king_mask;
+        u64 white_attack_mask, black_attack_mask;
 
         /**
          * Generates pseudolegal moves and returns a list of ordered pairs,
@@ -184,5 +215,57 @@ namespace nc {
          * @return Pseudolegal move.
          */
         Transition make_basic_pseudolegal_move(Square from, Square to, char promote_type = '\0');
+
+        /* -- Evaluation helpers -- */
+
+        /**
+         * Inverts a color.
+         *
+         * @param c Color to invert
+         * @return Inverted color
+         */
+        char colorflip(char c);
+
+        /**
+         * Gets the evaluation worth of a color's center control.
+         * Always positive.
+         *
+         * @param c Color to check.
+         * @return Evaluation value.
+         */
+        float eval_center(char c);
+
+        /**
+         * Gets the evaluation worth of a color's development.
+         * Always positive.
+         *
+         * @param c Color to check.
+         * @return Evaluation value.
+         */
+        float eval_development(char c);
+
+        /**
+         * Gets the evaluation worth of a color's material.
+         * Always positive.
+         *
+         * @param c Color to check.
+         * @return Evaluation value.
+         */
+        float eval_material(char c);
+
+        /**
+         * Gets the game phase, where 0 => opening and 1 => endgame
+         *
+         * @return Phase value
+         */
+        float eval_get_phase();
+
+        /**
+         * Gets the material value for a piece type.
+         *
+         * @param t Type
+         * @return Positive material value
+         */
+        float eval_get_piece_value(char t);
     };
 }
