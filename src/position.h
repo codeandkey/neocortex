@@ -166,9 +166,9 @@ namespace nc {
 
         /* Keep const non-pawn material total. */
         static constexpr float NPM_TOTAL = (4 * MAT_BISHOP) +
-                                       (4 * MAT_KNIGHT) +
-                                       (4 * MAT_ROOK) +
-                                       (2 * MAT_QUEEN);
+                                           (4 * MAT_KNIGHT) +
+                                           (4 * MAT_ROOK) +
+                                           (2 * MAT_QUEEN);
 
         bool white_in_check, black_in_check;
         bool w_kingside, w_queenside, b_kingside, b_queenside;
