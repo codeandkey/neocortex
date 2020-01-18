@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
         if (x.size() < 4) {
             std::cout << "[";
             for (auto m : x) {
-                std::cout << " " << m.first.to_string() << " ";
+                std::cout << " " << m.to_string() << " ";
             }
             std::cout << "]";
         } else {
@@ -37,9 +37,9 @@ int main(int argc, char** argv) {
         std::cin >> inp;
 
         try {
-            g.apply(inp);
+            nc::Position::Transition t = g.apply(inp);
 
-            std::cout << "Applied matched move " << inp << "\n";
+            std::cout << "Applied matched move " << t.to_string() << "\n";
             std::cout << "New game FEN: " << g.get_current_position().get_fen() << "\n";
         } catch (std::exception& e) {
             std::cerr << "Caught exception: " << e.what() << "\n";

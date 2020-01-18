@@ -24,8 +24,9 @@ namespace nc {
          * Raises a runtime exception if the move is illegal.
          *
          * @param move Move to apply.
+         * @return Applied move transition.
          */
-        void apply(Move move);
+        Position::Transition apply(Move move);
 
         /**
          * Gets the current game position.
@@ -39,11 +40,11 @@ namespace nc {
          *
          * @return list of legal transitions.
          */
-        std::list<std::pair<Move, Position>> get_legal_next_moves();
+        std::list<Position::Transition> get_legal_next_moves();
 
     private:
         Position current_position;
-        std::list<std::pair<Move, Position>> legal_next_moves;
+        std::list<Position::Transition> legal_next_moves;
 
         /**
          * Updates the internal list of next legal moves.

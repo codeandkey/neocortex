@@ -103,21 +103,33 @@ std::string Position::get_fen() {
     return out;
 }
 
-std::list<std::pair<Move, Position>> Position::get_legal_moves() {
+std::list<Position::Transition> Position::get_legal_moves() {
     /* First, generate all pseudolegal moves. */
-    std::list<std::pair<Move, Position>> out = get_pseudolegal_moves();
+    std::list<Position::Transition> out = get_pseudolegal_moves();
 
     /* Then, prune out those which leave the moving color in check. */
     auto psl_iter = out.begin();
 
     while (psl_iter != out.end()) {
+        Position* result = (*psl_iter).get_result();
+
         /* Check if the color that just moved is in check. */
-        bool bad_check = (*psl_iter).second.get_color_in_check(color_to_move);
+        bool bad_check = result->get_color_in_check(color_to_move);
 
         if (bad_check) {
             /* Illegal move! Get out of here. */
             out.erase(psl_iter++);
         } else {
+            /* Check if the move delivers check. */
+            if (result->get_color_in_check(result->color_to_move)) {
+                (*psl_iter).set_check(true);
+
+                /* Check if the move delivers mate now. This might be unnecessary depending on how we do searching. */
+                if (!result->get_legal_moves().size()) {
+                    (*psl_iter).set_mate(true);
+                }
+            }
+
             psl_iter++;
         }
     }
@@ -125,8 +137,8 @@ std::list<std::pair<Move, Position>> Position::get_legal_moves() {
     return out;
 }
 
-std::list<std::pair<Move, Position>> Position::get_pseudolegal_moves() {
-    std::list<std::pair<Move, Position>> out;
+std::list<Position::Transition> Position::get_pseudolegal_moves() {
+    std::list<Position::Transition> out;
 
     for (int r = 0; r < 8; ++r) {
         for (int f = 0; f < 8; ++f) {
@@ -239,7 +251,7 @@ std::list<std::pair<Move, Position>> Position::get_pseudolegal_moves() {
     return out;
 }
 
-void Position::get_pseudolegal_rook_moves(Square from, std::list<std::pair<Move, Position>>* out) {
+void Position::get_pseudolegal_rook_moves(Square from, std::list<Position::Transition>* out) {
     /* N */
     for (int d = 1;; ++d) {
         Square dst(from.get_rank() + d, from.get_file());
@@ -309,7 +321,7 @@ void Position::get_pseudolegal_rook_moves(Square from, std::list<std::pair<Move,
     }
 }
 
-void Position::get_pseudolegal_bishop_moves(Square from, std::list<std::pair<Move, Position>>* out) {
+void Position::get_pseudolegal_bishop_moves(Square from, std::list<Position::Transition>* out) {
     /* NE */
     for (int d = 1;; ++d) {
         Square dst(from.get_rank() + d, from.get_file() + d);
@@ -379,7 +391,7 @@ void Position::get_pseudolegal_bishop_moves(Square from, std::list<std::pair<Mov
     }
 }
 
-std::pair<Move, Position> Position::make_basic_pseudolegal_move(Square from, Square to, char promote_type) {
+Position::Transition Position::make_basic_pseudolegal_move(Square from, Square to, char promote_type) {
     Piece* pto = board + to.get_index();
     Piece* pfrom = board + from.get_index();
 
@@ -430,7 +442,7 @@ std::pair<Move, Position> Position::make_basic_pseudolegal_move(Square from, Squ
         result.board[to.get_index()].set(color_to_move, promote_type);
     }
 
-    return std::pair<Move, Position>(move, result);
+    return Position::Transition(move, result);
 }
 
 bool Position::get_color_in_check(char col) {
@@ -491,4 +503,61 @@ bool Position::get_color_in_check(char col) {
     }
 
     return false;
+}
+
+Position::Transition::Transition(Move _move, Position _result, bool _check, bool _mate) : move(_move) {
+    check = _check;
+    mate = _mate;
+    result = new Position(_result);
+}
+
+Position::Transition::~Transition() {
+    delete result;
+}
+
+Position::Transition::Transition(const Position::Transition& b) : move(b.move) {
+    check = b.check;
+    mate = b.mate;
+
+    result = new Position(*(b.result));
+}
+
+Position* Position::Transition::get_result() {
+    return result;
+}
+
+Move* Position::Transition::get_move() {
+    return &move;
+}
+
+bool Position::Transition::get_check() {
+    return check;
+}
+
+bool Position::Transition::get_mate() {
+    return mate;
+}
+
+void Position::Transition::set_check(bool _check) {
+    check = _check;
+}
+
+void Position::Transition::set_mate(bool _mate) {
+    mate = _mate;
+}
+
+std::string Position::Transition::to_string() {
+    std::string out = move.to_string();
+
+    if (mate) {
+        out += '#';
+    } else if (check) {
+        out += '+';
+    }
+
+    return out;
+}
+
+Position::Transition::operator std::string() {
+    return to_string();
 }

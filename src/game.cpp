@@ -12,13 +12,13 @@ Game::Game(std::string fen) : current_position(fen) {
     update_next_moves();
 }
 
-void Game::apply(Move move) {
+Position::Transition Game::apply(Move move) {
     for (auto i : legal_next_moves) {
-        if (i.first.to_string() == move.to_string()) {
+        if (i.get_move()->to_string() == move.to_string()) {
             /* Apply matched move */
-            current_position = i.second;
+            current_position = *(i.get_result());
             update_next_moves();
-            return;
+            return i;
         }
     }
 
@@ -33,6 +33,6 @@ Position Game::get_current_position() {
     return current_position;
 }
 
-std::list<std::pair<Move, Position>> Game::get_legal_next_moves() {
+std::list<Position::Transition> Game::get_legal_next_moves() {
     return legal_next_moves;
 }
