@@ -163,6 +163,16 @@ namespace nc {
          */
         char get_color_to_move();
 
+        /**
+         * Gets if the position is "quiet" (no color is in check)
+         *
+         * TODO: this should be extended -- captures should also be considered not quiet.
+         * Perhaps the quiet property could be moved to the Move structure.
+         *
+         * @return true if position is quiet, false otherwise
+         */
+        bool is_quiet();
+
     protected:
         /* Some static board eval consts. */
         static constexpr float MAT_PAWN = 1.0f;
@@ -281,5 +291,13 @@ namespace nc {
          * @return Positive material value
          */
         float eval_get_piece_value(char t);
+
+        /**
+         * Computes attack masks for white and black, and updates white_in_check
+         * and black_in_check accordingly.
+         *
+         * Also updates the white_attack_mask and black_attack_mask members.
+         */
+        void compute_attack_masks();
     };
 }

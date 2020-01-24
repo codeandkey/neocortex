@@ -16,8 +16,7 @@ Position::Position() {
     white_king_mask = ((u64) 1 << 4);
     black_king_mask = ((u64) 1 << 60);
 
-    white_attack_mask = get_color_attack_mask('w');
-    black_attack_mask = get_color_attack_mask('b');
+    compute_attack_masks();
 
     halfmove_clock = 0;
     fullmove_number = 1;
@@ -123,6 +122,8 @@ std::list<Position::Transition> Position::get_legal_moves() {
 
     while (psl_iter != out.end()) {
         Position* result = (*psl_iter).get_result();
+
+        result->compute_attack_masks();
 
         /* Check if the color that just moved is in check. */
         bool bad_check = result->get_color_in_check(color_to_move);
@@ -652,94 +653,8 @@ Position::Transition Position::make_basic_pseudolegal_move(Square from, Square t
 }
 
 bool Position::get_color_in_check(char col) {
-    u64 king_mask = (col == 'w') ? white_king_mask : black_king_mask;
-
-    /* Construct an attack mask and see if it intersects with the king mask. */
-    u64 attack_mask = 0;
-
-    for (int r = 0; r < 8; ++r) {
-        for (int f = 0; f < 8; ++f) {
-            Square dst(r, f);
-            Piece* p = board + dst.get_index();
-
-            if (p->is_valid() && p->get_color() != col) {
-                switch (p->get_type()) {
-                case 'k':
-                    attack_mask |= lookup::king_attack(dst);
-                    break;
-                case 'q':
-                    attack_mask |= lookup::queen_attack(dst, &occ);
-                    break;
-                case 'b':
-                    attack_mask |= lookup::bishop_attack(dst, &occ);
-                    break;
-                case 'n':
-                    attack_mask |= lookup::knight_attack(dst);
-                    break;
-                case 'r':
-                    attack_mask |= lookup::rook_attack(dst, &occ);
-                    break;
-                case 'p':
-                    if (col == 'w') {
-                        attack_mask |= lookup::black_pawn_attack(dst);
-                    } else {
-                        attack_mask |= lookup::white_pawn_attack(dst);
-                    }
-                    break;
-                }
-            }
-
-        }
-    }
-
-    /* Don't exit early, we will want to reuse the attack masks in eval. */
-    if (col == 'w') {
-        black_attack_mask = attack_mask;
-    } else {
-        white_attack_mask = attack_mask;
-    }
-
-    return (attack_mask & king_mask);
-}
-
-u64 Position::get_color_attack_mask(char col) {
-    u64 attack_mask = 0;
-
-    for (int r = 0; r < 8; ++r) {
-        for (int f = 0; f < 8; ++f) {
-            Square dst(r, f);
-            Piece* p = board + dst.get_index();
-
-            if (p->get_color() == col) {
-                switch (p->get_type()) {
-                case 'k':
-                    attack_mask |= lookup::king_attack(dst);
-                    break;
-                case 'q':
-                    attack_mask |= lookup::queen_attack(dst, &occ);
-                    break;
-                case 'b':
-                    attack_mask |= lookup::bishop_attack(dst, &occ);
-                    break;
-                case 'n':
-                    attack_mask |= lookup::knight_attack(dst);
-                    break;
-                case 'r':
-                    attack_mask |= lookup::rook_attack(dst, &occ);
-                    break;
-                case 'p':
-                    if (col == 'w') {
-                        attack_mask |= lookup::black_pawn_attack(dst);
-                    } else {
-                        attack_mask |= lookup::white_pawn_attack(dst);
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    return attack_mask;
+    if (col == 'w') return white_in_check;
+    return black_in_check;
 }
 
 float Position::get_eval() {
@@ -897,4 +812,49 @@ Position::Transition::operator std::string() {
 
 char Position::get_color_to_move() {
     return color_to_move;
+}
+
+void Position::compute_attack_masks() {
+    for (int r = 0; r < 8; ++r) {
+        for (int f = 0; f < 8; ++f) {
+            Square dst(r, f);
+            Piece* p = board + dst.get_index();
+
+            if (!p->is_valid()) continue;
+
+            u64* dst_mask = (p->get_color() == 'w') ? &white_attack_mask : &black_attack_mask;
+
+            switch (p->get_type()) {
+            case 'k':
+                *dst_mask |= lookup::king_attack(dst);
+                break;
+            case 'q':
+                *dst_mask |= lookup::queen_attack(dst, &occ);
+                break;
+            case 'b':
+                *dst_mask |= lookup::bishop_attack(dst, &occ);
+                break;
+            case 'n':
+                *dst_mask |= lookup::knight_attack(dst);
+                break;
+            case 'r':
+                *dst_mask |= lookup::rook_attack(dst, &occ);
+                break;
+            case 'p':
+                if (p->get_color() == 'w') {
+                    *dst_mask |= lookup::black_pawn_attack(dst);
+                } else {
+                    *dst_mask |= lookup::white_pawn_attack(dst);
+                }
+                break;
+            }
+        }
+    }
+
+    white_in_check = (black_attack_mask & white_king_mask);
+    black_in_check = (white_attack_mask & black_king_mask);
+}
+
+bool Position::is_quiet() {
+    return (!white_in_check && !black_in_check);
 }

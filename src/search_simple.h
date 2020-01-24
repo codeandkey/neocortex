@@ -22,7 +22,7 @@ namespace nc {
             void set_depth(int depth);
 
         private:
-            int depth;
+            int depth, quiescence_depth;
             std::thread search_worker;
             Position root_position;
 
@@ -30,5 +30,6 @@ namespace nc {
 
             void worker_func();
             Evaluation alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove);
+            Evaluation quiescence_search(Position* p, int d, Evaluation alpha, Evaluation beta);
     };
 }

@@ -5,7 +5,7 @@
 
 using namespace nc;
 
-SearchSimple::SearchSimple(std::ostream& uci_out) : Search(uci_out), depth(4) {
+SearchSimple::SearchSimple(std::ostream& uci_out) : Search(uci_out), depth(4), quiescence_depth(3) {
     search_running.store(false);
 }
 
@@ -45,7 +45,11 @@ void SearchSimple::worker_func() {
 
 Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove) {
     if (!d) {
-        return Evaluation(p->get_eval());
+        if (p->is_quiet()) {
+            return Evaluation(p->get_eval());
+        } else {
+            return quiescence_search(p, quiescence_depth, alpha, beta);
+        }
     }
 
     std::list<Position::Transition> legal_moves = p->get_legal_moves();
@@ -92,6 +96,66 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             if (inner < out) {
                 out = inner;
                 if (bestmove) *bestmove = *(m.get_move());
+            }
+
+            if (out < beta) {
+                beta = out;
+            }
+
+            if (alpha > beta) {
+                break;
+            }
+        }
+
+        return out;
+    }
+}
+
+Evaluation SearchSimple::quiescence_search(Position* p, int d, Evaluation alpha, Evaluation beta) {
+    if (!d || p->is_quiet()) {
+        return Evaluation(p->get_eval());
+    }
+
+    std::list<Position::Transition> legal_moves = p->get_legal_moves();
+
+    if (p->get_color_to_move() == 'w') {
+        /* Maximize evaluation. */
+        Evaluation out(0, true, -1);
+
+        for (auto m : legal_moves) {
+            if (m.get_mate()) {
+                return Evaluation(0, true, 1);
+            }
+
+            Evaluation inner = quiescence_search(m.get_result(), d - 1, alpha, beta);
+
+            if (inner > out) {
+                out = inner;
+            }
+
+            if (out > alpha) {
+                alpha = out;
+            }
+
+            if (alpha > beta) {
+                break;
+            }
+        }
+
+        return out;
+    } else {
+        /* Minimize evaluation. */
+        Evaluation out(0, true, 1);
+
+        for (auto m : legal_moves) {
+            if (m.get_mate()) {
+                return Evaluation(0, true, -1);
+            }
+
+            Evaluation inner = quiescence_search(m.get_result(), d - 1, alpha, beta);
+
+            if (inner < out) {
+                out = inner;
             }
 
             if (out < beta) {
