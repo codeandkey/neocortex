@@ -54,13 +54,19 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
 
     std::list<Position::Transition> legal_moves = p->get_legal_moves();
 
+    if (!legal_moves.size()) {
+        throw std::runtime_error("Unexpected alpha-beta called on finished game..");
+    }
+
+    Move best_move = *(legal_moves.front().get_move());
+
     if (p->get_color_to_move() == 'w') {
         /* Maximize evaluation. */
         Evaluation out(0, true, -1);
 
         for (auto m : legal_moves) {
             if (m.get_mate()) {
-                if (bestmove) *bestmove = *(m.get_move());
+                if (bestmove) best_move = *(m.get_move());
                 return Evaluation(0, true, 1);
             }
 
@@ -68,7 +74,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
 
             if (inner > out) {
                 out = inner;
-                if (bestmove) *bestmove = *(m.get_move());
+                if (bestmove) best_move = *(m.get_move());
             }
 
             if (out > alpha) {
@@ -80,6 +86,8 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             }
         }
 
+        if (bestmove) *bestmove = best_move;
+
         return out;
     } else {
         /* Minimize evaluation. */
@@ -87,7 +95,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
 
         for (auto m : legal_moves) {
             if (m.get_mate()) {
-                if (bestmove) *bestmove = *(m.get_move());
+                if (bestmove) best_move = *(m.get_move());
                 return Evaluation(0, true, -1);
             }
 
@@ -95,7 +103,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
 
             if (inner < out) {
                 out = inner;
-                if (bestmove) *bestmove = *(m.get_move());
+                if (bestmove) best_move = *(m.get_move());
             }
 
             if (out < beta) {
@@ -107,6 +115,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             }
         }
 
+        if (bestmove) *bestmove = best_move;
         return out;
     }
 }
