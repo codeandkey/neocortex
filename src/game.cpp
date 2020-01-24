@@ -1,4 +1,5 @@
 #include "game.h"
+#include "log.h"
 
 #include <stdexcept>
 
@@ -27,6 +28,11 @@ Position::Transition Game::apply(Move move) {
 
 void Game::update_next_moves() {
     legal_next_moves = current_position.get_legal_moves();
+
+    /*nc_debug("legal next moves at %s:", current_position.get_fen().c_str());
+    for (auto i : legal_next_moves) {
+        nc_debug("move: %s", i.to_string().c_str());
+    }*/
 }
 
 Position Game::get_current_position() {

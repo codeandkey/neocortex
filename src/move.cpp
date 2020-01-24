@@ -1,4 +1,5 @@
 #include "move.h"
+#include "log.h"
 
 #include <stdexcept>
 

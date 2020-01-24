@@ -15,6 +15,27 @@ int main(int argc, char** argv) {
     nc::lookup::init();
     nc_info("Built attack lookups.");
 
+    /*nc::Game g;
+    g.apply(std::string("e2e4"));
+    g.apply(std::string("g8f6"));
+    g.apply(std::string("b1c3"));
+    g.apply(std::string("e7e5"));
+    g.apply(std::string("d2d3"));
+    g.apply(std::string("f8b4"));
+    g.apply(std::string("a2a3"));
+    g.apply(std::string("b4c3"));
+    g.apply(std::string("b2c3"));
+
+    nc::Position p = g.get_current_position();
+
+    std::list<nc::Position::Transition> l = p.get_legal_moves();
+
+    for (auto i : l) {
+        std::cout << "legal move: " << i.to_string() << "\n";
+    }
+
+    return 0;*/
+
     /* Start a uci stream. */
     nc::Engine eng(std::cin, std::cout);
     eng.run_uci_interface();

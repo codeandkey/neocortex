@@ -1,5 +1,9 @@
 #include "position.h"
 #include "lookup.h"
+#include "log.h"
+
+#include <iostream>
+#include "bitboard.h"
 
 #include <stdexcept>
 #include <bit>
@@ -815,6 +819,16 @@ char Position::get_color_to_move() {
 }
 
 void Position::compute_attack_masks() {
+    /*nc_debug("Computing attack masks for %s", get_fen().c_str());
+
+    nc_debug("white king mask:");
+    std::cerr << bitboard::to_string(white_king_mask) << "\n";
+    nc_debug("black king mask:");
+    std::cerr << bitboard::to_string(black_king_mask) << "\n";*/
+
+    white_attack_mask = 0;
+    black_attack_mask = 0;
+
     for (int r = 0; r < 8; ++r) {
         for (int f = 0; f < 8; ++f) {
             Square dst(r, f);
@@ -850,6 +864,11 @@ void Position::compute_attack_masks() {
             }
         }
     }
+
+    /*nc_debug("white attack mask:");
+    std::cerr << bitboard::to_string(white_king_mask) << "\n";
+    nc_debug("black attack mask:");
+    std::cerr << bitboard::to_string(black_attack_mask) << "\n";*/
 
     white_in_check = (black_attack_mask & white_king_mask);
     black_in_check = (white_attack_mask & black_king_mask);
