@@ -53,7 +53,7 @@ int Square::get_index() {
 }
 
 bool Square::is_valid() {
-    return (index > 0);
+    return (index >= 0);
 }
 
 Square::operator int() {
