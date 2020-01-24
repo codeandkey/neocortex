@@ -4,6 +4,7 @@
 #include "position.h"
 #include "move.h"
 #include "game.h"
+#include "engine.h"
 
 #include <iostream>
 
@@ -14,7 +15,12 @@ int main(int argc, char** argv) {
     nc::lookup::init();
     nc_info("Built attack lookups.");
 
-    /* Start a game and run it from the command line. */
+    /* Start a uci stream. */
+    nc::Engine eng(std::cin, std::cout);
+    eng.run_uci_interface();
+
+
+    /*
     nc::Game g;
 
     std::cout << "Started a game. Enter in some moves:\n";
@@ -45,6 +51,7 @@ int main(int argc, char** argv) {
             std::cerr << "Caught exception: " << e.what() << "\n";
         }
     }
+    */
 
     return 0;
 }

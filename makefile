@@ -1,6 +1,6 @@
 CXX      = g++
 CXXFLAGS = -std=c++11 -Wall -Werror -g
-LDFLAGS  =
+LDFLAGS  = -pthread
 OUTPUT   = neocortex
 
 SOURCES = $(wildcard src/*.cpp)

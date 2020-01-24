@@ -9,6 +9,7 @@ namespace nc {
     public:
         Move(Square from, Square to, char promote_type = '\0');
         Move(std::string uci);
+        Move();
 
         std::string to_string();
         operator std::string();

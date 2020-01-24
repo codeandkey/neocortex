@@ -4,7 +4,11 @@
 
 using namespace nc;
 
+Move::Move() {}
+
 Move::Move(std::string uci) {
+    promote_type = '\0';
+
     switch (uci.size()) {
     case 5:
         promote_type = uci[4];

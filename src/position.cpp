@@ -115,6 +115,9 @@ std::list<Position::Transition> Position::get_legal_moves() {
     /* First, generate all pseudolegal moves. */
     std::list<Position::Transition> out = get_pseudolegal_moves();
 
+    /* Also get castling moves. */
+    get_castle_moves(&out);
+
     /* Then, prune out those which leave the moving color in check. */
     auto psl_iter = out.begin();
 
@@ -257,6 +260,174 @@ std::list<Position::Transition> Position::get_pseudolegal_moves() {
     }
 
     return out;
+}
+
+void Position::get_castle_moves(std::list<Position::Transition>* out) {
+    if (color_to_move == 'w') {
+        Square from(0, 4);
+
+        if (w_kingside) {
+            /* Check the rook is in the corner. */
+            if (board[Square(0, 7).get_index()].get_uci() == 'R') {
+                /* Check the 3 target squares are not in check. */
+                if (!(black_attack_mask & 0x70)) {
+                    /* Check the squares bwteen the king and rook are empty. */
+                    if (!(occ.get_rank(0) & 0x60)) {
+                        /* Make the move! */
+                        Position result(*this);
+                        Square to(0, 6);
+                        Move move(from, to);
+
+                        /* Unset castle flags */
+                        result.w_kingside = result.w_queenside = false;
+
+                        /* Move king, rook */
+                        result.board[from.get_index()] = Piece();
+                        result.board[to.get_index()] = 'K';
+                        result.board[Square(0, 5).get_index()] = 'R';
+                        result.board[Square(0, 7).get_index()] = Piece();
+
+                        result.en_passant_target = Square();
+                        result.color_to_move = colorflip(result.color_to_move);
+
+                        result.occ.flip(from);
+                        result.occ.flip(to);
+                        result.occ.flip(Square(0, 5));
+                        result.occ.flip(Square(0, 7));
+
+                        result.white_king_mask = ((u64) 1 << to.get_index());
+
+                        out->push_back(Transition(move, result));
+                    }
+                }
+            }
+        }
+
+        if (w_queenside) {
+            /* Check the rook is in the corner. */
+            if (board[Square(0, 0).get_index()].get_uci() == 'R') {
+                /* Check the 3 target squares are not in check. */
+                if (!(black_attack_mask & 0x1C)) {
+                    /* Check the squares bwteen the king and rook are empty. */
+                    if (!(occ.get_rank(0) & 0xE)) {
+                        /* Make the move! */
+                        Position result(*this);
+                        Square to(0, 2);
+                        Move move(from, to);
+
+                        /* Unset castle flags */
+                        result.w_kingside = result.w_queenside = false;
+
+                        /* Move king, rook */
+                        result.board[from.get_index()] = Piece();
+                        result.board[to.get_index()] = 'K';
+                        result.board[Square(0, 3).get_index()] = 'R';
+                        result.board[Square(0, 0).get_index()] = Piece();
+
+                        result.en_passant_target = Square();
+                        result.color_to_move = colorflip(result.color_to_move);
+
+                        result.occ.flip(from);
+                        result.occ.flip(to);
+                        result.occ.flip(Square(0, 0));
+                        result.occ.flip(Square(0, 3));
+
+                        result.white_king_mask = ((u64) 1 << (to.get_index()));
+
+                        out->push_back(Transition(move, result));
+                    }
+                }
+            }
+        }
+    } else {
+        Square from(7, 4);
+
+        if (b_kingside) {
+            u64 no_attack_mask = 0;
+
+            no_attack_mask |= ((u64) 1 << Square(7, 4).get_index());
+            no_attack_mask |= ((u64) 1 << Square(7, 5).get_index());
+            no_attack_mask |= ((u64) 1 << Square(7, 6).get_index());
+
+            /* Check the rook is in the corner. */
+            if (board[Square(7, 7).get_index()].get_uci() == 'r') {
+                /* Check the 3 target squares are not in check. */
+                if (!(white_attack_mask & no_attack_mask)) {
+                    /* Check the squares bwteen the king and rook are empty. */
+                    if (!(occ.get_rank(7) & 0x60)) {
+                        /* Make the move! */
+                        Position result(*this);
+                        Square to(7, 6);
+                        Move move(from, to);
+
+                        /* Unset castle flags */
+                        result.b_kingside = result.b_queenside = false;
+
+                        /* Move king, rook */
+                        result.board[from.get_index()] = Piece();
+                        result.board[to.get_index()] = 'k';
+                        result.board[Square(7, 5).get_index()] = 'r';
+                        result.board[Square(7, 7).get_index()] = Piece();
+
+                        result.en_passant_target = Square();
+                        result.color_to_move = colorflip(result.color_to_move);
+
+                        result.occ.flip(from);
+                        result.occ.flip(to);
+                        result.occ.flip(Square(7, 5));
+                        result.occ.flip(Square(7, 7));
+
+                        result.black_king_mask = ((u64) 1 << (to.get_index()));
+
+                        out->push_back(Transition(move, result));
+                    }
+                }
+            }
+        }
+
+        if (b_queenside) {
+            u64 no_attack_mask = 0;
+
+            no_attack_mask |= ((u64) 1 << Square(7, 4).get_index());
+            no_attack_mask |= ((u64) 1 << Square(7, 3).get_index());
+            no_attack_mask |= ((u64) 1 << Square(7, 2).get_index());
+
+            /* Check the rook is in the corner. */
+            if (board[Square(7, 0).get_index()].get_uci() == 'r') {
+                /* Check the 3 target squares are not in check. */
+                if (!(white_attack_mask & no_attack_mask)) {
+                    /* Check the squares bwteen the king and rook are empty. */
+                    if (!(occ.get_rank(7) & 0xE)) {
+                        /* Make the move! */
+                        Position result(*this);
+                        Square to(7, 2);
+                        Move move(from, to);
+
+                        /* Unset castle flags */
+                        result.b_kingside = result.b_queenside = false;
+
+                        /* Move king, rook */
+                        result.board[from.get_index()] = Piece();
+                        result.board[to.get_index()] = 'k';
+                        result.board[Square(7, 3).get_index()] = 'r';
+                        result.board[Square(7, 0).get_index()] = Piece();
+
+                        result.en_passant_target = Square();
+                        result.color_to_move = colorflip(result.color_to_move);
+
+                        result.occ.flip(from);
+                        result.occ.flip(to);
+                        result.occ.flip(Square(7, 0));
+                        result.occ.flip(Square(7, 3));
+
+                        result.black_king_mask = ((u64) 1 << (to.get_index()));
+
+                        out->push_back(Transition(move, result));
+                    }
+                }
+            }
+        }
+    }
 }
 
 void Position::get_pseudolegal_rook_moves(Square from, std::list<Position::Transition>* out) {
@@ -453,9 +624,28 @@ Position::Transition Position::make_basic_pseudolegal_move(Square from, Square t
     if (pfrom->get_type() == 'k') {
         if (pfrom->get_color() == 'w') {
             result.white_king_mask = ((u64) 1 << (to.get_index()));
+            result.w_kingside = result.w_queenside = false;
         } else {
             result.black_king_mask = ((u64) 1 << (to.get_index()));
+            result.b_kingside = result.b_queenside = false;
         }
+    }
+
+    /* No castling if rooks are moved. */
+    if (from.get_index() == 63) {
+        result.b_kingside = false;
+    }
+
+    if (from.get_index() == 56) {
+        result.b_queenside = false;
+    }
+
+    if (from.get_index() == 7) {
+        result.b_kingside = false;
+    }
+
+    if (from.get_index() == 0) {
+        result.w_queenside = false;
     }
 
     return Position::Transition(move, result);
@@ -703,4 +893,8 @@ std::string Position::Transition::to_string() {
 
 Position::Transition::operator std::string() {
     return to_string();
+}
+
+char Position::get_color_to_move() {
+    return color_to_move;
 }

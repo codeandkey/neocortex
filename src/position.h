@@ -156,6 +156,13 @@ namespace nc {
          */
         float get_eval();
 
+        /**
+         * Gets the color to move.
+         *
+         * @return 'w' or 'b'
+         */
+        char get_color_to_move();
+
     protected:
         /* Some static board eval consts. */
         static constexpr float MAT_PAWN = 1.0f;
@@ -187,6 +194,13 @@ namespace nc {
          * @return Pseudolegal moves.
          */
         std::list<Transition> get_pseudolegal_moves();
+
+        /**
+         * Generates legal castling moves.
+         *
+         * @param out List to add moves to.
+         */
+        void get_castle_moves(std::list<Transition>* out);
 
         /**
          * Generates pseudolegal rook moves from a square.
