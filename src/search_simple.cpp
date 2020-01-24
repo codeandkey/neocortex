@@ -66,7 +66,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
 
         for (auto m : legal_moves) {
             if (m.get_mate()) {
-                if (bestmove) best_move = *(m.get_move());
+                if (bestmove) *bestmove = *(m.get_move());
                 return Evaluation(0, true, 1);
             }
 
@@ -95,7 +95,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
 
         for (auto m : legal_moves) {
             if (m.get_mate()) {
-                if (bestmove) best_move = *(m.get_move());
+                if (bestmove) *bestmove = *(m.get_move());
                 return Evaluation(0, true, -1);
             }
 
