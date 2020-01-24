@@ -175,7 +175,7 @@ void lookup::init() {
         for (int f = 0; f < 8 ; ++f) {
             u64 mask = 0;
 
-            for (int x = -1; x <= 1; ++x) {
+            for (int x = -1; x <= 1; x += 2) {
                 int df = f + x, dr = r + 1;
                 if (df < 0 || df >= 8 || dr < 0 || dr >= 8) continue;
 
@@ -191,7 +191,7 @@ void lookup::init() {
         for (int f = 0; f < 8 ; ++f) {
             u64 mask = 0;
 
-            for (int x = -1; x <= 1; ++x) {
+            for (int x = -1; x <= 1; x += 2) {
                 int df = f + x, dr = r - 1;
                 if (df < 0 || df >= 8 || dr < 0 || dr >= 8) continue;
 
