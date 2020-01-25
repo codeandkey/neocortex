@@ -36,14 +36,14 @@ void SearchSimple::worker_func() {
     nc_debug("In search worker thread. Starting alpha-beta.. ");
 
     Move bestmove;
-    Evaluation eval = alpha_beta(&root_position, depth, Evaluation(0, true, -1), Evaluation(0, true, 1), &bestmove);
+    Evaluation eval = alpha_beta(&root_position, depth, Evaluation(0, true, -1), Evaluation(0, true, 1), &bestmove, true);
 
     nc_debug("%s: evaluation %s, bestmove %s", root_position.get_fen().c_str(), eval.to_string().c_str(), bestmove.to_string().c_str());
 
     write_bestmove(bestmove);
 }
 
-Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove) {
+Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove, bool top) {
     if (!d) {
         if (p->is_quiet()) {
             return Evaluation(p->get_eval());
@@ -76,7 +76,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
                 return Evaluation(0, true, 1);
             }
 
-            Evaluation inner = alpha_beta(m.get_result(), d - 1, alpha, beta, nullptr);
+            Evaluation inner = alpha_beta(m.get_result(), d - 1, alpha, beta, nullptr, false);
 
             if (inner > out) {
                 out = inner;
@@ -92,7 +92,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             }
         }
 
-        out.add_noise(eval_noise);
+        if (top) out.add_noise(eval_noise);
         return out;
     } else {
         /* Minimize evaluation. */
@@ -104,7 +104,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
                 return Evaluation(0, true, -1);
             }
 
-            Evaluation inner = alpha_beta(m.get_result(), d - 1, alpha, beta, nullptr);
+            Evaluation inner = alpha_beta(m.get_result(), d - 1, alpha, beta, nullptr, false);
 
             if (inner < out) {
                 out = inner;
@@ -120,7 +120,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             }
         }
 
-        out.add_noise(eval_noise);
+        if (top) out.add_noise(eval_noise);
         return out;
     }
 }

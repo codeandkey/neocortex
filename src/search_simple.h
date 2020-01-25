@@ -30,7 +30,7 @@ namespace nc {
             std::atomic<bool> search_running;
 
             void worker_func();
-            Evaluation alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove);
+            Evaluation alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove, bool top);
             Evaluation quiescence_search(Position* p, int d, Evaluation alpha, Evaluation beta);
     };
 }
