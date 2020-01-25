@@ -3,6 +3,8 @@
 #include "log.h"
 
 #include <iostream>
+#include <sstream>
+
 #include "bitboard.h"
 
 #include <stdexcept>
@@ -53,7 +55,77 @@ Position::Position() {
 
 Position::Position(std::string fen) {
     /* Try and parse a valid FEN */
-    throw std::runtime_error("FEN parsing not implemented! FIXME");
+
+    std::stringstream ss(fen);
+
+    std::string rinfo, col_to_move, castle, en_passant, halfmove, fullmove;
+
+    ss >> rinfo;
+    ss >> col_to_move;
+    ss >> castle;
+    ss >> en_passant;
+    ss >> halfmove_clock;
+    ss >> fullmove_number;
+
+    color_to_move = col_to_move[0];
+
+    int crank = 7, cfile = 0;
+    for (auto c : rinfo) {
+        if (c == '/') {
+            crank--;
+            cfile = 0;
+            continue;
+        }
+
+        if (c >= '1' && c <= '8') {
+            int count = c - '0';
+
+            for (int i = 0; i < count; ++i) {
+                board[Square(crank, cfile++).get_index()] = Piece();
+            }
+        } else {
+            board[Square(crank, cfile++).get_index()] = c;
+        }
+    }
+
+    en_passant_target = en_passant;
+
+    w_kingside = w_queenside = b_kingside = b_queenside = false;
+
+    for (auto c : castle) {
+        switch (c) {
+            case 'K':
+                w_kingside = true;
+                break;
+            case 'Q':
+                w_queenside = true;
+                break;
+            case 'k':
+                b_kingside = true;
+                break;
+            case 'q':
+                b_queenside = true;
+                break;
+        }
+    }
+
+    /* initialize occtable */
+    for (int r = 0; r < 8; ++r) {
+        for (int f = 0; f < 8; ++f) {
+            if (board[Square(r, f).get_index()].is_valid()) {
+                occ.flip(Square(r, f));
+
+                /* Also set the king masks here. */
+                if (board[Square(r, f).get_index()].get_uci() == 'K') {
+                    white_king_mask = ((u64) 1 << Square(r, f).get_index());
+                }
+
+                if (board[Square(r, f).get_index()].get_uci() == 'k') {
+                    black_king_mask = ((u64) 1 << Square(r, f).get_index());
+                }
+            }
+        }
+    }
 }
 
 std::string Position::get_fen() {
@@ -80,7 +152,7 @@ std::string Position::get_fen() {
             }
         }
 
-        out += '/';
+        if (r) out += '/';
     }
 
     /* Write color to move */
@@ -856,9 +928,9 @@ void Position::compute_attack_masks() {
                 break;
             case 'p':
                 if (p->get_color() == 'w') {
-                    *dst_mask |= lookup::black_pawn_attack(dst);
-                } else {
                     *dst_mask |= lookup::white_pawn_attack(dst);
+                } else {
+                    *dst_mask |= lookup::black_pawn_attack(dst);
                 }
                 break;
             }
