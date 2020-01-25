@@ -5,7 +5,7 @@
 
 using namespace nc;
 
-SearchSimple::SearchSimple(std::ostream& uci_out) : Search(uci_out), depth(4), quiescence_depth(3) {
+SearchSimple::SearchSimple(std::ostream& uci_out) : Search(uci_out), depth(4), quiescence_depth(5) {
     search_running.store(false);
 }
 
