@@ -323,7 +323,15 @@ std::list<Position::Transition> Position::get_pseudolegal_moves() {
                                 }
                             }
 
-                            out.push_back(make_basic_pseudolegal_move(Square(r, f), capture_dst));
+                            if (capture_dst.get_rank() == last) {
+                                /* Perform promotion if needed */
+                                out.push_back(make_basic_pseudolegal_move(Square(r, f), capture_dst, 'b'));
+                                out.push_back(make_basic_pseudolegal_move(Square(r, f), capture_dst, 'n'));
+                                out.push_back(make_basic_pseudolegal_move(Square(r, f), capture_dst, 'r'));
+                                out.push_back(make_basic_pseudolegal_move(Square(r, f), capture_dst, 'q'));
+                            } else {
+                                out.push_back(make_basic_pseudolegal_move(Square(r, f), capture_dst));
+                            }
                         }
                     }
                     break;
