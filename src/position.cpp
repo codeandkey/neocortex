@@ -398,7 +398,7 @@ void Position::get_castle_moves(std::list<Position::Transition>* out) {
                 /* Check the 3 target squares are not in check. */
                 if (!(black_attack_mask & no_attack_mask)) {
                     /* Check the squares bwteen the king and rook are empty. */
-                    if (!(occ.get_rank(0) & 0xE)) {
+                    if (!(occ.get_rank(0) & 0x0E)) {
                         /* Make the move! */
                         Position result(*this);
                         Square to(0, 2);
@@ -486,7 +486,7 @@ void Position::get_castle_moves(std::list<Position::Transition>* out) {
                 /* Check the 3 target squares are not in check. */
                 if (!(white_attack_mask & no_attack_mask)) {
                     /* Check the squares bwteen the king and rook are empty. */
-                    if (!(occ.get_rank(7) & 0xE)) {
+                    if (!(occ.get_rank(7) & 0x0E)) {
                         /* Make the move! */
                         Position result(*this);
                         Square to(7, 2);
