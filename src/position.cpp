@@ -344,10 +344,16 @@ void Position::get_castle_moves(std::list<Position::Transition>* out) {
         Square from(0, 4);
 
         if (w_kingside) {
+            u64 no_attack_mask = 0;
+
+            no_attack_mask |= ((u64) 1 << Square(0, 4).get_index());
+            no_attack_mask |= ((u64) 1 << Square(0, 5).get_index());
+            no_attack_mask |= ((u64) 1 << Square(0, 6).get_index());
+
             /* Check the rook is in the corner. */
             if (board[Square(0, 7).get_index()].get_uci() == 'R') {
                 /* Check the 3 target squares are not in check. */
-                if (!(black_attack_mask & 0x70)) {
+                if (!(black_attack_mask & no_attack_mask)) {
                     /* Check the squares bwteen the king and rook are empty. */
                     if (!(occ.get_rank(0) & 0x60)) {
                         /* Make the move! */
@@ -381,10 +387,16 @@ void Position::get_castle_moves(std::list<Position::Transition>* out) {
         }
 
         if (w_queenside) {
+            u64 no_attack_mask = 0;
+
+            no_attack_mask |= ((u64) 1 << Square(0, 2).get_index());
+            no_attack_mask |= ((u64) 1 << Square(0, 3).get_index());
+            no_attack_mask |= ((u64) 1 << Square(0, 4).get_index());
+
             /* Check the rook is in the corner. */
             if (board[Square(0, 0).get_index()].get_uci() == 'R') {
                 /* Check the 3 target squares are not in check. */
-                if (!(black_attack_mask & 0x1C)) {
+                if (!(black_attack_mask & no_attack_mask)) {
                     /* Check the squares bwteen the king and rook are empty. */
                     if (!(occ.get_rank(0) & 0xE)) {
                         /* Make the move! */
