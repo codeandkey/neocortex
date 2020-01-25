@@ -23,7 +23,7 @@ namespace nc {
 
         private:
             int depth, quiescence_depth;
-            const float eval_noise = 0.02;
+            const float eval_noise = 0.001;
             std::thread search_worker;
             Position root_position;
 
