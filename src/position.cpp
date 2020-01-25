@@ -4,11 +4,7 @@
 
 #include <iostream>
 #include <sstream>
-
-#include "bitboard.h"
-
 #include <stdexcept>
-#include <bit>
 
 using namespace nc;
 
