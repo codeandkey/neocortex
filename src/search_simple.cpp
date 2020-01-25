@@ -62,6 +62,10 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
         *bestmove = *(legal_moves.front().get_move());
     }
 
+    if (!legal_moves.size() && !(p->get_color_in_check(p->get_color_to_move()))) {
+        return Evaluation(0, false, 0); /* stalemate endgame */
+    }
+
     if (p->get_color_to_move() == 'w') {
         /* Maximize evaluation. */
         Evaluation out(0, true, -1);
