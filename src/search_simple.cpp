@@ -54,11 +54,11 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
 
     std::list<Position::Transition> legal_moves = p->get_legal_moves();
 
-    if (!legal_moves.size()) {
-        throw std::runtime_error("Unexpected alpha-beta called on finished game..");
-    }
-
     if (bestmove) {
+        if (!legal_moves.size()) {
+            throw std::runtime_error("Best move requested, but no legal moves..");
+        }
+
         *bestmove = *(legal_moves.front().get_move());
     }
 
