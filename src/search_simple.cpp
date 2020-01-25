@@ -58,7 +58,9 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
         throw std::runtime_error("Unexpected alpha-beta called on finished game..");
     }
 
-    Move best_move = *(legal_moves.front().get_move());
+    if (bestmove) {
+        *bestmove = *(legal_moves.front().get_move());
+    }
 
     if (p->get_color_to_move() == 'w') {
         /* Maximize evaluation. */
@@ -74,7 +76,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
 
             if (inner > out) {
                 out = inner;
-                if (bestmove) best_move = *(m.get_move());
+                if (bestmove) *bestmove = *(m.get_move());
             }
 
             if (out > alpha) {
@@ -85,8 +87,6 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
                 break;
             }
         }
-
-        if (bestmove) *bestmove = best_move;
 
         return out;
     } else {
@@ -103,7 +103,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
 
             if (inner < out) {
                 out = inner;
-                if (bestmove) best_move = *(m.get_move());
+                if (bestmove) *bestmove = *(m.get_move());
             }
 
             if (out < beta) {
@@ -115,7 +115,6 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             }
         }
 
-        if (bestmove) *bestmove = best_move;
         return out;
     }
 }
