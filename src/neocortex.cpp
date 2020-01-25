@@ -7,8 +7,11 @@
 #include "engine.h"
 
 #include <iostream>
+#include <cstdlib>
 
 int main(int argc, char** argv) {
+    srand(time(NULL));
+
     nc::log_init();
     nc_info("Started neocortex.");
 

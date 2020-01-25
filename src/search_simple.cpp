@@ -92,6 +92,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             }
         }
 
+        out.add_noise(eval_noise);
         return out;
     } else {
         /* Minimize evaluation. */
@@ -119,6 +120,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             }
         }
 
+        out.add_noise(eval_noise);
         return out;
     }
 }

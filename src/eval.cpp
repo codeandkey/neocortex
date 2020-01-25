@@ -95,6 +95,10 @@ int Evaluation::compare(Evaluation rhs) {
     }
 }
 
+void Evaluation::add_noise(float amp) {
+    eval += (((float) (rand() % 10) / 10.0f) - 0.5f) * 2.0f * amp;
+}
+
 bool Evaluation::operator > (Evaluation& rhs) {
     return (compare(rhs) == -1);
 }

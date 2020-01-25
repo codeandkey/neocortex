@@ -62,6 +62,13 @@ namespace nc {
              * @return -1 if b is better for black, 1 if b is better for white, 0 if this eval is equal to b.
              */
             int compare(Evaluation b);
+            
+            /**
+             * Adds a random amount of noise to the evaluation.
+             *
+             * @param amp Maximum amplitude in both directions
+             */
+            void add_noise(float amp);
 
             bool operator < (Evaluation& rhs);
             bool operator > (Evaluation& rhs);
