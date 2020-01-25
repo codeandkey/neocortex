@@ -81,6 +81,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             if (inner > out) {
                 out = inner;
                 if (bestmove) *bestmove = *(m.get_move());
+                if (top) nc_debug("Found move: %s => %s", m.to_string().c_str(), inner.to_string().c_str());
             }
 
             if (out > alpha) {
@@ -109,6 +110,7 @@ Evaluation SearchSimple::alpha_beta(Position* p, int d, Evaluation alpha, Evalua
             if (inner < out) {
                 out = inner;
                 if (bestmove) *bestmove = *(m.get_move());
+                if (top) nc_debug("Found move: %s => %s", m.to_string().c_str(), inner.to_string().c_str());
             }
 
             if (out < beta) {
