@@ -18,6 +18,8 @@ Position::Position() {
     white_king_mask = ((u64) 1 << 4);
     black_king_mask = ((u64) 1 << 60);
 
+    quiet = false;
+
     compute_attack_masks();
 
     halfmove_clock = 0;
@@ -122,6 +124,10 @@ Position::Position(std::string fen) {
             }
         }
     }
+
+    /* make masks, set quiet */
+    quiet = true;
+    compute_attack_masks();
 }
 
 std::string Position::get_fen() {
@@ -741,6 +747,8 @@ Position::Transition Position::make_basic_pseudolegal_move(Square from, Square t
         result.w_queenside = false;
     }
 
+    result.set_quiet(!pto->is_valid());
+
     return Position::Transition(move, result);
 }
 
@@ -963,5 +971,9 @@ void Position::compute_attack_masks() {
 }
 
 bool Position::is_quiet() {
-    return (!white_in_check && !black_in_check);
+    return (!white_in_check && !black_in_check) && quiet;
+}
+
+void Position::set_quiet(bool q) {
+    quiet = q;
 }

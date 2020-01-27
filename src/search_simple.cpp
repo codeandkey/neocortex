@@ -9,6 +9,10 @@ SearchSimple::SearchSimple(std::ostream& uci_out) : Search(uci_out), depth(4), q
     search_running.store(false);
 }
 
+SearchSimple::~SearchSimple() {
+    stop();
+}
+
 void SearchSimple::set_position(Position p) {
     root_position = p;
 }

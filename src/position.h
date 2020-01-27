@@ -164,14 +164,18 @@ namespace nc {
         char get_color_to_move();
 
         /**
-         * Gets if the position is "quiet" (no color is in check)
-         *
-         * TODO: this should be extended -- captures should also be considered not quiet.
-         * Perhaps the quiet property could be moved to the Move structure.
+         * Gets if the position is "quiet"
          *
          * @return true if position is quiet, false otherwise
          */
         bool is_quiet();
+
+        /**
+         * Sets the position quiet flag.
+         *
+         * @param q Quiet flag
+         */
+        void set_quiet(bool q);
 
     protected:
         /* Some static board eval consts. */
@@ -196,6 +200,7 @@ namespace nc {
         Occtable occ;
         u64 white_king_mask, black_king_mask;
         u64 white_attack_mask, black_attack_mask;
+        bool quiet;
 
         /**
          * Generates pseudolegal moves and returns a list of ordered pairs,

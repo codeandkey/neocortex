@@ -15,6 +15,7 @@ namespace nc {
     class SearchSimple : public Search {
         public:
             SearchSimple(std::ostream& uci_out);
+            ~SearchSimple();
 
             void set_position(Position p);
             void go();
