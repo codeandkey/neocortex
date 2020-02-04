@@ -23,6 +23,6 @@ void lookup::initialize_knight_lookup() {
     }
 }
 
-std::vector<Move> lookup::knight_moves(u8 s) {
+const std::vector<Move>& lookup::knight_moves(u8 s) {
     return _nc2_lookup_knight_table[s];
 }

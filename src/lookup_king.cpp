@@ -22,6 +22,6 @@ void lookup::initialize_king_lookup() {
     }
 }
 
-std::vector<Move> lookup::king_moves(u8 s) {
+const std::vector<Move>& lookup::king_moves(u8 s) {
     return _nc2_lookup_king_table[s];
 }
