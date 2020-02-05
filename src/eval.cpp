@@ -10,8 +10,8 @@ static const float _nc2_eval_type_values[] = {
     3.0f, /* knight */
     3.2f, /* bishop */
     5.0f, /* rook */
-    7.0f, /* queen */
     0.0f, /* king */
+    7.0f, /* queen */
 };
 
 float eval::development(u8* board, u8 col) {
