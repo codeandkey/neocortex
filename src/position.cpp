@@ -80,6 +80,9 @@ Position::Position() {
 
     /* Initialize attack masks */
     update_check_states();
+
+    /* Initialize en passant target */
+    en_passant_target = square::null;
 }
 
 Position::Position(std::string fen) {
