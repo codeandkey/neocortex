@@ -16,8 +16,8 @@ using namespace nc2;
 static const char _nc2_position_init_uci[] = "RNBQKBNRPPPPPPPP8888pppppppprnbkqbnr";
 
 static const u64 _nc2_position_castle_noattack_masks[2][2] = {
-    { square::MASK_E1 | square::MASK_D1 | square::MASK_C1, square::MASK_E1 || square::MASK_F1 || square::MASK_G1 },
-    { square::MASK_E8 | square::MASK_D8 | square::MASK_C8, square::MASK_E8 || square::MASK_F8 || square::MASK_G8 },
+    { square::MASK_E1 | square::MASK_D1 | square::MASK_C1, square::MASK_E1 | square::MASK_F1 | square::MASK_G1 },
+    { square::MASK_E8 | square::MASK_D8 | square::MASK_C8, square::MASK_E8 | square::MASK_F8 | square::MASK_G8 },
 };
 
 Position::Position() {
