@@ -4,8 +4,10 @@
 
 using namespace nc2;
 
-std::vector<Move> _nc2_pawn_advance_table[64][2];
-std::vector<Move> _nc2_pawn_capture_table[64][2];
+static std::vector<Move> _nc2_pawn_advance_table[64][2];
+static std::vector<Move> _nc2_pawn_capture_table[64][2];
+
+static u64 _nc2_pawn_attack_table[64][2];
 
 void lookup::initialize_pawn_lookup() {
     /* Initialize white lookups */
@@ -13,6 +15,8 @@ void lookup::initialize_pawn_lookup() {
         for (int f = 0; f < 8; ++f) {
             /* Check for left captures */
             if (f > 0) {
+                _nc2_pawn_attack_table[square::at(r, f)][piece::Color::WHITE] |= square::mask(square::at(r + 1, f - 1));
+
                 if (r == 7) {
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f - 1), piece::Type::QUEEN));
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f - 1), piece::Type::KNIGHT));
@@ -25,6 +29,8 @@ void lookup::initialize_pawn_lookup() {
 
             /* Check for right captures */
             if (f < 7) {
+                _nc2_pawn_attack_table[square::at(r, f)][piece::Color::WHITE] |= square::mask(square::at(r + 1, f + 1));
+
                 if (r == 7) {
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f + 1), piece::Type::QUEEN));
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f + 1), piece::Type::KNIGHT));
@@ -57,6 +63,8 @@ void lookup::initialize_pawn_lookup() {
         for (int f = 0; f < 8; ++f) {
             /* Check for left captures */
             if (f > 0) {
+                _nc2_pawn_attack_table[square::at(r, f)][piece::Color::BLACK] |= square::mask(square::at(r - 1, f - 1));
+
                 if (r == 1) {
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::BLACK].push_back(Move(square::at(r, f), square::at(r - 1, f - 1), piece::Type::QUEEN));
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::BLACK].push_back(Move(square::at(r, f), square::at(r - 1, f - 1), piece::Type::KNIGHT));
@@ -69,6 +77,8 @@ void lookup::initialize_pawn_lookup() {
 
             /* Check for right captures */
             if (f < 7) {
+                _nc2_pawn_attack_table[square::at(r, f)][piece::Color::BLACK] |= square::mask(square::at(r - 1, f + 1));
+
                 if (r == 1) {
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::BLACK].push_back(Move(square::at(r, f), square::at(r - 1, f + 1), piece::Type::QUEEN));
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::BLACK].push_back(Move(square::at(r, f), square::at(r - 1, f + 1), piece::Type::KNIGHT));
@@ -103,4 +113,8 @@ const std::vector<Move>& lookup::pawn_advances(u8 s, u8 col) {
 
 const std::vector<Move>& lookup::pawn_captures(u8 s, u8 col) {
     return _nc2_pawn_capture_table[s][col];
+}
+
+u64 lookup::pawn_attacks(u8 s, u8 col) {
+    return _nc2_pawn_attack_table[s][col];
 }

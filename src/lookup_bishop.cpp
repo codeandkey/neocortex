@@ -3,7 +3,8 @@
 
 using namespace nc2;
 
-std::vector<Move> _nc2_lookup_bishop_table[64][64][64]; /* [square][diag_rocc][antidiag_rocc] */
+static std::vector<Move> _nc2_lookup_bishop_table[64][64][64]; /* [square][diag_rocc][antidiag_rocc] */
+static u64 _nc2_lookup_bishop_attack_table[64][64][64];
 
 void lookup::initialize_bishop_lookup() {
     for (int r = 0; r < 8; ++r) {
@@ -22,24 +23,28 @@ void lookup::initialize_bishop_lookup() {
                     /* Walk northeast (diag) */
                     for (int d = 1; r + d < 8 && f + d < 8; ++d) {
                         dst->push_back(Move(s, square::at(r + d, f + d)));
+                        _nc2_lookup_bishop_attack_table[s][diag_rocc][antidiag_rocc] |= square::mask(square::at(r + d, f + d));
                         if ((diag_occ >> (r + d)) & 1) break;
                     }
 
                     /* Walk southwest (diag) */
                     for (int d = 1; r - d >= 0 && f - d >= 0; ++d) {
                         dst->push_back(Move(s, square::at(r - d, f - d)));
+                        _nc2_lookup_bishop_attack_table[s][diag_rocc][antidiag_rocc] |= square::mask(square::at(r - d, f - d));
                         if ((diag_occ >> (r - d)) & 1) break;
                     }
 
                     /* Walk northwest (antidiag) */
                     for (int d = 1; r + d < 8 && f - d >= 0; ++d) {
                         dst->push_back(Move(s, square::at(r + d, f - d)));
+                        _nc2_lookup_bishop_attack_table[s][diag_rocc][antidiag_rocc] |= square::mask(square::at(r + d, f - d));
                         if ((antidiag_occ >> (r + d)) & 1) break;
                     }
 
                     /* Walk southeast (diag) */
                     for (int d = 1; r - d >= 0 && f + d < 8; ++d) {
                         dst->push_back(Move(s, square::at(r - d, f + d)));
+                        _nc2_lookup_bishop_attack_table[s][diag_rocc][antidiag_rocc] |= square::mask(square::at(r - d, f + d));
                         if ((antidiag_occ >> (r - d)) & 1) break;
                     }
                 }
@@ -56,3 +61,10 @@ const std::vector<Move>& lookup::bishop_moves(u8 s, Occboard* occ) {
     return _nc2_lookup_bishop_table[s][diag_rocc][antidiag_rocc];
 }
 
+u64 lookup::bishop_attacks(u8 s, Occboard* occ) {
+    u8 d = square::diag(s), ad = square::antidiag(s);
+    u8 diag_rocc = Occboard::to_rocc(occ->get_diag(d));
+    u8 antidiag_rocc = Occboard::to_rocc(occ->get_antidiag(ad));
+
+    return _nc2_lookup_bishop_attack_table[s][diag_rocc][antidiag_rocc];
+}

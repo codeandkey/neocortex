@@ -11,5 +11,6 @@ namespace nc2 {
         void initialize_rook_lookup();
 
         const std::vector<Move>& rook_moves(u8 s, Occboard* occ);
+        u64 rook_attacks(u8 s, Occboard* occ);
     }
 }

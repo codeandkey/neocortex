@@ -10,5 +10,6 @@ namespace nc2 {
         void initialize_knight_lookup();
 
         const std::vector<Move>& knight_moves(u8 s);
+        u64 knight_attacks(u8 s);
     }
 }

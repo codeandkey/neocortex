@@ -15,5 +15,7 @@ namespace nc2 {
 
         const std::vector<Move>& pawn_advances(u8 s, u8 col);
         const std::vector<Move>& pawn_captures(u8 s, u8 col);
+
+        u64 pawn_attacks(u8 s, u8 col);
     }
 }

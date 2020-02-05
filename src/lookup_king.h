@@ -10,5 +10,6 @@ namespace nc2 {
         void initialize_king_lookup();
 
         const std::vector<Move>& king_moves(u8 s);
+        u64 king_attacks(u8 s);
     }
 }

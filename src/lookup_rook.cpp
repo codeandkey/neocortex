@@ -3,7 +3,8 @@
 
 using namespace nc2;
 
-std::vector<Move> _nc2_lookup_rook_table[64][64][64]; /* [square][rank_rocc][file_rocc] */
+static std::vector<Move> _nc2_lookup_rook_table[64][64][64]; /* [square][rank_rocc][file_rocc] */
+static u64 _nc2_lookup_rook_attack_table[64][64][64];
 
 void lookup::initialize_rook_lookup() {
     for (int r = 0; r < 8; ++r) {
@@ -22,24 +23,28 @@ void lookup::initialize_rook_lookup() {
                     /* Walk north */
                     for (int cr = r + 1; cr < 8; ++cr) {
                         dst->push_back(Move(s, square::at(cr, f)));
+                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, f));
                         if ((rank_occ >> cr) & 1) break;
                     }
 
                     /* Walk south */
                     for (int cr = r - 1; cr >= 0; --cr) {
                         dst->push_back(Move(s, square::at(cr, f)));
+                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, f));
                         if ((rank_occ >> cr) & 1) break;
                     }
 
                     /* Walk east */
                     for (int cf = f + 1; cf < 8; ++cf) {
                         dst->push_back(Move(s, square::at(r, cf)));
+                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, f));
                         if ((file_occ >> cf) & 1) break;
                     }
 
                     /* Walk west */
                     for (int cf = f - 1; cf >= 0; --cf) {
                         dst->push_back(Move(s, square::at(r, cf)));
+                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, f));
                         if ((file_occ >> cf) & 1) break;
                     }
                 }
@@ -56,3 +61,10 @@ const std::vector<Move>& lookup::rook_moves(u8 s, Occboard* occ) {
     return _nc2_lookup_rook_table[s][rank_rocc][file_rocc];
 }
 
+u64 lookup::rook_attacks(u8 s, Occboard* occ) {
+    u8 r = square::rank(s), f = square::file(s);
+    u8 rank_rocc = Occboard::to_rocc(occ->get_rank(r));
+    u8 file_rocc = Occboard::to_rocc(occ->get_file(f));
+
+    return _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc];
+}
