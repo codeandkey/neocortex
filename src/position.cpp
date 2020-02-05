@@ -108,6 +108,8 @@ std::string Position::get_debug_string() {
     std::string out;
 
     out += "board state: transposition hash " + std::to_string(ttable_index) + "\n";
+    if (check_states[piece::Color::WHITE]) out += "white in CHECK\n";
+    if (check_states[piece::Color::BLACK]) out += "black in CHECK\n";
     for (int r = 7; r >= 0; --r) {
         for (int f = 0; f < 8; ++f) {
             u8 p = board[square::at(r, f)];
