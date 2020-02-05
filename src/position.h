@@ -29,6 +29,12 @@ namespace nc2 {
             std::string get_debug_string();
 
             u32 get_ttable_key();
+
+            float get_eval();
+
+            bool is_quiet();
+            u8 get_color_to_move();
+            bool get_color_in_check(u8 col);
             
         private:
             Occboard global_occ;

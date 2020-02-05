@@ -8,6 +8,7 @@
 #include "tindex.h"
 #include "piece.h"
 #include "square.h"
+#include "eval.h"
 
 #include <iostream>
 
@@ -92,24 +93,24 @@ Position::Position(std::string fen) {
 std::vector<Position::Transition> Position::gen_legal_moves() {
     std::vector<Position::Transition> pl_moves = gen_pseudolegal_moves();
 
-    std::cerr << "Generating legal moves for position..\n";
+    //std::cerr << "Generating legal moves for position..\n";
 
     auto it = pl_moves.begin();
 
     while (it != pl_moves.end()) {
         if (!(*it).second.update_check_states()) {
             /* Illegal position! Drop this move. */
-            std::cerr << "Rejecting " << (*it).first.to_string() << "\n";
-            std::cerr << "^ due to king_mask = \n" << bitboard_to_string((*it).second.king_masks[color_to_move]);
-            std::cerr << "^ due to (other) attack_mask = \n" << bitboard_to_string((*it).second.attack_masks[piece::colorflip(color_to_move)]);
+            //std::cerr << "Rejecting " << (*it).first.to_string() << "\n";
+            //std::cerr << "^ due to king_mask = \n" << bitboard_to_string((*it).second.king_masks[color_to_move]);
+            //std::cerr << "^ due to (other) attack_mask = \n" << bitboard_to_string((*it).second.attack_masks[piece::colorflip(color_to_move)]);
             it = pl_moves.erase(it);
         } else {
-            std::cerr << "Accepting " << (*it).first.to_string() << "\n";
+            //std::cerr << "Accepting " << (*it).first.to_string() << "\n";
             ++it;
         }
     }
 
-    std::cerr << "Done generating legal moves.\n";
+    //std::cerr << "Done generating legal moves.\n";
 
     return pl_moves;
 }
@@ -155,6 +156,38 @@ std::string Position::get_debug_string() {
 
 u32 Position::get_ttable_key() {
     return ttable_index;
+}
+
+float Position::get_eval() {
+    float ev = 0.0f;
+
+    ev += eval::development(board, piece::Color::WHITE);
+    ev -= eval::development(board, piece::Color::BLACK);
+
+    ev += eval::center_control(attack_masks[piece::Color::WHITE]);
+    ev -= eval::center_control(attack_masks[piece::Color::BLACK]);
+
+    ev += eval::material_diff(board);
+
+    if (color_to_move == piece::Color::WHITE) {
+        ev += eval::TEMPO_VALUE;
+    } else {
+        ev -= eval::TEMPO_VALUE;
+    }
+
+    return ev;
+}
+
+bool Position::is_quiet() {
+    return quiet;
+}
+
+u8 Position::get_color_to_move() {
+    return color_to_move;
+}
+
+bool Position::get_color_in_check(u8 col) {
+    return check_states[col];
 }
 
 std::vector<Position::Transition> Position::gen_pseudolegal_moves() {
@@ -629,6 +662,8 @@ bool Position::update_check_states() {
 
     check_states[piece::Color::WHITE] = attack_masks[piece::Color::BLACK] & king_masks[piece::Color::WHITE];
     check_states[piece::Color::BLACK] = attack_masks[piece::Color::WHITE] & king_masks[piece::Color::BLACK];
+
+    if (check_states[piece::Color::WHITE] || check_states[piece::Color::BLACK]) quiet = false;
 
     /* The color that just moved cannot be in check. */
     return !check_states[piece::colorflip(color_to_move)];

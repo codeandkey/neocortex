@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "position.h"
+#include "eval_type.h"
 
 namespace nc2 {
     class SearcherST {
@@ -15,5 +16,11 @@ namespace nc2 {
         private:
             std::ostream& uci_out;
             Position root;
+
+            Evaluation alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove_out);
+            Evaluation quiescence(Position* p, int d, Evaluation alpha, Evaluation beta);
+
+            static constexpr int DEPTH = 5;
+            static constexpr int QDEPTH = 4;
     };
 }
