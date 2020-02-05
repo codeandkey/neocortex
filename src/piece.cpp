@@ -32,3 +32,26 @@ char piece::type_char(u8 t) {
 bool piece::exists(u8 p) {
     return (p != piece::null);
 }
+
+u8 piece::colorflip(u8 c) {
+    return !c;
+}
+
+std::vector<u8> piece::from_uci(char u) {
+    std::vector<u8> out;
+
+    if ('1' <= u && u <= '8') {
+        int count = u - '0';
+        for (int i = 0; i < count; ++i) {
+            out.push_back(piece::null);
+        }
+
+        return out;
+    }
+
+    for (u8 i = 0; i < sizeof _nc2_uci_chars; ++i) {
+        if (_nc2_uci_chars[i] == u) out.push_back(i);
+    }
+
+    return out;
+}

@@ -12,6 +12,7 @@
 #include "square.h"
 #include "piece.h"
 #include "occ.h"
+#include "position.h"
 
 int main(int argc, char** argv) {
     nc2::lookup::initialize_pawn_lookup();
@@ -22,11 +23,11 @@ int main(int argc, char** argv) {
 
     std::cerr << "lookups ready\n";
 
-    nc2::Occboard occ = nc2::Occboard::standard();
+    nc2::Position pos;
 
-    occ.flip(nc2::square::at(0, 7));
-    occ.flip(nc2::square::at(0, 5));
-    std::cout << "pawn_can_jump(b, black) = " << (occ.pawn_can_jump(1, nc2::piece::Color::BLACK) ? "yes" : "no") << "\n";
+    for (auto t : pos.gen_legal_moves()) {
+        std::cerr << "PL move: " << t.first.to_string() << "\n";
+    }
 
     if (argc == 2 && std::string(argv[1]) == "test") {
         /* Run all tests. */

@@ -4,6 +4,7 @@
  * Piece constants and helpers.
  */
 
+#include <vector>
 #include "types.h"
 
 namespace nc2 {
@@ -42,8 +43,12 @@ namespace nc2 {
         u8 type(u8 p);
         u8 color(u8 p);
 
+        u8 colorflip(u8 c);
+
         char uci(u8 p);
         char type_char(u8 t);
         bool exists(u8 p);
+
+        std::vector<u8> from_uci(char c);
     }
 }
