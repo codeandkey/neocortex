@@ -100,6 +100,8 @@ std::vector<Position::Transition> Position::gen_legal_moves() {
         if (!(*it).second.update_check_states()) {
             /* Illegal position! Drop this move. */
             std::cerr << "Rejecting " << (*it).first.to_string() << "\n";
+            std::cerr << "^ due to king_mask = \n" << bitboard_to_string((*it).second.king_masks[color_to_move]);
+            std::cerr << "^ due to (other) attack_mask = \n" << bitboard_to_string((*it).second.attack_masks[piece::colorflip(color_to_move)]);
             it = pl_moves.erase(it);
         } else {
             std::cerr << "Accepting " << (*it).first.to_string() << "\n";
