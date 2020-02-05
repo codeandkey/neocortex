@@ -60,6 +60,10 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
         for (auto m : legal_moves) {
             Evaluation inner = alpha_beta(&m.second, d - 1, alpha, beta, nullptr);
 
+            if (d == DEPTH) {
+                std::cerr << "evaluated top-level move " << m.first.to_string() << " : search " << inner.to_string() << " immediate " << m.second.get_eval() << "\n";
+            }
+
             if (inner.get_forced_mate() && !inner.get_mate_in()) {
                 /* Move is mate in 1! */
                 if (bestmove_out) *bestmove_out = m.first;
