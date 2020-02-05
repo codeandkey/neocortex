@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 
+#include "engine.h"
 #include "tindex.h"
 #include "unit_test.h"
 #include "lookup_pawn.h"
@@ -16,6 +17,7 @@
 #include "position.h"
 
 void run_game();
+void run_engine();
 
 int main(int argc, char** argv) {
     nc2::lookup::initialize_pawn_lookup();
@@ -24,12 +26,6 @@ int main(int argc, char** argv) {
     nc2::lookup::initialize_rook_lookup();
     nc2::lookup::initialize_bishop_lookup();
     nc2::ttable::initialize_indices(0xdeadbeef);
-
-    std::cerr << "lookups ready\n";
-
-    nc2::Occboard occ = nc2::Occboard::standard();
-    std::cerr << "bishop attacks at e4:\n";
-    std::cerr << nc2::bitboard_to_string(nc2::lookup::bishop_attacks(nc2::square::at(5, 0), &occ));
 
     if (argc == 2 && std::string(argv[1]) == "test") {
         /* Run all tests. */
@@ -59,9 +55,14 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    run_game();
+    run_engine();
 
     return 0;
+}
+
+void run_engine() {
+    nc2::Engine e(std::cout, std::cin);
+    e.start_uci();
 }
 
 void run_game() {

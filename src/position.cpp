@@ -30,15 +30,12 @@ Position::Position() {
             board[ind] = p;
 
             if (piece::exists(p)) {
-                std::cerr << "XORing piece " << (int) p << " / " << piece::uci(p) << ", square " << square::to_string(ind) << ": " << ttable::get_piece_key(ind, p) << "\n";
                 ttable_index ^= ttable::get_piece_key(ind, p);
             }
 
             ++ind;
         }
     }
-
-    std::cerr << "tindex after board init: " << ttable_index << "\n";
 
     /* Initialize king masks, although not really needed. */
     king_masks[piece::Color::WHITE] = square::MASK_E1;
@@ -59,8 +56,6 @@ Position::Position() {
     ttable_index ^= ttable::get_castle_key(piece::Color::WHITE, 1);
     ttable_index ^= ttable::get_castle_key(piece::Color::BLACK, 0);
     ttable_index ^= ttable::get_castle_key(piece::Color::BLACK, 1);
-
-    std::cerr << "tindex after castle states: " << ttable_index << "\n";
 
     /* Initialize move numbers and halfmove clock */
     halfmove_clock = 0;
@@ -85,6 +80,10 @@ Position::Position() {
 
     /* Initialize attack masks */
     update_check_states();
+}
+
+Position::Position(std::string fen) {
+    throw std::runtime_error("FEN parsing not implemented!");
 }
 
 std::vector<Position::Transition> Position::gen_legal_moves() {
