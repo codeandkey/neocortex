@@ -27,6 +27,9 @@ Position::Transition Game::apply(std::string move) {
 }
 
 void Game::update_next_moves() {
+    std::cerr << "Updating next moves for: \n";
+    std::cerr << current_position.get_debug_string();
+
     legal_next_moves = current_position.gen_legal_moves();
 
     for (auto i : legal_next_moves) {

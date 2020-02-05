@@ -11,8 +11,6 @@ void SearcherST::set_position(Position p) {
 void SearcherST::go() {
     std::vector<Position::Transition> moves = root.gen_legal_moves();
 
-    std::cerr << "starting search: debug info\n" << root.get_debug_string() << "\n";
-
     if (moves.size()) {
         uci_out << "bestmove " << moves[0].first.to_string() << "\n";
     }
