@@ -86,7 +86,7 @@ void run_game() {
         bool updated = false;
         for (auto i : legal_moves) {
             if (i.first.to_string() == move) {
-                std::cout << "Applying move " << move << "\n";
+                std::cerr << "Applying move " << move << "\n";
                 p = i.second;
                 updated = true;
                 break;
@@ -94,7 +94,7 @@ void run_game() {
         }
 
         if (!updated) {
-            std::cout << "No matched move " << move << "!\n";
+            std::cerr << "No matched move " << move << "!\n";
         }
     }
 }
