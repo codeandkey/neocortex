@@ -92,16 +92,22 @@ Position::Position(std::string fen) {
 std::vector<Position::Transition> Position::gen_legal_moves() {
     std::vector<Position::Transition> pl_moves = gen_pseudolegal_moves();
 
+    std::cerr << "Generating legal moves for position..\n";
+
     auto it = pl_moves.begin();
 
     while (it != pl_moves.end()) {
         if (!(*it).second.update_check_states()) {
             /* Illegal position! Drop this move. */
+            std::cerr << "Rejecting " << (*it).first.to_string() << "\n";
             it = pl_moves.erase(it);
         } else {
+            std::cerr << "Accepting " << (*it).first.to_string() << "\n";
             ++it;
         }
     }
+
+    std::cerr << "Done generating legal moves.\n";
 
     return pl_moves;
 }
