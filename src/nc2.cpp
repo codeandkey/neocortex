@@ -23,11 +23,9 @@ int main(int argc, char** argv) {
 
     std::cerr << "lookups ready\n";
 
-    nc2::Position pos;
-
-    for (auto t : pos.gen_legal_moves()) {
-        std::cerr << "PL move: " << t.first.to_string() << "\n";
-    }
+    //nc2::Occboard occ = nc2::Occboard::standard();
+    std::cerr << "pawn attacks at e4:\n";
+    std::cerr << nc2::bitboard_to_string(nc2::lookup::pawn_attacks(nc2::square::at(3, 4), nc2::piece::Color::WHITE));
 
     if (argc == 2 && std::string(argv[1]) == "test") {
         /* Run all tests. */
@@ -55,6 +53,36 @@ int main(int argc, char** argv) {
 
         if (failed) return -1;
         return 0;
+    }
+
+    nc2::Position p;
+    while (1) {
+        std::cout << "position debug: " << p.get_debug_string();
+
+        std::vector<nc2::Position::Transition> legal_moves = p.gen_legal_moves();
+
+        std::cout << "Legal moves: ";
+        for (auto i : legal_moves) {
+            std::cout << i.first.to_string() << "\n";
+        }
+
+        std::cout << "Enter a move: ";
+        std::string move;
+        std::cin >> move;
+
+        bool updated = false;
+        for (auto i : legal_moves) {
+            if (i.first.to_string() == move) {
+                std::cout << "Applying move " << move << "\n";
+                p = i.second;
+                updated = true;
+                break;
+            }
+        }
+
+        if (!updated) {
+            std::cout << "No matched move " << move << "!\n";
+        }
     }
 
     return 0;

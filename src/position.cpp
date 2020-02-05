@@ -9,6 +9,8 @@
 #include "piece.h"
 #include "square.h"
 
+#include <iostream>
+
 using namespace nc2;
 
 static const char _nc2_position_init_uci[] = "RNBQKBNRPPPPPPPP8888pppppppprnbkqbnr";
@@ -77,20 +79,50 @@ Position::Position() {
 
 std::vector<Position::Transition> Position::gen_legal_moves() {
     std::vector<Position::Transition> pl_moves = gen_pseudolegal_moves();
-    std::vector<Position::Transition> output;
 
     auto it = pl_moves.begin();
 
     while (it != pl_moves.end()) {
-        auto cur = it++;
-
-        if (!(*cur).second.update_check_states()) {
+        if (!(*it).second.update_check_states()) {
             /* Illegal position! Drop this move. */
-            pl_moves.erase(cur);
+            it = pl_moves.erase(it);
+        } else {
+            ++it;
         }
     }
 
     return pl_moves;
+}
+
+std::string Position::get_debug_string() {
+    /* Print out board UCI pieces, as well as the global occboard and attack masks. */
+    std::string out;
+
+    out += "board state:\n";
+    for (int r = 7; r >= 0; --r) {
+        for (int f = 0; f < 8; ++f) {
+            u8 p = board[square::at(r, f)];
+
+            if (piece::exists(p)) {
+                out += piece::uci(p);
+            } else {
+                out += '.';
+            }
+        }
+
+        out += '\n';
+    }
+
+    out += "white attacks:\n";
+    out += bitboard_to_string(attack_masks[piece::Color::WHITE]);
+
+    out += "black attacks:\n";
+    out += bitboard_to_string(attack_masks[piece::Color::BLACK]);
+
+    out += "global occ:\n";
+    out += bitboard_to_string(global_occ.get_board());
+
+    return out;
 }
 
 u32 Position::get_ttable_key() {
@@ -419,8 +451,11 @@ std::vector<Position::Transition> Position::gen_castle_moves() {
 
     for (int side = 0; side < 2; ++side) {
         if (castle_states[color_to_move][side]) {
+            std::cerr << "castle_states[" << (int) color_to_move << "][" << side << "] ok\n";
             if (!(attack_masks[piece::colorflip(color_to_move)] & _nc2_position_castle_noattack_masks[color_to_move][side])) {
+                std::cerr << "attack_mask OK\n";
                 if (global_occ.color_can_castle(color_to_move, side)) {
+                    std::cerr << "global_occ test OK\n";
                     u8 from, to, rfrom, rto;
 
                     if (side == 0) {
@@ -494,8 +529,18 @@ std::vector<Position::Transition> Position::gen_castle_moves() {
 
                     /* All castle moves are quiet (unless delivering check, tested for later) */
                     result.quiet = true;
+
+                    output.push_back(Transition(Move(from, to), result));
+                } else {
+                    std::cerr << "global_occ failed\n";
                 }
+            } else {
+                std::cerr << "attack mask failed:\nattack_mask=\n";
+                std::cerr << bitboard_to_string(attack_masks[piece::colorflip(color_to_move)]) << "\nnoattackmask=\n";
+                std::cerr << bitboard_to_string(_nc2_position_castle_noattack_masks[color_to_move][side]) << "\n";
             }
+        } else {
+            std::cerr << "castle_states[" << (int) color_to_move << "][" << side << "] failed\n";
         }
     }
 
@@ -504,7 +549,6 @@ std::vector<Position::Transition> Position::gen_castle_moves() {
 
 bool Position::update_check_states() {
     /* Generate attack masks for both colors. */
-    /* Fail early if an illegal state is found. */
 
     attack_masks[piece::Color::WHITE] = 0;
     attack_masks[piece::Color::BLACK] = 0;

@@ -26,7 +26,10 @@ namespace nc2 {
 
             std::vector<Transition> gen_legal_moves();
 
+            std::string get_debug_string();
+
             u32 get_ttable_key();
+            
         private:
             Occboard global_occ;
             Occboard color_occ[2];

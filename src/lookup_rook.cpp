@@ -23,29 +23,29 @@ void lookup::initialize_rook_lookup() {
                     /* Walk north */
                     for (int cr = r + 1; cr < 8; ++cr) {
                         dst->push_back(Move(s, square::at(cr, f)));
-                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, f));
-                        if ((rank_occ >> cr) & 1) break;
+                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(cr, f));
+                        if ((file_occ >> cr) & 1) break;
                     }
 
                     /* Walk south */
                     for (int cr = r - 1; cr >= 0; --cr) {
                         dst->push_back(Move(s, square::at(cr, f)));
-                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, f));
-                        if ((rank_occ >> cr) & 1) break;
+                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(cr, f));
+                        if ((file_occ >> cr) & 1) break;
                     }
 
                     /* Walk east */
                     for (int cf = f + 1; cf < 8; ++cf) {
                         dst->push_back(Move(s, square::at(r, cf)));
-                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, f));
-                        if ((file_occ >> cf) & 1) break;
+                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, cf));
+                        if ((rank_occ >> cf) & 1) break;
                     }
 
                     /* Walk west */
                     for (int cf = f - 1; cf >= 0; --cf) {
                         dst->push_back(Move(s, square::at(r, cf)));
-                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, f));
-                        if ((file_occ >> cf) & 1) break;
+                        _nc2_lookup_rook_attack_table[s][rank_rocc][file_rocc] |= square::mask(square::at(r, cf));
+                        if ((rank_occ >> cf) & 1) break;
                     }
                 }
             }
