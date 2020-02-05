@@ -31,7 +31,7 @@ void lookup::initialize_pawn_lookup() {
             if (f < 7) {
                 _nc2_pawn_attack_table[square::at(r, f)][piece::Color::WHITE] |= square::mask(square::at(r + 1, f + 1));
 
-                if (r == 7) {
+                if (r == 6) {
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f + 1), piece::Type::QUEEN));
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f + 1), piece::Type::KNIGHT));
                     _nc2_pawn_capture_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f + 1), piece::Type::ROOK));
@@ -42,7 +42,7 @@ void lookup::initialize_pawn_lookup() {
             }
 
             /* Add advances */
-            if (r == 7) {
+            if (r == 6) {
                 _nc2_pawn_advance_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f), piece::Type::QUEEN));
                 _nc2_pawn_advance_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f), piece::Type::KNIGHT));
                 _nc2_pawn_advance_table[square::at(r, f)][piece::Color::WHITE].push_back(Move(square::at(r, f), square::at(r + 1, f), piece::Type::ROOK));
