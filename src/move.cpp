@@ -28,26 +28,5 @@ std::string Move::to_string() {
         out += piece::type_char(ptype);
     }
 
-    switch (ptype) {
-    case piece::Type::PAWN:
-        out += 'p';
-        break;
-    case piece::Type::ROOK:
-        out += 'r';
-        break;
-    case piece::Type::BISHOP:
-        out += 'b';
-        break;
-    case piece::Type::KNIGHT:
-        out += 'n';
-        break;
-    case piece::Type::QUEEN:
-        out += 'q';
-        break;
-    case piece::Type::KING:
-        out += 'k';
-        break;
-    }
-
     return out;
 }
