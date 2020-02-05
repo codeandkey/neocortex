@@ -133,6 +133,12 @@ std::string Position::get_debug_string() {
     out += "global occ:\n";
     out += bitboard_to_string(global_occ.get_board());
 
+    out += "white king mask:\n";
+    out += bitboard_to_string(king_masks[piece::Color::WHITE]);
+
+    out += "black king mask:\n";
+    out += bitboard_to_string(king_masks[piece::Color::BLACK]);
+
     return out;
 }
 
