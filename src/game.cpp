@@ -32,9 +32,11 @@ void Game::update_next_moves() {
 
     legal_next_moves = current_position.gen_legal_moves();
 
+    std::cerr << "(begin legal moves)\n";
     for (auto i : legal_next_moves) {
         std::cerr << "Legal next move: " << i.first.to_string() << "\n";
     }
+    std::cerr << "(end legal moves)\n";
 }
 
 Position Game::get_current_position() {

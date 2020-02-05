@@ -471,11 +471,11 @@ std::vector<Position::Transition> Position::gen_castle_moves() {
 
     for (int side = 0; side < 2; ++side) {
         if (castle_states[color_to_move][side]) {
-            std::cerr << "castle_states[" << (int) color_to_move << "][" << side << "] ok\n";
+            //std::cerr << "castle_states[" << (int) color_to_move << "][" << side << "] ok\n";
             if (!(attack_masks[piece::colorflip(color_to_move)] & _nc2_position_castle_noattack_masks[color_to_move][side])) {
-                std::cerr << "attack_mask OK\n";
+                //std::cerr << "attack_mask OK\n";
                 if (global_occ.color_can_castle(color_to_move, side)) {
-                    std::cerr << "global_occ test OK\n";
+                    //std::cerr << "global_occ test OK\n";
                     u8 from, to, rfrom, rto;
 
                     if (side == 0) {
@@ -552,15 +552,15 @@ std::vector<Position::Transition> Position::gen_castle_moves() {
 
                     output.push_back(Transition(Move(from, to), result));
                 } else {
-                    std::cerr << "global_occ failed\n";
+                    //std::cerr << "global_occ failed\n";
                 }
             } else {
-                std::cerr << "attack mask failed:\nattack_mask=\n";
-                std::cerr << bitboard_to_string(attack_masks[piece::colorflip(color_to_move)]) << "\nnoattackmask=\n";
-                std::cerr << bitboard_to_string(_nc2_position_castle_noattack_masks[color_to_move][side]) << "\n";
+                //std::cerr << "attack mask failed:\nattack_mask=\n";
+                //std::cerr << bitboard_to_string(attack_masks[piece::colorflip(color_to_move)]) << "\nnoattackmask=\n";
+                //std::cerr << bitboard_to_string(_nc2_position_castle_noattack_masks[color_to_move][side]) << "\n";
             }
         } else {
-            std::cerr << "castle_states[" << (int) color_to_move << "][" << side << "] failed\n";
+            //std::cerr << "castle_states[" << (int) color_to_move << "][" << side << "] failed\n";
         }
     }
 
