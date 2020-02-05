@@ -249,19 +249,19 @@ void Position::filter_basic_moves(const std::vector<Move>& source, std::vector<P
         }
 
         /* Check for castle breaking */
-        if (from == square::Squares::a1) {
+        if (from == square::Squares::a1 || to == square::Squares::a1) {
             result.castle_states[piece::Color::WHITE][0] = false;
         }
 
-        if (from == square::Squares::h1) {
+        if (from == square::Squares::h1 || to == square::Squares::h1) {
             result.castle_states[piece::Color::WHITE][1] = false;
         }
 
-        if (from == square::Squares::a8) {
+        if (from == square::Squares::a8 || to == square::Squares::a8) {
             result.castle_states[piece::Color::BLACK][0] = false;
         }
 
-        if (from == square::Squares::h8) {
+        if (from == square::Squares::h8 || to == square::Squares::h8) {
             result.castle_states[piece::Color::BLACK][1] = false;
         }
 
@@ -306,6 +306,14 @@ void Position::filter_pawn_advances(const std::vector<Move>& source, std::vector
     for (auto m : source) {
         u8 from = m.get_from(), to = m.get_to();
 
+        u8 dst_type = m.get_ptype();
+
+        if (dst_type == piece::Type::NONE) {
+            dst_type = piece::Type::PAWN;
+        }
+
+        u8 dst_piece = piece::make(dst_type, color_to_move);
+
         int rdiff = ((int) square::rank(from) - (int) square::rank(to));
         bool is_jump = (rdiff == 2 || rdiff == -2);
 
@@ -320,13 +328,13 @@ void Position::filter_pawn_advances(const std::vector<Move>& source, std::vector
 
         /* Update result ttable_index. */
         result.ttable_index ^= ttable::get_piece_key(from, board[from]); /* remove from piece */
-        result.ttable_index ^= ttable::get_piece_key(to, board[from]); /* place new piece */
+        result.ttable_index ^= ttable::get_piece_key(to, dst_piece); /* place new piece */
 
         /* Pawn advances are quiet */
         result.quiet = true;
 
         /* Update board values. */
-        result.board[to] = board[from];
+        result.board[to] = dst_piece;
         result.board[from] = piece::null;
 
         /* Update color to move */
@@ -375,6 +383,14 @@ void Position::filter_pawn_captures(const std::vector<Move>& source, std::vector
         bool en_passant = false;
         u8 en_passant_piece = 0;
 
+        u8 dst_type = m.get_ptype();
+
+        if (dst_type == piece::Type::NONE) {
+            dst_type = piece::Type::PAWN;
+        }
+
+        u8 dst_piece = piece::make(dst_type, color_to_move);
+
         /* Can't capture own pieces */
         if (piece::exists(board[to])) {
             if (piece::color(board[to]) == color_to_move) continue;
@@ -389,7 +405,7 @@ void Position::filter_pawn_captures(const std::vector<Move>& source, std::vector
 
         /* Update result ttable_index. */
         result.ttable_index ^= ttable::get_piece_key(from, board[from]); /* remove from piece */
-        result.ttable_index ^= ttable::get_piece_key(to, board[from]); /* place new piece */
+        result.ttable_index ^= ttable::get_piece_key(to, dst_piece); /* place new piece */
 
         if (en_passant) {
             result.ttable_index ^= ttable::get_piece_key(en_passant_piece, board[en_passant_piece]); /* remove captured EP piece */
@@ -401,7 +417,7 @@ void Position::filter_pawn_captures(const std::vector<Move>& source, std::vector
         result.quiet = false;
 
         /* Update board values. */
-        result.board[to] = board[from];
+        result.board[to] = dst_piece;
         result.board[from] = piece::null;
 
         if (en_passant) {
