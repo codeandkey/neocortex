@@ -6,6 +6,22 @@
 
 using namespace nc2;
 
+static u64 _nc2_occboard_pawn_jump_masks[8][2] = { /* [file][color] */
+    { square::MASK_A3 | square::MASK_A4, square::MASK_A6 | square::MASK_A5 },
+    { square::MASK_B3 | square::MASK_B4, square::MASK_B6 | square::MASK_B5 },
+    { square::MASK_C3 | square::MASK_C4, square::MASK_C6 | square::MASK_C5 },
+    { square::MASK_D3 | square::MASK_D4, square::MASK_D6 | square::MASK_D5 },
+    { square::MASK_E3 | square::MASK_E4, square::MASK_E6 | square::MASK_E5 },
+    { square::MASK_F3 | square::MASK_F4, square::MASK_F6 | square::MASK_F5 },
+    { square::MASK_G3 | square::MASK_G4, square::MASK_G6 | square::MASK_G5 },
+    { square::MASK_H3 | square::MASK_H4, square::MASK_H6 | square::MASK_H5 },
+};
+
+static u64 _nc2_occboard_castle_masks[2][2] = { /* [color][kingside] */
+    { square::MASK_B1 | square::MASK_C1 | square::MASK_D1, square::MASK_F1 | square::MASK_G1 },
+    { square::MASK_B8 | square::MASK_C8 | square::MASK_D8, square::MASK_F8 | square::MASK_G8 },
+};
+
 Occboard::Occboard() {
     memset(this, 0, sizeof *this);
 }
@@ -32,7 +48,7 @@ void Occboard::flip(u8 s) {
     ranks[r] ^= (1 << f);
     files[f] ^= rb;
 
-    board ^= (1 << s);
+    board ^= square::mask(s);
 }
 
 u64 Occboard::get_board() {
@@ -59,8 +75,20 @@ u8 Occboard::get_antidiag(u8 d) {
     return antidiags[d];
 }
 
+bool Occboard::pawn_can_jump(u8 f, u8 col) {
+    return !test_mask(_nc2_occboard_pawn_jump_masks[f][col]);
+}
+
+bool Occboard::color_can_castle(u8 col, int kingside) {
+    return !test_mask(_nc2_occboard_castle_masks[col][kingside]);
+}
+
 bool Occboard::test(u8 s) {
     return (board & square::mask(s));
+}
+
+bool Occboard::test_mask(u64 m) {
+    return (board & m);
 }
 
 u8 Occboard::to_rocc(u8 occ_byte) {

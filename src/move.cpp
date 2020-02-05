@@ -24,6 +24,10 @@ std::string Move::to_string() {
     std::string out = square::to_string(from);
     out += square::to_string(to);
 
+    if (ptype != piece::Type::NONE) {
+        out += piece::type_char(ptype);
+    }
+
     switch (ptype) {
     case piece::Type::PAWN:
         out += 'p';

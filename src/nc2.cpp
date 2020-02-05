@@ -24,9 +24,9 @@ int main(int argc, char** argv) {
 
     nc2::Occboard occ = nc2::Occboard::standard();
 
-    for (auto m : nc2::lookup::rook_moves(nc2::square::at(3, 3), &occ)) {
-        std::cout << "rook move : " << m.to_string() << "\n";
-    }
+    occ.flip(nc2::square::at(0, 7));
+    occ.flip(nc2::square::at(0, 5));
+    std::cout << "pawn_can_jump(b, black) = " << (occ.pawn_can_jump(1, nc2::piece::Color::BLACK) ? "yes" : "no") << "\n";
 
     if (argc == 2 && std::string(argv[1]) == "test") {
         /* Run all tests. */

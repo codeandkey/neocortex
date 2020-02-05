@@ -20,7 +20,11 @@ namespace nc2 {
             u8 get_diag(u8 d);
             u8 get_antidiag(u8 d);
 
+            bool pawn_can_jump(u8 f, u8 col);
+            bool color_can_castle(u8 col, int is_kingside);
+
             bool test(u8 s);
+            bool test_mask(u64 m);
 
             static u8 to_rocc(u8 occ_byte);
         private:
