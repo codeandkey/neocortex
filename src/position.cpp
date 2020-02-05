@@ -240,7 +240,7 @@ void Position::filter_basic_moves(const std::vector<Move>& source, std::vector<P
         }
 
         /* Update king masks if needed. */
-        if (piece::type(board[from]) == 'k') {
+        if (piece::type(board[from]) == piece::Type::KING) {
             result.king_masks[color_to_move] = square::mask(to);
 
             /* King moves remove castle rights */
