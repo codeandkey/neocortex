@@ -388,7 +388,7 @@ void Position::filter_pawn_advances(const std::vector<Move>& source, std::vector
         }
 
         if (is_jump) {
-            result.en_passant_target = to;
+            result.en_passant_target = square::at((color_to_move == piece::Color::WHITE) ? 2 : 5, square::file(to));
             result.ttable_index ^= ttable::get_en_passant_file_key(square::file(to));
         }
 
