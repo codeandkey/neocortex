@@ -38,5 +38,71 @@ namespace nc2 {
             a7, b7, c7, d7, e7, f7, g7, h7,
             a8, b8, c8, d8, e8, f8, g8, h8,
         };
+
+        /* constant square masks, used for building constant mask values */
+        constexpr u64 MASK_A1 = ((u64) 1 << 0);
+        constexpr u64 MASK_B1 = ((u64) 1 << 1);
+        constexpr u64 MASK_C1 = ((u64) 1 << 2);
+        constexpr u64 MASK_D1 = ((u64) 1 << 3);
+        constexpr u64 MASK_E1 = ((u64) 1 << 4);
+        constexpr u64 MASK_F1 = ((u64) 1 << 5);
+        constexpr u64 MASK_G1 = ((u64) 1 << 6);
+        constexpr u64 MASK_H1 = ((u64) 1 << 7);
+        constexpr u64 MASK_A2 = ((u64) 1 << 8);
+        constexpr u64 MASK_B2 = ((u64) 1 << 9);
+        constexpr u64 MASK_C2 = ((u64) 1 << 10);
+        constexpr u64 MASK_D2 = ((u64) 1 << 11);
+        constexpr u64 MASK_E2 = ((u64) 1 << 12);
+        constexpr u64 MASK_F2 = ((u64) 1 << 13);
+        constexpr u64 MASK_G2 = ((u64) 1 << 14);
+        constexpr u64 MASK_H2 = ((u64) 1 << 15);
+        constexpr u64 MASK_A3 = ((u64) 1 << 16);
+        constexpr u64 MASK_B3 = ((u64) 1 << 17);
+        constexpr u64 MASK_C3 = ((u64) 1 << 18);
+        constexpr u64 MASK_D3 = ((u64) 1 << 19);
+        constexpr u64 MASK_E3 = ((u64) 1 << 20);
+        constexpr u64 MASK_F3 = ((u64) 1 << 21);
+        constexpr u64 MASK_G3 = ((u64) 1 << 22);
+        constexpr u64 MASK_H3 = ((u64) 1 << 23);
+        constexpr u64 MASK_A4 = ((u64) 1 << 24);
+        constexpr u64 MASK_B4 = ((u64) 1 << 25);
+        constexpr u64 MASK_C4 = ((u64) 1 << 26);
+        constexpr u64 MASK_D4 = ((u64) 1 << 27);
+        constexpr u64 MASK_E4 = ((u64) 1 << 28);
+        constexpr u64 MASK_F4 = ((u64) 1 << 29);
+        constexpr u64 MASK_G4 = ((u64) 1 << 30);
+        constexpr u64 MASK_H4 = ((u64) 1 << 31);
+        constexpr u64 MASK_A5 = ((u64) 1 << 32);
+        constexpr u64 MASK_B5 = ((u64) 1 << 33);
+        constexpr u64 MASK_C5 = ((u64) 1 << 34);
+        constexpr u64 MASK_D5 = ((u64) 1 << 35);
+        constexpr u64 MASK_E5 = ((u64) 1 << 36);
+        constexpr u64 MASK_F5 = ((u64) 1 << 37);
+        constexpr u64 MASK_G5 = ((u64) 1 << 38);
+        constexpr u64 MASK_H5 = ((u64) 1 << 39);
+        constexpr u64 MASK_A6 = ((u64) 1 << 40);
+        constexpr u64 MASK_B6 = ((u64) 1 << 41);
+        constexpr u64 MASK_C6 = ((u64) 1 << 42);
+        constexpr u64 MASK_D6 = ((u64) 1 << 43);
+        constexpr u64 MASK_E6 = ((u64) 1 << 44);
+        constexpr u64 MASK_F6 = ((u64) 1 << 45);
+        constexpr u64 MASK_G6 = ((u64) 1 << 46);
+        constexpr u64 MASK_H6 = ((u64) 1 << 47);
+        constexpr u64 MASK_A7 = ((u64) 1 << 48);
+        constexpr u64 MASK_B7 = ((u64) 1 << 49);
+        constexpr u64 MASK_C7 = ((u64) 1 << 50);
+        constexpr u64 MASK_D7 = ((u64) 1 << 51);
+        constexpr u64 MASK_E7 = ((u64) 1 << 52);
+        constexpr u64 MASK_F7 = ((u64) 1 << 53);
+        constexpr u64 MASK_G7 = ((u64) 1 << 54);
+        constexpr u64 MASK_H7 = ((u64) 1 << 55);
+        constexpr u64 MASK_A8 = ((u64) 1 << 56);
+        constexpr u64 MASK_B8 = ((u64) 1 << 57);
+        constexpr u64 MASK_C8 = ((u64) 1 << 58);
+        constexpr u64 MASK_D8 = ((u64) 1 << 59);
+        constexpr u64 MASK_E8 = ((u64) 1 << 60);
+        constexpr u64 MASK_F8 = ((u64) 1 << 61);
+        constexpr u64 MASK_G8 = ((u64) 1 << 62);
+        constexpr u64 MASK_H8 = ((u64) 1 << 63);
     }
 }
