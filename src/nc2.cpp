@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 
+#include "tindex.h"
 #include "unit_test.h"
 #include "lookup_pawn.h"
 #include "lookup_king.h"
@@ -14,18 +15,21 @@
 #include "occ.h"
 #include "position.h"
 
+void run_game();
+
 int main(int argc, char** argv) {
     nc2::lookup::initialize_pawn_lookup();
     nc2::lookup::initialize_knight_lookup();
     nc2::lookup::initialize_king_lookup();
     nc2::lookup::initialize_rook_lookup();
     nc2::lookup::initialize_bishop_lookup();
+    nc2::ttable::initialize_indices(0xdeadbeef);
 
     std::cerr << "lookups ready\n";
 
-    //nc2::Occboard occ = nc2::Occboard::standard();
-    std::cerr << "pawn attacks at e4:\n";
-    std::cerr << nc2::bitboard_to_string(nc2::lookup::pawn_attacks(nc2::square::at(3, 4), nc2::piece::Color::WHITE));
+    nc2::Occboard occ = nc2::Occboard::standard();
+    std::cerr << "bishop attacks at e4:\n";
+    std::cerr << nc2::bitboard_to_string(nc2::lookup::bishop_attacks(nc2::square::at(5, 0), &occ));
 
     if (argc == 2 && std::string(argv[1]) == "test") {
         /* Run all tests. */
@@ -54,6 +58,14 @@ int main(int argc, char** argv) {
         if (failed) return -1;
         return 0;
     }
+
+    run_game();
+
+    return 0;
+}
+
+void run_game() {
+    std::cerr << "black to move key: " << nc2::ttable::get_black_to_move_key() << "\n";
 
     nc2::Position p;
     while (1) {
@@ -84,6 +96,4 @@ int main(int argc, char** argv) {
             std::cout << "No matched move " << move << "!\n";
         }
     }
-
-    return 0;
 }

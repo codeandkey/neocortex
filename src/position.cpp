@@ -25,12 +25,20 @@ Position::Position() {
 
     /* Initialize board pieces. */
     int ind = 0;
-    for (u8 i = 0; i < sizeof _nc2_position_init_uci; ++i) {
+    for (u8 i = 0; i < sizeof _nc2_position_init_uci - 1; ++i) {
         for (auto p : piece::from_uci(_nc2_position_init_uci[i])) {
-            board[ind++] = p;
-            ttable_index ^= ttable::get_piece_key(i, p);
+            board[ind] = p;
+
+            if (piece::exists(p)) {
+                std::cerr << "XORing piece " << (int) p << " / " << piece::uci(p) << ", square " << square::to_string(ind) << ": " << ttable::get_piece_key(ind, p) << "\n";
+                ttable_index ^= ttable::get_piece_key(ind, p);
+            }
+
+            ++ind;
         }
     }
+
+    std::cerr << "tindex after board init: " << ttable_index << "\n";
 
     /* Initialize king masks, although not really needed. */
     king_masks[piece::Color::WHITE] = square::MASK_E1;
@@ -51,6 +59,8 @@ Position::Position() {
     ttable_index ^= ttable::get_castle_key(piece::Color::WHITE, 1);
     ttable_index ^= ttable::get_castle_key(piece::Color::BLACK, 0);
     ttable_index ^= ttable::get_castle_key(piece::Color::BLACK, 1);
+
+    std::cerr << "tindex after castle states: " << ttable_index << "\n";
 
     /* Initialize move numbers and halfmove clock */
     halfmove_clock = 0;
@@ -98,7 +108,7 @@ std::string Position::get_debug_string() {
     /* Print out board UCI pieces, as well as the global occboard and attack masks. */
     std::string out;
 
-    out += "board state:\n";
+    out += "board state: transposition hash " + std::to_string(ttable_index) + "\n";
     for (int r = 7; r >= 0; --r) {
         for (int f = 0; f < 8; ++f) {
             u8 p = board[square::at(r, f)];
