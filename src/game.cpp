@@ -1,6 +1,7 @@
 #include "game.h"
 
 #include <stdexcept>
+#include <iostream>
 
 using namespace nc2;
 
@@ -27,6 +28,10 @@ Position::Transition Game::apply(std::string move) {
 
 void Game::update_next_moves() {
     legal_next_moves = current_position.gen_legal_moves();
+
+    for (auto i : legal_next_moves) {
+        std::cerr << "Legal next move: " << i.first.to_string() << "\n";
+    }
 }
 
 Position Game::get_current_position() {
