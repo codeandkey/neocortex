@@ -43,7 +43,6 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
         }
     }
 
-
     if (bestmove_out) *bestmove_out = legal_moves[0].first;
 
     if (p->get_color_to_move() == piece::Color::WHITE) {
@@ -86,9 +85,13 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
         }
 
         /* Choose the best move from all the best moves. */
-        std::sort(best_moves.begin(), best_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval() > b.second.get_eval();
-        });
+        if (bestmove_out) {
+            std::sort(best_moves.begin(), best_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
+                return a.second.get_eval() > b.second.get_eval();
+            });
+
+            *bestmove_out = best_moves[0].first;
+        }
 
         return best_eval;
     } else {
@@ -126,10 +129,14 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
             }
         }
 
-        /* Choose the best move from all the best moves. */
-        std::sort(best_moves.begin(), best_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval() < b.second.get_eval();
-        });
+        if (bestmove_out) {
+            /* Choose the best move from all the best moves. */
+            std::sort(best_moves.begin(), best_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
+                return a.second.get_eval() < b.second.get_eval();
+            });
+
+            *bestmove_out = best_moves[0].first;
+        }
 
         return best_eval;
     }
