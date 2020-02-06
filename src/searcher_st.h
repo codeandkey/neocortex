@@ -23,7 +23,7 @@ namespace nc2 {
             int nodes;
             int thits;
 
-            static constexpr int DEPTH = 6;
+            static constexpr int DEPTH = 5;
             static constexpr int QDEPTH = 5;
     };
 }
