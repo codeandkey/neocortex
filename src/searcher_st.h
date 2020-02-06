@@ -24,6 +24,6 @@ namespace nc2 {
             int thits;
 
             static constexpr int DEPTH = 5;
-            static constexpr int QDEPTH = 5;
+            static constexpr int QDEPTH = 4;
     };
 }
