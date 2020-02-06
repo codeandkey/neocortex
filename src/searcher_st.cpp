@@ -1,5 +1,6 @@
 #include "searcher_st.h"
 #include "ttable.h"
+#include "eval.h"
 
 #include <algorithm>
 #include <chrono>
@@ -58,7 +59,7 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
 
     if (!d) {
         if (p->is_quiet()) {
-            return Evaluation(p->get_eval());
+            return Evaluation(p->get_eval() + eval::noise());
         } else {
             return quiescence(p, QDEPTH, alpha, beta);
         }
@@ -191,7 +192,7 @@ Evaluation SearcherST::quiescence(Position* p, int d, Evaluation alpha, Evaluati
     ++nodes;
 
     if (!d || p->is_quiet()) {
-        return Evaluation(p->get_eval());
+        return Evaluation(p->get_eval() + eval::noise());
     }
 
     std::vector<Position::Transition> legal_moves = p->gen_legal_moves();

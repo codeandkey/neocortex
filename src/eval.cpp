@@ -95,3 +95,9 @@ float eval::evaluate(u8* board, u64 white_attacks, u64 black_attacks) {
 
     return score;
 }
+
+float eval::noise() {
+    return (((rand() % 100) / 100.0f) * 2.0f - 1.0f) * NOISE_THRESHOLD;
+}
+
+

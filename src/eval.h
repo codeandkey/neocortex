@@ -19,9 +19,12 @@ namespace nc2 {
 
         float evaluate(u8* board, u64 white_attacks, u64 black_attacks);
 
+        float noise();
+
         constexpr float TEMPO_VALUE = 0.15f;
         constexpr float CENTER_CONTROL_VALUE = 1.0f;
         constexpr float DEVELOPMENT_VALUE = 0.75f;
         constexpr float ADV_PAWN_VALUE = 0.5f;
+        constexpr float NOISE_THRESHOLD = 0.01f;
     }
 }

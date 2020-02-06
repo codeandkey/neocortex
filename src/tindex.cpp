@@ -1,6 +1,7 @@
 #include "tindex.h"
 
 #include <cmath>
+#include <ctime>
 
 using namespace nc2;
 
@@ -29,6 +30,8 @@ void ttable::initialize_indices(u32 seed) {
     for (int f = 0; f < 8; ++f) {
         _nc2_tindex_ep_keys[f] = rand();
     }
+
+    srand(time(NULL));
 }
 
 u32 ttable::get_piece_key(u8 s, u8 p) {
