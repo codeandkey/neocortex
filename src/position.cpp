@@ -434,7 +434,7 @@ void Position::filter_pawn_captures(const std::vector<Move>& source, std::vector
         } else {
             if (to != en_passant_target) continue;
             en_passant = true;
-            en_passant_piece = square::at((color_to_move == piece::Color::WHITE) ? 3 : 4, square::file(en_passant_target));
+            en_passant_piece = square::at((color_to_move == piece::Color::WHITE) ? 4 : 3, square::file(en_passant_target));
         }
 
         /* Build resulting state now. */
