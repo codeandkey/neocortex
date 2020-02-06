@@ -12,15 +12,24 @@ void SearcherST::set_position(Position p) {
     root = p;
 }
 
-void SearcherST::go() {
+void SearcherST::go(int wtime, int btime) {
     std::vector<Position::Transition> moves = root.gen_legal_moves();
 
     nodes = 0;
     thits = 0;
 
+    int movetime = (root.get_color_to_move() == piece::Color::WHITE) ? wtime : btime;
+    int search_depth = DEPTH;
+
+    if (movetime > 0) {
+        if (movetime < 60000) search_depth = 4;
+        if (movetime < 10000) search_depth = 3;
+        if (movetime < 1000) search_depth = 1;
+    }
+
     auto cur_time = std::chrono::system_clock::now();
     Move bestmove;
-    Evaluation current_eval = alpha_beta(&root, DEPTH, Evaluation(0, true, -1), Evaluation(0, true, 1), &bestmove);
+    Evaluation current_eval = alpha_beta(&root, search_depth, Evaluation(0, true, -1), Evaluation(0, true, 1), &bestmove);
 
     auto post_time = std::chrono::system_clock::now();
 
@@ -28,7 +37,7 @@ void SearcherST::go() {
 
     int nps = (float) nodes / (float) seconds;
 
-    std::cerr << "Search completed at depth " << DEPTH << ", evaluation " << current_eval.to_string() << " bestmove " << bestmove.to_string() << " nodes " << nodes << " nps " << nps << " thits " << thits << " time " << seconds << "\n";
+    std::cerr << "Search completed at depth " << search_depth << ", evaluation " << current_eval.to_string() << " bestmove " << bestmove.to_string() << " nodes " << nodes << " nps " << nps << " thits " << thits << " time " << seconds << "\n";
     uci_out << "bestmove " << bestmove.to_string() << "\n";
 }
 

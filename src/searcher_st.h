@@ -10,7 +10,7 @@ namespace nc2 {
         public:
             SearcherST(std::ostream& uci_out);
 
-            void go();
+            void go(int wtime, int btime);
             void set_position(Position p);
 
         private:

@@ -49,7 +49,17 @@ void Engine::start_uci() {
             words >> word;
 
             if (word == "go") {
-                searcher.go();
+                int wtime = -1, btime = -1;
+
+                while (words >> word) {
+                    if (word == "wtime") {
+                        words >> wtime;
+                    } else if (word == "btime") {
+                        words >> btime;
+                    }
+                }
+
+                searcher.go(wtime, btime);
                 continue;
             }
 
