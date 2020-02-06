@@ -106,6 +106,7 @@ std::vector<Position::Transition> Position::gen_legal_moves() {
             it = pl_moves.erase(it);
         } else {
             //std::cerr << "Accepting " << (*it).first.to_string() << "\n";
+            (*it).second.computed_eval = false; // force the resulting position to be re-evaluated
             ++it;
         }
     }
@@ -162,28 +163,22 @@ u8* Position::get_board() {
     return board;
 }
 
-float Position::get_eval() {
-    float ev = 0.0f;
-    float phase = eval::phase(board);
-
-    ev += eval::development(board, piece::Color::WHITE * (1.0f - phase));
-    ev -= eval::development(board, piece::Color::BLACK * (1.0f - phase));
-
-    ev += eval::center_control(attack_masks[piece::Color::WHITE]);
-    ev -= eval::center_control(attack_masks[piece::Color::BLACK]);
-
-    ev += eval::material_diff(board);
-
-    ev += eval::advanced_pawns(board, piece::Color::WHITE) * phase;
-    ev -= eval::advanced_pawns(board, piece::Color::BLACK) * phase;
+void Position::compute_eval() {
+    current_eval = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK]);
 
     if (color_to_move == piece::Color::WHITE) {
-        ev += eval::TEMPO_VALUE;
+        current_eval += eval::TEMPO_VALUE;
     } else {
-        ev -= eval::TEMPO_VALUE;
+        current_eval -= eval::TEMPO_VALUE;
     }
 
-    return ev;
+    computed_eval = true;
+}
+
+float Position::get_eval() {
+    if (!computed_eval) compute_eval();
+
+    return current_eval;
 }
 
 bool Position::is_quiet() {

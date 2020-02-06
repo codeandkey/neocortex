@@ -30,6 +30,7 @@ namespace nc2 {
 
             u32 get_ttable_key();
 
+            void compute_eval();
             float get_eval();
 
             bool is_quiet();
@@ -55,6 +56,9 @@ namespace nc2 {
             /* FEN bits, game state */
             bool castle_states[2][2]; /* [color][kingside] */
             int fullmove_number, halfmove_clock;
+
+            bool computed_eval;
+            float current_eval;
 
             /**
              * Generates all pseudolegal moves.

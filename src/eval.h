@@ -9,11 +9,15 @@
 
 namespace nc2 {
     namespace eval {
-        float development(u8* board, u8 col);
+        void init();
+
+        float development(u8* board);
         float center_control(u64 attack_mask);
         float material_diff(u8* board);
         float advanced_pawns(u8* board, u8 col);
         float phase(u8* board);
+
+        float evaluate(u8* board, u64 white_attacks, u64 black_attacks);
 
         constexpr float TEMPO_VALUE = 0.15f;
         constexpr float CENTER_CONTROL_VALUE = 1.0f;

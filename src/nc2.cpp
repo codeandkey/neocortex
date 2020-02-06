@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 
+#include "eval.h"
 #include "engine.h"
 #include "tindex.h"
 #include "unit_test.h"
@@ -20,6 +21,8 @@ void run_game();
 void run_engine();
 
 int main(int argc, char** argv) {
+    nc2::eval::init();
+
     nc2::lookup::initialize_pawn_lookup();
     nc2::lookup::initialize_knight_lookup();
     nc2::lookup::initialize_king_lookup();
