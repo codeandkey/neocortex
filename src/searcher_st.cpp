@@ -23,8 +23,9 @@ void SearcherST::go(int wtime, int btime) {
     int search_depth = DEPTH;
 
     if (movetime > 0) {
-        if (movetime < 120000) search_depth = DEPTH * 2 / 3;
-        if (movetime < 10000) search_depth = DEPTH / 2;
+        if (movetime < 120000) search_depth = DEPTH - 1;
+        if (movetime < 60000) search_depth = DEPTH - 2;
+        if (movetime < 30000) search_depth = DEPTH - 3;
         if (movetime < 2500) search_depth = 1;
     }
 
