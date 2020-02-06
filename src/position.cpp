@@ -158,6 +158,10 @@ u32 Position::get_ttable_key() {
     return ttable_index;
 }
 
+u8* Position::get_board() {
+    return board;
+}
+
 float Position::get_eval() {
     float ev = 0.0f;
     float phase = eval::phase(board);

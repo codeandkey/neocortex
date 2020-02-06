@@ -35,6 +35,8 @@ namespace nc2 {
             bool is_quiet();
             u8 get_color_to_move();
             bool get_color_in_check(u8 col);
+
+            u8* get_board();
             
         private:
             Occboard global_occ;

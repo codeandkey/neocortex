@@ -1,4 +1,5 @@
 #include "searcher_st.h"
+#include "ttable.h"
 
 #include <algorithm>
 
@@ -21,6 +22,16 @@ void SearcherST::go() {
 }
 
 Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove_out) {
+    /* Check the ttable cache. */
+    /* Don't try a table lookup if we need to report a bestmove. */
+    if (!bestmove_out) {
+        Evaluation ttable_hit(0, false, 0);
+
+        if (ttable::lookup(p, &ttable_hit, d)) {
+            return ttable_hit;
+        }
+    }
+
     if (!d) {
         if (p->is_quiet()) {
             return Evaluation(p->get_eval());
@@ -93,6 +104,9 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
             *bestmove_out = best_moves[0].first;
         }
 
+        /* Position wasn't a table hit, so store it in the ttable. */
+        ttable::store(p, best_eval, d);
+
         return best_eval;
     } else {
         /* Sort legal moves by best heuristic first. This helps speed up AB pruning. */
@@ -141,6 +155,9 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
 
             *bestmove_out = best_moves[0].first;
         }
+
+        /* Position wasn't a table hit, so store it in the ttable. */
+        ttable::store(p, best_eval, d);
 
         return best_eval;
     }
