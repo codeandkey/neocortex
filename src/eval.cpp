@@ -14,6 +14,11 @@ static const float _nc2_eval_type_values[] = {
     7.0f, /* queen */
 };
 
+static const float _nc2_eval_total_npm = 4 * _nc2_eval_type_values[piece::Type::KNIGHT] + \
+                                         4 * _nc2_eval_type_values[piece::Type::ROOK] + \
+                                         4 * _nc2_eval_type_values[piece::Type::BISHOP] + \
+                                         2 * _nc2_eval_type_values[piece::Type::QUEEN];
+
 float eval::development(u8* board, u8 col) {
     u8 start = 2 * 8, count = 0;
     if (col == piece::Color::BLACK) start = 5 * 8;
@@ -56,4 +61,39 @@ float eval::material_diff(u8* board) {
     }
 
     return out;
+}
+
+float eval::advanced_pawns(u8* board, u8 col) {
+    int score = 0;
+
+    if (col == piece::Color::WHITE) {
+        for (u8 s = 0; s < 64; ++s) {
+            if (board[s] == piece::WHITE_PAWN) {
+                score += square::rank(s) - 1;
+            }
+        }
+    } else if (col == piece::Color::BLACK) {
+        for (u8 s = 0; s < 64; ++s) {
+            if (board[s] == piece::BLACK_PAWN) {
+                score += 7 - square::rank(s);
+            }
+        }
+    }
+
+    return score * ADV_PAWN_VALUE;
+}
+
+float eval::phase(u8* board) {
+    /* compute non-pawn material, find difference */
+    float npm = 0.0f;
+
+    for (u8 s = 0; s < 64; ++s) {
+        u8 p = board[s];
+        if (!piece::exists(p)) continue;
+        if (piece::type(p) == piece::Type::PAWN) continue;
+
+        npm += _nc2_eval_type_values[piece::type(p)];
+    }
+
+    return 1.0f - (npm / _nc2_eval_total_npm);
 }

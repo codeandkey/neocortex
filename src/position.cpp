@@ -160,14 +160,18 @@ u32 Position::get_ttable_key() {
 
 float Position::get_eval() {
     float ev = 0.0f;
+    float phase = eval::phase(board);
 
-    ev += eval::development(board, piece::Color::WHITE);
-    ev -= eval::development(board, piece::Color::BLACK);
+    ev += eval::development(board, piece::Color::WHITE * (1.0f - phase));
+    ev -= eval::development(board, piece::Color::BLACK * (1.0f - phase));
 
     ev += eval::center_control(attack_masks[piece::Color::WHITE]);
     ev -= eval::center_control(attack_masks[piece::Color::BLACK]);
 
     ev += eval::material_diff(board);
+
+    ev += eval::advanced_pawns(board, piece::Color::WHITE) * phase;
+    ev -= eval::advanced_pawns(board, piece::Color::BLACK) * phase;
 
     if (color_to_move == piece::Color::WHITE) {
         ev += eval::TEMPO_VALUE;
