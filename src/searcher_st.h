@@ -20,7 +20,10 @@ namespace nc2 {
             Evaluation alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove_out);
             Evaluation quiescence(Position* p, int d, Evaluation alpha, Evaluation beta);
 
-            static constexpr int DEPTH = 5;
-            static constexpr int QDEPTH = 4;
+            int nodes;
+            int thits;
+
+            static constexpr int DEPTH = 6;
+            static constexpr int QDEPTH = 5;
     };
 }

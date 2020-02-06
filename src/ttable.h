@@ -5,7 +5,7 @@
 
 namespace nc2 {
     namespace ttable {
-        static constexpr int TTABLE_WIDTH = 16384;
+        static constexpr int TTABLE_WIDTH = 131072;
 
         bool lookup(Position* p, Evaluation* saved_eval, int mindepth);
         void store(Position* p, Evaluation position_eval, int depth);

@@ -2,6 +2,7 @@
 #include "ttable.h"
 
 #include <algorithm>
+#include <chrono>
 
 using namespace nc2;
 
@@ -14,20 +15,34 @@ void SearcherST::set_position(Position p) {
 void SearcherST::go() {
     std::vector<Position::Transition> moves = root.gen_legal_moves();
 
+    nodes = 0;
+    thits = 0;
+
+    auto cur_time = std::chrono::system_clock::now();
     Move bestmove;
     Evaluation current_eval = alpha_beta(&root, DEPTH, Evaluation(0, true, -1), Evaluation(0, true, 1), &bestmove);
 
-    std::cerr << "Search completed at depth " << DEPTH << ", evaluation " << current_eval.to_string() << " bestmove " << bestmove.to_string() << "\n";
+    auto post_time = std::chrono::system_clock::now();
+
+    float seconds = std::chrono::duration_cast<std::chrono::milliseconds>(post_time - cur_time).count() / 1000.0f;
+
+    int nps = (float) nodes / (float) seconds;
+
+    std::cerr << "Search completed at depth " << DEPTH << ", evaluation " << current_eval.to_string() << " bestmove " << bestmove.to_string() << " nodes " << nodes << " nps " << nps << " thits " << thits << " time " << seconds << "\n";
     uci_out << "bestmove " << bestmove.to_string() << "\n";
 }
 
 Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove_out) {
+    ++nodes;
+
     /* Check the ttable cache. */
     /* Don't try a table lookup if we need to report a bestmove. */
+
     if (!bestmove_out) {
         Evaluation ttable_hit(0, false, 0);
 
         if (ttable::lookup(p, &ttable_hit, d)) {
+            ++thits;
             return ttable_hit;
         }
     }
@@ -164,6 +179,8 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
 }
 
 Evaluation SearcherST::quiescence(Position* p, int d, Evaluation alpha, Evaluation beta) {
+    ++nodes;
+
     if (!d || p->is_quiet()) {
         return Evaluation(p->get_eval());
     }
