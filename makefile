@@ -1,5 +1,5 @@
 CXX      = g++
-CXXFLAGS = -std=c++11 -Wall -Werror -g
+CXXFLAGS = -std=c++11 -Wall -Werror -O3 -ffast-math
 LDFLAGS  = -pthread
 OUTPUT   = nc2
 
