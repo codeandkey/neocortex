@@ -23,10 +23,10 @@ void ttable::store(Position* p, Evaluation position_eval, int depth) {
     ttable::Entry** entry = _nc2_ttable_list + (p->get_ttable_key() % ttable::TTABLE_WIDTH);
 
     if (*entry) {
-        *entry = new ttable::Entry(*p, position_eval, depth);
-    } else {
         (*entry)->p = *p;
         (*entry)->e = position_eval;
         (*entry)->depth = depth;
+    } else {
+        *entry = new ttable::Entry(*p, position_eval, depth);
     }
 }
