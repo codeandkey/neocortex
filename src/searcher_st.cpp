@@ -24,7 +24,7 @@ void SearcherST::go(int wtime, int btime) {
     if (movetime > 0) {
         if (movetime < 120000) search_depth = DEPTH * 2 / 3;
         if (movetime < 10000) search_depth = DEPTH / 2;
-        if (movetime < 1000) search_depth = 1;
+        if (movetime < 2500) search_depth = 1;
     }
 
     auto cur_time = std::chrono::system_clock::now();
