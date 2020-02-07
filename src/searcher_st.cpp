@@ -84,9 +84,11 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
 
     if (p->get_color_to_move() == piece::Color::WHITE) {
         /* Sort legal moves by best heuristic first. This helps speed up AB pruning. */
-        std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval() > b.second.get_eval();
-        });
+        if (d > 1) {
+            std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
+                return a.second.get_eval() > b.second.get_eval();
+            });
+        }
 
         /* Maximize evaluation. */
         std::vector<Position::Transition> best_moves;
@@ -136,9 +138,11 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
         return best_eval;
     } else {
         /* Sort legal moves by best heuristic first. This helps speed up AB pruning. */
-        std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval() < b.second.get_eval();
-        });
+        if (d > 1) {
+            std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
+                return a.second.get_eval() < b.second.get_eval();
+            });
+        }
 
         /* Minimize evaluation. */
         std::vector<Position::Transition> best_moves;
