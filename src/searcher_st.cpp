@@ -37,7 +37,7 @@ void SearcherST::go(int wtime, int btime) {
             search_depth = 7;
         }
     } else {
-        search_depth = 9;
+        search_depth = 7;
     }
 
     int i = 0;
