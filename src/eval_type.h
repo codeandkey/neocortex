@@ -49,6 +49,13 @@ namespace nc2 {
             std::string to_string();
 
             /**
+             * Converts the evaluation to a UCI "score" string.
+             *
+             * @return Evaluation in string format.
+             */
+            std::string to_uci_string();
+
+            /**
              * Shorthand for to_string().
              */
             operator std::string();

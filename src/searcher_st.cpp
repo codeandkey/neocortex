@@ -37,7 +37,7 @@ void SearcherST::go(int wtime, int btime) {
             search_depth = 7;
         }
     } else {
-        search_depth = 7;
+        search_depth = 9;
     }
 
     int i = 0;
@@ -53,6 +53,7 @@ void SearcherST::go(int wtime, int btime) {
         int nps = (float) nodes * 1000.0f / (ms + 1);
 
         std::cerr << "info depth " << i << " nodes " << nodes << " thits " << thits << " nps " << nps << " time " << ms << " score " << current_best_eval.to_string() << " currmove " << bestmove.to_string() << "\n";
+        uci_out << "info depth " << i << " nodes " << nodes << " thits " << thits << " nps " << nps << " time " << ms << " score " << current_best_eval.to_uci_string() << " currmove " << bestmove.to_string() << "\n";
     }
 
     std::cerr << "Search stopped at depth " << (i - 1) << ", evaluation " << current_best_eval.to_string() << " move " << bestmove.to_string() << "\n";

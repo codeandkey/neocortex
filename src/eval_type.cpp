@@ -39,6 +39,20 @@ std::string Evaluation::to_string() {
     return out;
 }
 
+std::string Evaluation::to_uci_string() {
+    std::string out;
+
+    if (has_mate) {
+        out += "mate ";
+        out += std::to_string(mate_in);
+    } else {
+        out += "cp ";
+        out += std::to_string((int) (eval * 100.0f));
+    }
+
+    return out;
+}
+
 Evaluation::operator std::string() {
     return to_string();
 }
