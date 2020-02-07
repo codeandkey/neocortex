@@ -21,15 +21,17 @@ void SearcherST::go(int wtime, int btime) {
     Evaluation current_best_eval(0, false, 0);
 
     if (movetime > 0) {
-        if (movetime < 1000) {
+        if (movetime < 3500) {
             search_depth = 0;
-        } else if (movetime < 10000) {
+        } else if (movetime < 7000) {
             search_depth = 2;
-        } else if (movetime < 30000) {
+        } else if (movetime < 12000) {
+            search_depth = 3;
+        } else if (movetime < 20000) {
             search_depth = 4;
         } else if (movetime < 60000) {
             search_depth = 5;
-        } else if (movetime < 120000) {
+        } else if (movetime < 300000) {
             search_depth = 6;
         } else {
             search_depth = 7;
