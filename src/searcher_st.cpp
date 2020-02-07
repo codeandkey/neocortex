@@ -23,6 +23,8 @@ void SearcherST::go(int wtime, int btime) {
     if (movetime > 0) {
         if (movetime < 1000) {
             search_depth = 0;
+        } else if (movetime < 10000) {
+            search_depth = 2;
         } else if (movetime < 30000) {
             search_depth = 4;
         } else if (movetime < 60000) {
