@@ -63,11 +63,11 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
     /* Don't try a table lookup if we need to report a bestmove. */
 
     if (!bestmove_out) {
-        Evaluation ttable_hit(0, false, 0);
+        Evaluation cur_eval = p->get_eval();
 
-        if (ttable::lookup(p, &ttable_hit, d)) {
+        if (p->get_eval_depth() >= d) {
             ++thits;
-            return ttable_hit;
+            return cur_eval;
         }
     }
 
@@ -82,7 +82,7 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
             return Evaluation(moves[0].second.get_eval());
         } else {
             if (p->is_quiet()) {
-                return Evaluation(p->get_eval() + eval::noise());
+                return p->get_eval();
             } else {
                 return quiescence(p, QDEPTH, alpha, beta);
             }
@@ -90,6 +90,13 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
     }
 
     std::vector<Position::Transition> legal_moves = p->gen_legal_moves();
+
+    /* Go ahead and compute the eval and ttable lookups for resulting positions. */
+    for (auto i : legal_moves) {
+        if (i.second.compute_eval()) {
+            ++thits;
+        }
+    }
 
     if (!legal_moves.size()) {
         if (bestmove_out) {
@@ -212,7 +219,7 @@ Evaluation SearcherST::quiescence(Position* p, int d, Evaluation alpha, Evaluati
     ++nodes;
 
     if (!d || p->is_quiet()) {
-        return Evaluation(p->get_eval() + eval::noise());
+        return p->get_eval();
     }
 
     std::vector<Position::Transition> legal_moves = p->gen_legal_moves();

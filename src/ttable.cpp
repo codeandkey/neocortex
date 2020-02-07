@@ -8,11 +8,12 @@ static ttable::Entry* _nc2_ttable_list[ttable::TTABLE_WIDTH];
 
 ttable::Entry::Entry(Position p, Evaluation e, int d) : p(p), e(e), depth(d) {}
 
-bool ttable::lookup(Position* p, Evaluation* saved_eval, int mindepth) {
+bool ttable::lookup(Position* p, Evaluation* saved_eval, int* saved_depth) {
     ttable::Entry* entry = _nc2_ttable_list[p->get_ttable_key() % ttable::TTABLE_WIDTH];
 
-    if (entry && entry->depth >= mindepth && !memcmp(p->get_board(), entry->p.get_board(), 64)) {
+    if (entry && !memcmp(p->get_board(), entry->p.get_board(), 64)) {
         *saved_eval = entry->e;
+        *saved_depth = entry->depth;
         return true;
     }
 

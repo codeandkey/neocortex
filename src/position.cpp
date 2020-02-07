@@ -9,6 +9,7 @@
 #include "piece.h"
 #include "square.h"
 #include "eval.h"
+#include "ttable.h"
 
 #include <iostream>
 
@@ -163,22 +164,39 @@ u8* Position::get_board() {
     return board;
 }
 
-void Position::compute_eval() {
-    current_eval = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK]);
+bool Position::compute_eval() {
+    computed_eval = true;
 
-    if (color_to_move == piece::Color::WHITE) {
-        current_eval += eval::TEMPO_VALUE;
-    } else {
-        current_eval -= eval::TEMPO_VALUE;
+    if (!computed_eval) {
+        if (ttable::lookup(this, &current_eval, &eval_depth)) {
+            return true;
+        }
     }
 
+    float current_eval_value = 0.0f;
+    current_eval_value = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK]);
+
+    if (color_to_move == piece::Color::WHITE) {
+        current_eval_value += eval::TEMPO_VALUE;
+    } else {
+        current_eval_value -= eval::TEMPO_VALUE;
+    }
+
+    current_eval = Evaluation(current_eval_value);
+    eval_depth = 0;
     computed_eval = true;
+
+    return false;
 }
 
-float Position::get_eval() {
+const Evaluation& Position::get_eval() {
     if (!computed_eval) compute_eval();
 
     return current_eval;
+}
+
+int Position::get_eval_depth() {
+    return eval_depth;
 }
 
 bool Position::is_quiet() {

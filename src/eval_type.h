@@ -12,7 +12,7 @@ namespace nc2 {
              * @param has_mate Should be true if there is mate on the board.
              * @param mate_in Number of moves until mate. Negative for black.
              */
-            Evaluation(float eval, bool has_mate = false, int mate_in = 0);
+            Evaluation(float eval = 0.0f, bool has_mate = false, int mate_in = 0);
 
             /**
              * Returns the evaluation value.
@@ -61,7 +61,7 @@ namespace nc2 {
              * @param b Other evaluation.
              * @return -1 if b is better for black, 1 if b is better for white, 0 if this eval is equal to b.
              */
-            int compare(Evaluation b);
+            int compare(const Evaluation& b) const;
             
             /**
              * Adds a random amount of noise to the evaluation.
@@ -70,11 +70,11 @@ namespace nc2 {
              */
             void add_noise(float amp);
 
-            bool operator < (Evaluation& rhs);
-            bool operator > (Evaluation& rhs);
-            bool operator >= (Evaluation& rhs);
-            bool operator <= (Evaluation& rhs);
-            bool operator == (Evaluation& rhs);
+            bool operator < (const Evaluation& rhs) const;
+            bool operator > (const Evaluation& rhs) const;
+            bool operator >= (const Evaluation& rhs) const;
+            bool operator <= (const Evaluation& rhs) const;
+            bool operator == (const Evaluation& rhs) const;
 
         protected:
             float eval;

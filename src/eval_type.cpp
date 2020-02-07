@@ -43,7 +43,7 @@ Evaluation::operator std::string() {
     return to_string();
 }
 
-int Evaluation::compare(Evaluation rhs) {
+int Evaluation::compare(const Evaluation& rhs) const {
     /*
      * -1 : RHS better for black
      *  0 : draw
@@ -99,22 +99,22 @@ void Evaluation::add_noise(float amp) {
     eval += (((float) (rand() % 10) / 10.0f) - 0.5f) * 2.0f * amp;
 }
 
-bool Evaluation::operator > (Evaluation& rhs) {
+bool Evaluation::operator > (const Evaluation& rhs) const {
     return (compare(rhs) == -1);
 }
 
-bool Evaluation::operator < (Evaluation& rhs) {
+bool Evaluation::operator < (const Evaluation& rhs) const {
     return (compare(rhs) == 1);
 }
 
-bool Evaluation::operator >= (Evaluation& rhs) {
+bool Evaluation::operator >= (const Evaluation& rhs) const {
     return (compare(rhs) <= 0);
 }
 
-bool Evaluation::operator <= (Evaluation& rhs) {
+bool Evaluation::operator <= (const Evaluation& rhs) const {
     return (compare(rhs) >= 0);
 }
 
-bool Evaluation::operator == (Evaluation& rhs) {
+bool Evaluation::operator == (const Evaluation& rhs) const {
     return (compare(rhs) == 0);
 }

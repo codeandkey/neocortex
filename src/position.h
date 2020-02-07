@@ -6,6 +6,7 @@
 #include "types.h"
 #include "move.h"
 #include "occ.h"
+#include "eval_type.h"
 
 namespace nc2 {
     class Position {
@@ -30,8 +31,9 @@ namespace nc2 {
 
             u32 get_ttable_key();
 
-            void compute_eval();
-            float get_eval();
+            bool compute_eval(); /* Computes the position eval or loads it from the ttable. */
+            const Evaluation& get_eval();
+            int get_eval_depth();
 
             bool is_quiet();
             u8 get_color_to_move();
@@ -58,7 +60,8 @@ namespace nc2 {
             int fullmove_number, halfmove_clock;
 
             bool computed_eval;
-            float current_eval;
+            Evaluation current_eval;
+            int eval_depth;
 
             /**
              * Generates all pseudolegal moves.
