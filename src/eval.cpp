@@ -17,6 +17,25 @@ static const float _nc2_eval_type_values[] = {
     7.0f, /* queen */
 };
 
+static float _nc2_eval_npm_values[] = {
+    0.0f,
+    0.0f,
+    _nc2_eval_type_values[piece::Type::KNIGHT],
+    _nc2_eval_type_values[piece::Type::KNIGHT],
+    _nc2_eval_type_values[piece::Type::BISHOP],
+    _nc2_eval_type_values[piece::Type::BISHOP],
+    _nc2_eval_type_values[piece::Type::ROOK],
+    _nc2_eval_type_values[piece::Type::ROOK],
+    0.0f,
+    0.0f,
+    _nc2_eval_type_values[piece::Type::QUEEN],
+    _nc2_eval_type_values[piece::Type::QUEEN],
+    0.0f,
+    0.0f,
+    0.0f,
+    0.0f,
+};
+
 static const float _nc2_eval_total_npm = 4 * _nc2_eval_type_values[piece::Type::KNIGHT] + \
                                          4 * _nc2_eval_type_values[piece::Type::ROOK] + \
                                          4 * _nc2_eval_type_values[piece::Type::BISHOP] + \
@@ -82,13 +101,23 @@ float eval::phase(u8* board) {
 }
 
 float eval::evaluate(u8* board, u64 white_attacks, u64 black_attacks) {
-    float p = eval::phase(board);
     float score = 0.0f;
 
+    float npm = 0.0f;
+    float phase;
+    float endgame_score = 0.0f, opening_score = 0.0f;
+
     for (u8 s = 0; s < 64; ++s) {
-        score += p * _nc2_eval_endgame_scores[s][board[s]];
-        score += (1.0f - p) * _nc2_eval_opening_scores[s][board[s]];
+        u8 p = board[s];
+
+        npm += _nc2_eval_npm_values[p];
+        endgame_score += _nc2_eval_endgame_scores[s][p];
+        opening_score += _nc2_eval_opening_scores[s][p];
     }
+
+    phase = (npm / _nc2_eval_total_npm);
+    score += phase * opening_score;
+    score += (1.0f - phase) * endgame_score;
 
     score += eval::center_control(white_attacks);
     score -= eval::center_control(black_attacks);
