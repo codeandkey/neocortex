@@ -182,7 +182,7 @@ bool Position::compute_eval() {
         current_eval_value -= eval::TEMPO_VALUE;
     }
 
-    current_eval = Evaluation(current_eval_value);
+    current_eval = Evaluation(current_eval_value + eval::noise());
     eval_depth = 0;
     computed_eval = true;
 
