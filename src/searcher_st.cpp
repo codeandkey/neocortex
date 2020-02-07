@@ -14,32 +14,45 @@ void SearcherST::set_position(Position p) {
 }
 
 void SearcherST::go(int wtime, int btime) {
-    std::vector<Position::Transition> moves = root.gen_legal_moves();
-
-    nodes = 0;
-    thits = 0;
-
     int movetime = (root.get_color_to_move() == piece::Color::WHITE) ? wtime : btime;
     int search_depth = DEPTH;
 
+    Move bestmove;
+    Evaluation current_best_eval(0, false, 0);
+
     if (movetime > 0) {
-        if (movetime < 120000) search_depth = DEPTH - 1;
-        if (movetime < 60000) search_depth = DEPTH - 2;
-        if (movetime < 30000) search_depth = DEPTH - 3;
-        if (movetime < 2500) search_depth = 1;
+        if (movetime < 1000) {
+            search_depth = 0;
+        } else if (movetime < 30000) {
+            search_depth = 4;
+        } else if (movetime < 60000) {
+            search_depth = 5;
+        } else if (movetime < 120000) {
+            search_depth = 6;
+        } else {
+            search_depth = 7;
+        }
+    } else {
+        search_depth = 7;
     }
 
-    auto cur_time = std::chrono::system_clock::now();
-    Move bestmove;
-    Evaluation current_eval = alpha_beta(&root, search_depth, Evaluation(0, true, -1), Evaluation(0, true, 1), &bestmove);
+    int i = 0;
+    for (; i <= search_depth; ++i) {
+        nodes = 0;
+        thits = 0;
 
-    auto post_time = std::chrono::system_clock::now();
+        auto cur_time = std::chrono::system_clock::now();
+        current_best_eval = alpha_beta(&root, i, Evaluation(0, true, -1), Evaluation(0, true, 1), &bestmove);
+        auto post_time = std::chrono::system_clock::now();
 
-    float seconds = std::chrono::duration_cast<std::chrono::milliseconds>(post_time - cur_time).count() / 1000.0f;
+        int ms = std::chrono::duration_cast<std::chrono::milliseconds>(post_time - cur_time).count();
+        int nps = (float) nodes * 1000.0f / (ms + 1);
 
-    int nps = (float) nodes / (float) seconds;
+        std::cerr << "info depth " << i << " nodes " << nodes << " thits " << thits << " nps " << nps << " time " << ms << " score " << current_best_eval.to_string() << " currmove " << bestmove.to_string() << "\n";
+    }
 
-    std::cerr << "Search completed at depth " << search_depth << ", evaluation " << current_eval.to_string() << " bestmove " << bestmove.to_string() << " nodes " << nodes << " nps " << nps << " thits " << thits << " time " << seconds << "\n";
+    std::cerr << "Search stopped at depth " << (i - 1) << ", evaluation " << current_best_eval.to_string() << " move " << bestmove.to_string() << "\n";
+
     uci_out << "bestmove " << bestmove.to_string() << "\n";
 }
 
@@ -59,10 +72,20 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
     }
 
     if (!d) {
-        if (p->is_quiet()) {
-            return Evaluation(p->get_eval() + eval::noise());
+        if (bestmove_out) {
+            /* A zero-depth search with bestmove out is just asking for any legal move.
+             * No need to perform quiescence search here, just find the first move. */
+
+            std::vector<Position::Transition> moves = p->gen_legal_moves();
+            if (moves.size()) *bestmove_out = moves[0].first;
+
+            return Evaluation(moves[0].second.get_eval());
         } else {
-            return quiescence(p, QDEPTH, alpha, beta);
+            if (p->is_quiet()) {
+                return Evaluation(p->get_eval() + eval::noise());
+            } else {
+                return quiescence(p, QDEPTH, alpha, beta);
+            }
         }
     }
 
@@ -97,10 +120,6 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
 
         for (auto m : legal_moves) {
             Evaluation inner = alpha_beta(&m.second, d - 1, alpha, beta, nullptr);
-
-            if (d == DEPTH) {
-                std::cerr << "evaluated top-level move " << m.first.to_string() << " : search " << inner.to_string() << " immediate " << m.second.get_eval() << "\n";
-            }
 
             if (inner.get_forced_mate() && !inner.get_mate_in()) {
                 /* Move is mate in 1! */
@@ -151,10 +170,6 @@ Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluati
 
         for (auto m : legal_moves) {
             Evaluation inner = alpha_beta(&m.second, d - 1, alpha, beta, nullptr);
-
-            if (d == DEPTH) {
-                std::cerr << "evaluated top-level move " << m.first.to_string() << " : search " << inner.to_string() << " immediate " << m.second.get_eval() << "\n";
-            }
 
             if (inner.get_forced_mate() && !inner.get_mate_in()) {
                 /* Move is mate in 1! */
