@@ -17,12 +17,11 @@ void SearcherST::go(int wtime, int btime) {
     int movetime = (root.get_color_to_move() == piece::Color::WHITE) ? wtime : btime;
     int search_depth = DEPTH;
 
-    Move bestmove;
-    Evaluation current_best_eval(0, false, 0);
+    search::Result last_result;
 
     if (movetime > 0) {
         if (movetime < 3500) {
-            search_depth = 0;
+            search_depth = 1;
         } else if (movetime < 7000) {
             search_depth = 2;
         } else if (movetime < 12000) {
@@ -46,256 +45,256 @@ void SearcherST::go(int wtime, int btime) {
         thits = 0;
 
         auto cur_time = std::chrono::system_clock::now();
-        current_best_eval = alpha_beta(&root, i, Evaluation(0, true, -1), Evaluation(0, true, 1), &bestmove);
-        auto post_time = std::chrono::system_clock::now();
 
+        last_result = alpha_beta(&root, i, Evaluation(0, true, -1), Evaluation(0, true, 1));
+
+        auto post_time = std::chrono::system_clock::now();
         int ms = std::chrono::duration_cast<std::chrono::milliseconds>(post_time - cur_time).count();
         int nps = (float) nodes * 1000.0f / (ms + 1);
 
-        std::cerr << "info depth " << i << " nodes " << nodes << " thits " << thits << " nps " << nps << " time " << ms << " score " << current_best_eval.to_string() << " currmove " << bestmove.to_string() << "\n";
-        uci_out << "info depth " << i << " nodes " << nodes << " thits " << thits << " nps " << nps << " time " << ms << " score " << current_best_eval.to_uci_string() << " currmove " << bestmove.to_string() << "\n";
+        std::cerr << "info depth " << i << " nodes " << nodes << " thits " << thits << " nps " << nps << " time " << ms << " score " << last_result.get_score().to_string() << " pv " << last_result.get_pv_string() << "\n";
+        uci_out << "info depth " << i << " nodes " << nodes << " thits " << thits << " nps " << nps << " time " << ms << " score " << last_result.get_score().to_uci_string() << " pv " << last_result.get_pv_string() << "\n";
     }
 
-    std::cerr << "Search stopped at depth " << (i - 1) << ", evaluation " << current_best_eval.to_string() << " move " << bestmove.to_string() << "\n";
+    std::cerr << "Search stopped at depth " << (i - 1) << ", evaluation " << last_result.get_score().to_string() << " move " << last_result.get_bestmove().to_string() << "\n";
 
-    uci_out << "bestmove " << bestmove.to_string() << "\n";
+    uci_out << "bestmove " << last_result.get_bestmove().to_string() << "\n";
 }
 
-Evaluation SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove_out) {
+search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta) {
     ++nodes;
 
-    /* Check the ttable cache. */
-    /* Don't try a table lookup if we need to report a bestmove. */
-
-    if (!bestmove_out) {
-        Evaluation cur_eval = p->get_eval();
-
-        if (p->get_eval_depth() >= d) {
-            ++thits;
-            return cur_eval;
-        }
-    }
-
     if (!d) {
-        if (bestmove_out) {
-            /* A zero-depth search with bestmove out is just asking for any legal move.
-             * No need to perform quiescence search here, just find the first move. */
-
-            std::vector<Position::Transition> moves = p->gen_legal_moves();
-            if (moves.size()) *bestmove_out = moves[0].first;
-
-            return Evaluation(moves[0].second.get_eval());
+        if (p->is_quiet()) {
+            return search::Result(*p, Evaluation(p->get_eval_heuristic()));
         } else {
-            if (p->is_quiet()) {
-                return p->get_eval();
-            } else {
-                return quiescence(p, QDEPTH, alpha, beta);
-            }
+            return quiescence(p, QDEPTH, alpha, beta);
         }
     }
 
+    /* Load any potential thits. */
+    search::Result* current_hit = ttable::lookup(p);
+
+    if (current_hit) {
+        if (current_hit->get_depth() >= d) {
+            return *current_hit;
+        }
+    }
+
+    /* No thit, grab legal next moves from position. */
     std::vector<Position::Transition> legal_moves = p->gen_legal_moves();
 
-    /* Go ahead and compute the eval and ttable lookups for resulting positions. */
-    for (auto i : legal_moves) {
-        if (i.second.compute_eval()) {
-            ++thits;
-        }
-    }
-
     if (!legal_moves.size()) {
-        if (bestmove_out) {
-            throw std::runtime_error("Bestmove requested, but no legal moves..");
-        }
-
         if (!p->get_color_in_check(p->get_color_to_move())) {
-            return Evaluation(0, false, 0);
+            return search::Result(*p, Evaluation(0, false, 0), std::list<Move>());
         } else {
-            return Evaluation(0, true, 0);
+            return search::Result(*p, Evaluation(0, true, 0), std::list<Move>());
         }
     }
-
-    if (bestmove_out) *bestmove_out = legal_moves[0].first;
 
     if (p->get_color_to_move() == piece::Color::WHITE) {
-        /* Sort legal moves by best heuristic first. This helps speed up AB pruning. */
-        if (d > 1) {
-            std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-                return a.second.get_eval() > b.second.get_eval();
-            });
-        }
+        std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
+            return a.second.get_eval_heuristic() > b.second.get_eval_heuristic();
+        });
 
         /* Maximize evaluation. */
-        std::vector<Position::Transition> best_moves;
-        best_moves.push_back(legal_moves[0]);
-        Evaluation best_eval(0, true, -1);
+        std::list<Edge> best_lines;
+        Evaluation current_best_score(0, true, -1);
+        best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
         for (auto m : legal_moves) {
-            Evaluation inner = alpha_beta(&m.second, d - 1, alpha, beta, nullptr);
+            search::Result inner = alpha_beta(&m.second, d - 1, alpha, beta);
 
-            if (inner.get_forced_mate() && !inner.get_mate_in()) {
-                /* Move is mate in 1! */
-                if (bestmove_out) *bestmove_out = m.first;
-                return Evaluation(0, true, 1);
-            }
+            if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
+                best_lines.clear();
+                best_lines.push_back(Edge(m.first, inner));
+                break;
+            } else if (inner.get_score() == current_best_score) {
+                best_lines.push_back(Edge(m.first, inner));
+            } else if (inner.get_score() > current_best_score) {
+                best_lines.clear();
+                best_lines.push_back(Edge(m.first, inner));
 
-            if (inner == best_eval) {
-                best_moves.push_back(m);
-            } else if (inner > best_eval) {
-                best_moves.clear();
-                best_moves.push_back(m);
-                best_eval = inner;
+                current_best_score = inner.get_score();
 
-                if (best_eval > alpha) {
-                    alpha = best_eval;
+                if (current_best_score > alpha) {
+                    alpha = current_best_score;
 
                     if (alpha > beta) break;
                 }
             }
         }
 
-        /* Choose the best move from all the best moves. */
-        if (bestmove_out) {
-            std::sort(best_moves.begin(), best_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-                return a.second.get_eval() > b.second.get_eval();
-            });
+        /* Choose the best line always. */
+        best_lines.sort([&](Edge& a, Edge& b) {
+            return a.second.get_current() > b.second.get_current();
+        });
 
-            *bestmove_out = best_moves[0].first;
-        }
+        /* Push the new move to the PV and return the new result. */
+        search::Result best_line = best_lines.front().second;
+
+        best_line.insert_move(*p, best_lines.front().first);
 
         /* Position wasn't a table hit, so store it in the ttable. */
-        ttable::store(p, best_eval, d);
+        ttable::store(p, best_line);
 
-        return best_eval;
+        return best_line;
     } else {
-        /* Sort legal moves by best heuristic first. This helps speed up AB pruning. */
-        if (d > 1) {
-            std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-                return a.second.get_eval() < b.second.get_eval();
-            });
-        }
+        std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
+            return a.second.get_eval_heuristic() < b.second.get_eval_heuristic();
+        });
 
         /* Minimize evaluation. */
-        std::vector<Position::Transition> best_moves;
-        best_moves.push_back(legal_moves[0]);
-        Evaluation best_eval(0, true, 1);
+        std::list<Edge> best_lines;
+        Evaluation current_best_score(0, true, 1);
+        best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
         for (auto m : legal_moves) {
-            Evaluation inner = alpha_beta(&m.second, d - 1, alpha, beta, nullptr);
+            search::Result inner = alpha_beta(&m.second, d - 1, alpha, beta);
 
-            if (inner.get_forced_mate() && !inner.get_mate_in()) {
-                /* Move is mate in 1! */
-                if (bestmove_out) *bestmove_out = m.first;
-                return Evaluation(0, true, -1);
-            }
+            if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
+                best_lines.clear();
+                best_lines.push_back(Edge(m.first, inner));
+                break;
+            } else if (inner.get_score() == current_best_score) {
+                best_lines.push_back(Edge(m.first, inner));
+            } else if (inner.get_score() < current_best_score) {
+                best_lines.clear();
+                best_lines.push_back(Edge(m.first, inner));
 
-            if (inner == best_eval) {
-                best_moves.push_back(m);
-            } else if (inner < best_eval) {
-                best_moves.clear();
-                best_moves.push_back(m);
-                best_eval = inner;
+                current_best_score = inner.get_score();
 
-                if (best_eval < beta) {
-                    beta = best_eval;
+                if (current_best_score < beta) {
+                    beta = current_best_score;
 
                     if (alpha > beta) break;
                 }
             }
         }
 
-        if (bestmove_out) {
-            /* Choose the best move from all the best moves. */
-            std::sort(best_moves.begin(), best_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-                return a.second.get_eval() < b.second.get_eval();
-            });
+        /* Choose the best line always. */
+        best_lines.sort([&](Edge& a, Edge& b) {
+            return a.second.get_current() < b.second.get_current();
+        });
 
-            *bestmove_out = best_moves[0].first;
-        }
+        /* Push the new move to the PV and return the new result. */
+        search::Result best_line = best_lines.front().second;
+
+        best_line.insert_move(*p, best_lines.front().first);
 
         /* Position wasn't a table hit, so store it in the ttable. */
-        ttable::store(p, best_eval, d);
+        ttable::store(p, best_line);
 
-        return best_eval;
+        return best_line;
     }
 }
 
-Evaluation SearcherST::quiescence(Position* p, int d, Evaluation alpha, Evaluation beta) {
+search::Result SearcherST::quiescence(Position* p, int d, Evaluation alpha, Evaluation beta) {
     ++nodes;
 
     if (!d || p->is_quiet()) {
-        return p->get_eval();
+        return search::Result(*p, p->get_eval_heuristic());
     }
 
     std::vector<Position::Transition> legal_moves = p->gen_legal_moves();
 
     if (!legal_moves.size()) {
         if (!p->get_color_in_check(p->get_color_to_move())) {
-            return Evaluation(0, false, 0);
+            return search::Result(*p, Evaluation(0, false, 0));
         } else {
-            return Evaluation(0, true, 0);
+            return search::Result(*p, Evaluation(0, true, 0));
         }
     }
 
     if (p->get_color_to_move() == piece::Color::WHITE) {
         std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval() > b.second.get_eval();
+            return a.second.get_eval_heuristic() > b.second.get_eval_heuristic();
         });
 
         /* Maximize evaluation. */
-        Evaluation out(0, true, -1);
+        std::list<Edge> best_lines;
+        Evaluation current_best_score(0, true, -1);
+        best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
         for (auto m : legal_moves) {
-            Evaluation inner = quiescence(&m.second, d - 1, alpha, beta);
+            search::Result inner = quiescence(&m.second, d - 1, alpha, beta);
 
-            if (inner.get_forced_mate() && !inner.get_mate_in()) {
-                /* Move is mate in 1! */
-                return Evaluation(0, true, 1);
-            }
-
-            if (inner > out) {
-                out = inner;
-            }
-
-            if (out > alpha) {
-                alpha = out;
-            }
-
-            if (alpha > beta) {
+            if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
+                best_lines.clear();
+                best_lines.push_back(Edge(m.first, inner));
                 break;
+            } else if (inner.get_score() == current_best_score) {
+                best_lines.push_back(Edge(m.first, inner));
+            } else if (inner.get_score() > current_best_score) {
+                best_lines.clear();
+                best_lines.push_back(Edge(m.first, inner));
+
+                current_best_score = inner.get_score();
+
+                if (current_best_score > alpha) {
+                    alpha = current_best_score;
+
+                    if (alpha > beta) break;
+                }
             }
         }
 
-        return out;
+        /* Choose the best line always. */
+        best_lines.sort([&](Edge& a, Edge& b) {
+            return a.second.get_current() > b.second.get_current();
+        });
+
+        /* Push the new move to the PV and return the new result. */
+        search::Result best_line = best_lines.front().second;
+
+        /* When inserting quiescence moves, don't consider them a searched depth. */
+        best_line.insert_move(*p, best_lines.front().first, 0);
+
+        return best_line;
     } else {
         std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval() < b.second.get_eval();
+            return a.second.get_eval_heuristic() < b.second.get_eval_heuristic();
         });
 
         /* Minimize evaluation. */
-        Evaluation out(0, true, 1);
+        std::list<Edge> best_lines;
+        Evaluation current_best_score(0, true, 1);
+        best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
         for (auto m : legal_moves) {
-            Evaluation inner = quiescence(&m.second, d - 1, alpha, beta);
+            search::Result inner = quiescence(&m.second, d - 1, alpha, beta);
 
-            if (inner.get_forced_mate() && !inner.get_mate_in()) {
-                /* Move is mate in 1! */
-                return Evaluation(0, true, 1);
-            }
-
-            if (inner < out) {
-                out = inner;
-            }
-
-            if (out < beta) {
-                beta = out;
-            }
-
-            if (alpha > beta) {
+            if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
+                best_lines.clear();
+                best_lines.push_back(Edge(m.first, inner));
                 break;
+            } else if (inner.get_score() == current_best_score) {
+                best_lines.push_back(Edge(m.first, inner));
+            } else if (inner.get_score() < current_best_score) {
+                best_lines.clear();
+                best_lines.push_back(Edge(m.first, inner));
+
+                current_best_score = inner.get_score();
+
+                if (current_best_score < beta) {
+                    beta = current_best_score;
+
+                    if (alpha > beta) break;
+                }
             }
         }
 
-        return out;
+        /* Choose the best line always. */
+        best_lines.sort([&](Edge& a, Edge& b) {
+            return a.second.get_current() < b.second.get_current();
+        });
+
+        /* Push the new move to the PV and return the new result. */
+        search::Result best_line = best_lines.front().second;
+
+        /* When inserting quiescence moves, don't consider them a searched depth. */
+        best_line.insert_move(*p, best_lines.front().first, 0);
+
+        return best_line;
     }
 }

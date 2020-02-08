@@ -85,6 +85,9 @@ Position::Position() {
 
     /* Initialize en passant target */
     en_passant_target = square::null;
+
+    /* Not evaluated by default. */
+    computed_eval = false;
 }
 
 Position::Position(std::string fen) {
@@ -164,14 +167,8 @@ u8* Position::get_board() {
     return board;
 }
 
-bool Position::compute_eval() {
+void Position::compute_eval() {
     computed_eval = true;
-
-    if (!computed_eval) {
-        if (ttable::lookup(this, &current_eval, &eval_depth)) {
-            return true;
-        }
-    }
 
     float current_eval_value = 0.0f;
     current_eval_value = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK]);
@@ -182,21 +179,13 @@ bool Position::compute_eval() {
         current_eval_value -= eval::TEMPO_VALUE;
     }
 
-    current_eval = Evaluation(current_eval_value + eval::noise());
-    eval_depth = 0;
-    computed_eval = true;
-
-    return false;
+    current_eval = current_eval_value + eval::noise();
 }
 
-const Evaluation& Position::get_eval() {
+float Position::get_eval_heuristic() {
     if (!computed_eval) compute_eval();
 
     return current_eval;
-}
-
-int Position::get_eval_depth() {
-    return eval_depth;
 }
 
 bool Position::is_quiet() {

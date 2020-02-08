@@ -26,6 +26,10 @@ int Evaluation::get_mate_in() {
     return mate_in;
 }
 
+void Evaluation::set_mate_in(int m) {
+    mate_in = m;
+}
+
 std::string Evaluation::to_string() {
     std::string out;
 

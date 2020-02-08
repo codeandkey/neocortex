@@ -4,30 +4,21 @@
 
 using namespace nc2;
 
-static ttable::Entry* _nc2_ttable_list[ttable::TTABLE_WIDTH];
+static search::Result* _nc2_ttable_list[ttable::TTABLE_WIDTH];
 
-ttable::Entry::Entry(Position p, Evaluation e, int d) : p(p), e(e), depth(d) {}
+search::Result* ttable::lookup(Position* p) {
+    search::Result* entry = _nc2_ttable_list[p->get_ttable_key() % ttable::TTABLE_WIDTH];
 
-bool ttable::lookup(Position* p, Evaluation* saved_eval, int* saved_depth) {
-    ttable::Entry* entry = _nc2_ttable_list[p->get_ttable_key() % ttable::TTABLE_WIDTH];
-
-    if (entry && !memcmp(p->get_board(), entry->p.get_board(), 64)) {
-        *saved_eval = entry->e;
-        *saved_depth = entry->depth;
-        return true;
+    if (entry && entry->check_position(p)) {
+        return entry;
     }
 
-    return false;
+    return NULL;
 }
 
-void ttable::store(Position* p, Evaluation position_eval, int depth) {
-    ttable::Entry** entry = _nc2_ttable_list + (p->get_ttable_key() % ttable::TTABLE_WIDTH);
+void ttable::store(Position* p, search::Result res) {
+    search::Result** entry = _nc2_ttable_list + (p->get_ttable_key() % ttable::TTABLE_WIDTH);
 
-    if (*entry) {
-        (*entry)->p = *p;
-        (*entry)->e = position_eval;
-        (*entry)->depth = depth;
-    } else {
-        *entry = new ttable::Entry(*p, position_eval, depth);
-    }
+    if (!*entry) *entry = new search::Result();
+    (*entry)->update(res);
 }

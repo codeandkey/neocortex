@@ -16,24 +16,13 @@ namespace nc2 {
 
             typedef std::pair<Move, Position> Transition;
 
-            /*class Transition {
-                public:
-                    Transition(Position* current, Move m, Position result);
-
-                private:
-                    Move move;
-                    Position result;
-            };*/
-
             std::vector<Transition> gen_legal_moves();
 
             std::string get_debug_string();
 
             u32 get_ttable_key();
 
-            bool compute_eval(); /* Computes the position eval or loads it from the ttable. */
-            const Evaluation& get_eval();
-            int get_eval_depth();
+            float get_eval_heuristic();
 
             bool is_quiet();
             u8 get_color_to_move();
@@ -60,8 +49,7 @@ namespace nc2 {
             int fullmove_number, halfmove_clock;
 
             bool computed_eval;
-            Evaluation current_eval;
-            int eval_depth;
+            float current_eval;
 
             /**
              * Generates all pseudolegal moves.
@@ -96,5 +84,7 @@ namespace nc2 {
              * Returns true if the position is legal, false otherwise.
              */
             bool update_check_states();
+
+            void compute_eval();
     };
 }

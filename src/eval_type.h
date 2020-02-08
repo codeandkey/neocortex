@@ -77,12 +77,18 @@ namespace nc2 {
              */
             void add_noise(float amp);
 
+            /**
+             * Sets the mate in counter.
+             *
+             * @param m Number of moves until mate.
+             */
+            void set_mate_in(int m);
+
             bool operator < (const Evaluation& rhs) const;
             bool operator > (const Evaluation& rhs) const;
             bool operator >= (const Evaluation& rhs) const;
             bool operator <= (const Evaluation& rhs) const;
             bool operator == (const Evaluation& rhs) const;
-
         protected:
             float eval;
             bool has_mate;

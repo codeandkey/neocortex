@@ -1,9 +1,13 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
+#include <list>
 
 #include "position.h"
 #include "eval_type.h"
+#include "move.h"
+#include "result.h"
 
 namespace nc2 {
     class SearcherST {
@@ -17,8 +21,10 @@ namespace nc2 {
             std::ostream& uci_out;
             Position root;
 
-            Evaluation alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta, Move* bestmove_out);
-            Evaluation quiescence(Position* p, int d, Evaluation alpha, Evaluation beta);
+            typedef std::pair<Move, search::Result> Edge;
+
+            search::Result alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta);
+            search::Result quiescence(Position* p, int d, Evaluation alpha, Evaluation beta);
 
             int nodes;
             int thits;
