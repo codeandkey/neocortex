@@ -20,7 +20,7 @@ namespace nc2 {
 
             std::string get_debug_string();
 
-            u32 get_ttable_key();
+            u64 get_ttable_key();
 
             float get_eval_heuristic();
 
@@ -36,7 +36,7 @@ namespace nc2 {
             u8 color_to_move;
             u8 board[64];
             u8 en_passant_target;
-            u32 ttable_index;
+            u64 ttable_index;
 
             u64 attack_masks[2]; /* [color] */
             u64 king_masks[2]; /* [color] */

@@ -159,7 +159,7 @@ std::string Position::get_debug_string() {
     return out;
 }
 
-u32 Position::get_ttable_key() {
+u64 Position::get_ttable_key() {
     return ttable_index;
 }
 
