@@ -49,7 +49,13 @@ void search::Result::insert_move(Position before_pos, Move m, int depth_inc) {
     pv.insert(pv.begin(), m);
 
     if (score.get_forced_mate()) {
-        if (before_pos.get_color_to_move() == piece::Color::WHITE) {
+	if (!score.get_mate_in()) {
+	    if (before_pos.get_color_to_move() == piece::Color::WHITE) {
+                score.set_mate_in(1);
+            } else {
+                score.set_mate_in(-1);
+            }
+	} else if (score.get_mate_in() > 0) {
             score.set_mate_in(score.get_mate_in() + 1);
         } else {
             score.set_mate_in(score.get_mate_in() - 1);
