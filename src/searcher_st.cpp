@@ -261,7 +261,7 @@ search::Result SearcherST::quiescence(Position* p, int d, Evaluation alpha, Eval
 
         /* Choose the best line always. */
         best_lines.sort([&](Edge& a, Edge& b) {
-            return a.second.get_current() > b.second.get_current();
+            return a.second.get_score() > b.second.get_score();
         });
 
         /* Push the new move to the PV and return the new result. */
@@ -306,7 +306,7 @@ search::Result SearcherST::quiescence(Position* p, int d, Evaluation alpha, Eval
 
         /* Choose the best line always. */
         best_lines.sort([&](Edge& a, Edge& b) {
-            return a.second.get_current() < b.second.get_current();
+            return a.second.get_score() < b.second.get_score();
         });
 
         /* Push the new move to the PV and return the new result. */
