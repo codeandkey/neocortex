@@ -15,7 +15,7 @@ void SearcherST::set_position(Position p) {
 
 void SearcherST::go(int wtime, int btime) {
     int movetime = (root.get_color_to_move() == piece::Color::WHITE) ? wtime : btime;
-    int search_depth = DEPTH;
+    int search_depth;
 
     search::Result last_result;
 
@@ -68,7 +68,7 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
         if (p->is_quiet()) {
             return search::Result(*p, Evaluation(p->get_eval_heuristic()));
         } else {
-            return quiescence(p, QDEPTH, alpha, beta);
+            return quiescence(p, alpha, beta);
         }
     }
 
@@ -209,10 +209,10 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
     }
 }
 
-search::Result SearcherST::quiescence(Position* p, int d, Evaluation alpha, Evaluation beta) {
+search::Result SearcherST::quiescence(Position* p, Evaluation alpha, Evaluation beta) {
     ++nodes;
 
-    if (!d || p->is_quiet()) {
+    if (p->is_quiet()) {
         return search::Result(*p, p->get_eval_heuristic());
     }
 
@@ -237,7 +237,7 @@ search::Result SearcherST::quiescence(Position* p, int d, Evaluation alpha, Eval
         best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
         for (auto m : legal_moves) {
-            search::Result inner = quiescence(&m.second, d - 1, alpha, beta);
+            search::Result inner = quiescence(&m.second, alpha, beta);
 
             if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
                 best_lines.clear();
@@ -282,7 +282,7 @@ search::Result SearcherST::quiescence(Position* p, int d, Evaluation alpha, Eval
         best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
         for (auto m : legal_moves) {
-            search::Result inner = quiescence(&m.second, d - 1, alpha, beta);
+            search::Result inner = quiescence(&m.second, alpha, beta);
 
             if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
                 best_lines.clear();

@@ -24,12 +24,9 @@ namespace nc2 {
             typedef std::pair<Move, search::Result> Edge;
 
             search::Result alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta);
-            search::Result quiescence(Position* p, int d, Evaluation alpha, Evaluation beta);
+            search::Result quiescence(Position* p, Evaluation alpha, Evaluation beta);
 
             int nodes;
             int thits;
-
-            static constexpr int DEPTH = 5;
-            static constexpr int QDEPTH = 4;
     };
 }
