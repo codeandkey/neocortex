@@ -53,7 +53,7 @@ void SearcherST::go(int wtime, int btime) {
         int nps = (float) nodes * 1000.0f / (ms + 1);
 
         std::cerr << "info depth " << i << " nodes " << nodes << " thits " << thits << " nps " << nps << " time " << ms << " score " << last_result.get_score().to_string() << " pv " << last_result.get_pv_string() << "\n";
-        uci_out << "info depth " << i << " nodes " << nodes << " thits " << thits << " nps " << nps << " time " << ms << " score " << last_result.get_score().to_uci_string() << " pv " << last_result.get_pv_string() << "\n";
+        uci_out << "info depth " << i << " nodes " << nodes << " nps " << nps << " time " << ms << " score " << last_result.get_score().to_uci_string() << " pv " << last_result.get_pv_string() << "\n";
     }
 
     std::cerr << "Search stopped at depth " << (i - 1) << ", evaluation " << last_result.get_score().to_string() << " move " << last_result.get_bestmove().to_string() << "\n";
@@ -77,6 +77,7 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
 
     if (current_hit) {
         if (current_hit->get_depth() >= d) {
+	    ++thits;
             return *current_hit;
         }
     }
