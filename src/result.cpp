@@ -19,6 +19,10 @@ float search::Result::get_current() {
     return pos.get_eval_heuristic();
 }
 
+Position* search::Result::get_position() {
+    return &pos;
+}
+
 std::list<Move> search::Result::get_pv() {
     return pv;
 }
@@ -36,13 +40,12 @@ std::string search::Result::get_pv_string() {
     return out;
 }
 
-void search::Result::update(search::Result& from) {
-    /* Here, we decide the transposition table replacement strategy.
-     * For now, we will always replace colliding nodes. */
+int search::Result::get_depth() {
+    return depth;
+}
 
-    this->score = from.score;
-    this->pv = from.pv;
-    this->depth = from.depth;
+bool search::Result::check_position(Position* rhs) {
+    return !memcmp(rhs->get_board(), pos.get_board(), 64);
 }
 
 void search::Result::insert_move(Position before_pos, Move m, int depth_inc) {
@@ -66,14 +69,11 @@ void search::Result::insert_move(Position before_pos, Move m, int depth_inc) {
     depth += depth_inc;
 }
 
-bool search::Result::check_position(Position* rhs) {
-    return !memcmp(rhs->get_board(), pos.get_board(), 64);
-}
+void search::Result::update(search::Result& from) {
+    /* Here, we decide the transposition table replacement strategy.
+     * For now, we will always replace colliding nodes. */
 
-int search::Result::get_depth() {
-    return depth;
-}
-
-Position* search::Result::get_position() {
-    return &pos;
+    this->score = from.score;
+    this->pv = from.pv;
+    this->depth = from.depth;
 }
