@@ -15,7 +15,7 @@ namespace nc2 {
                 Move get_bestmove();
                 Evaluation get_score();
                 float get_current();
-                Position get_position();
+                Position* get_position();
                 std::list<Move> get_pv();
                 std::string get_pv_string();
                 int get_depth();

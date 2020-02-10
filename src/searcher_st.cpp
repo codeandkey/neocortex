@@ -93,9 +93,23 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
         }
     }
 
+    /* Make into list of edges and try early lookups. */
+    std::list<Edge> next_edges;
+
+    for (auto m : legal_moves) {
+        search::Result* hit = ttable::lookup(&m.second);
+
+        if (hit) {
+            next_edges.push_back(Edge(m.first, *hit));
+        } else {
+            next_edges.push_back(Edge(m.first, search::Result(m.second, Evaluation(m.second.get_eval_heuristic()))));
+        }
+    }
+
     if (p->get_color_to_move() == piece::Color::WHITE) {
-        std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval_heuristic() > b.second.get_eval_heuristic();
+        /* Perform move ordering */
+        next_edges.sort([&](Edge& a, Edge& b) {
+            return a.second.get_score() > b.second.get_score();
         });
 
         /* Maximize evaluation. */
@@ -103,20 +117,22 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
         Evaluation current_best_score(0, true, -1);
         best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
-        for (auto m : legal_moves) {
-            search::Result inner = alpha_beta(&m.second, d - 1, alpha, beta);
+        for (auto e : next_edges) {
+            if (e.second.get_depth() < d - 1) {
+                e.second = alpha_beta(e.second.get_position(), d - 1, alpha, beta);
+            }
 
-            if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
+            if (e.second.get_score().get_forced_mate() && e.second.get_score().get_mate_in() == 0) {
                 best_lines.clear();
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
                 break;
-            } else if (inner.get_score() == current_best_score) {
-                best_lines.push_back(Edge(m.first, inner));
-            } else if (inner.get_score() > current_best_score) {
+            } else if (e.second.get_score() == current_best_score) {
+                best_lines.push_back(e);
+            } else if (e.second.get_score() > current_best_score) {
                 best_lines.clear();
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
 
-                current_best_score = inner.get_score();
+                current_best_score = e.second.get_score();
 
                 if (current_best_score > alpha) {
                     alpha = current_best_score;
@@ -128,7 +144,7 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
 
         /* Choose the best line always. */
         best_lines.sort([&](Edge& a, Edge& b) {
-            return a.second.get_current() > b.second.get_current();
+            return a.second.get_score() > b.second.get_score();
         });
 
         /* Push the new move to the PV and return the new result. */
@@ -141,29 +157,32 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
 
         return best_line;
     } else {
-        std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval_heuristic() < b.second.get_eval_heuristic();
+        /* Perform move ordering */
+        next_edges.sort([&](Edge& a, Edge& b) {
+            return a.second.get_score() < b.second.get_score();
         });
 
-        /* Minimize evaluation. */
+        /* Maximize evaluation. */
         std::list<Edge> best_lines;
         Evaluation current_best_score(0, true, 1);
         best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
-        for (auto m : legal_moves) {
-            search::Result inner = alpha_beta(&m.second, d - 1, alpha, beta);
+        for (auto e : next_edges) {
+            if (e.second.get_depth() < d - 1) {
+                e.second = alpha_beta(e.second.get_position(), d - 1, alpha, beta);
+            }
 
-            if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
+            if (e.second.get_score().get_forced_mate() && e.second.get_score().get_mate_in() == 0) {
                 best_lines.clear();
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
                 break;
-            } else if (inner.get_score() == current_best_score) {
-                best_lines.push_back(Edge(m.first, inner));
-            } else if (inner.get_score() < current_best_score) {
+            } else if (e.second.get_score() == current_best_score) {
+                best_lines.push_back(e);
+            } else if (e.second.get_score() < current_best_score) {
                 best_lines.clear();
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
 
-                current_best_score = inner.get_score();
+                current_best_score = e.second.get_score();
 
                 if (current_best_score < beta) {
                     beta = current_best_score;
@@ -175,7 +194,7 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
 
         /* Choose the best line always. */
         best_lines.sort([&](Edge& a, Edge& b) {
-            return a.second.get_current() < b.second.get_current();
+            return a.second.get_score() < b.second.get_score();
         });
 
         /* Push the new move to the PV and return the new result. */

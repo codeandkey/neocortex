@@ -67,3 +67,7 @@ bool search::Result::check_position(Position* rhs) {
 int search::Result::get_depth() {
     return depth;
 }
+
+Position* search::Result::get_position() {
+    return &pos;
+}
