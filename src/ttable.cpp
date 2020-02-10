@@ -1,7 +1,5 @@
 #include "ttable.h"
 
-#include <cstring>
-
 using namespace nc2;
 
 static search::Result* _nc2_ttable_list[ttable::TTABLE_WIDTH];
