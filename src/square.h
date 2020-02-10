@@ -12,20 +12,89 @@ namespace nc2 {
     namespace square {
         constexpr u8 null = 0xFF;
 
-        void init_lookups();
-
+        /**
+         * Gets a square at a location. r and f should be between 0 and 7 inclusive.
+         * 
+         * @param r Rank
+         * @param f File
+         *
+         * @return Target square.
+         */
         u8 at(u8 r, u8 f);
+
+        /**
+         * Gets a square at a location. or returns square::null if the coordinates are out of bounds.
+         * 
+         * @param r Rank
+         * @param f File
+         *
+         * @return Target square, or square::null.
+         */
         u8 at_safe(u8 r, u8 f);
 
+        /**
+         * Gets the rank of a square.
+         * 
+         * @param s Square
+         *
+         * @return Square rank, from 0 to 7 inclusive.
+         */
         u8 rank(u8 s);
-        u8 file(u8 s);
-        u8 shift(u8 s, int r, int f);
 
+        /**
+         * Gets the file of a square.
+         * 
+         * @param s Square
+         *
+         * @return Square file, from 0 to 7 inclusive.
+         */
+        u8 file(u8 s);
+
+        /**
+         * Gets the diagonal of a square.
+         * 
+         * @param s Square
+         *
+         * @return Square diagonal, from 0 to 14 inclusive.
+         */
         u8 diag(u8 s);
+
+        /**
+         * Gets the antidiagonal of a square.
+         * 
+         * @param s Square
+         *
+         * @return Square antidiagonal, from 0 to 14 inclusive.
+         */
         u8 antidiag(u8 s);
 
+        /**
+         * Shifts a square by some number of ranks and files.
+         * 
+         * @param s Square
+         * @param r Ranks
+         * @param f Files
+         *
+         * @return New square.
+         */
+        u8 shift(u8 s, int r, int f);
+
+        /**
+         * Gets the bitboard mask for a single square.
+         *
+         * @param s Square (0 <= s < 64)
+         *
+         * @return Bitboard mask.
+         */
         u64 mask(u8 s);
 
+        /**
+         * Gets the square as a UCI string.
+         *
+         * @param s Square
+         *
+         * @return String representation.
+         */
         std::string to_string(u8 s);
 
         enum Squares {

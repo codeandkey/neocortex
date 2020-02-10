@@ -44,15 +44,6 @@ u8 square::file(u8 s) {
     return s & 7;
 }
 
-u8 square::shift(u8 s, int r, int f) {
-    assert(square::rank(s) + r >= 0);
-    assert(square::rank(s) + r < 8);
-    assert(square::file(s) + f >= 0);
-    assert(square::file(s) + f < 8);
-
-    return s + 8 * r + f;
-}
-
 u8 square::diag(u8 s) {
     assert(s < 64);
     return _nc2_square_diag_lookup[s];
@@ -62,6 +53,16 @@ u8 square::antidiag(u8 s) {
     assert(s < 64);
     return _nc2_square_antidiag_lookup[s];
 }
+
+u8 square::shift(u8 s, int r, int f) {
+    assert(square::rank(s) + r >= 0);
+    assert(square::rank(s) + r < 8);
+    assert(square::file(s) + f >= 0);
+    assert(square::file(s) + f < 8);
+
+    return s + 8 * r + f;
+}
+
 
 u64 square::mask(u8 s) {
     return (u64) 1 << s;
