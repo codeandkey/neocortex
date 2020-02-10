@@ -12,6 +12,7 @@
 #include "lookup_bishop.h"
 #include "lookup_rook.h"
 #include "tests/test_dummy.h"
+#include "tests/test_mates.h"
 #include "square.h"
 #include "piece.h"
 #include "occ.h"
@@ -37,6 +38,7 @@ int main(int argc, char** argv) {
         std::vector<nc2::UnitTest*> tests;
 
         tests.push_back(new nc2::tests::DummyTest());
+        tests.push_back(new nc2::tests::MatesTest());
 
         for (auto t : tests) {
             ++count;

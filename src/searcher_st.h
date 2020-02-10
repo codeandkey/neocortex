@@ -35,6 +35,16 @@ namespace nc2 {
              */
             void set_position(Position p);
 
+            /**
+             * Runs a synchronous search at a certain depth.
+             *
+             * @param start Starting position.
+             * @param d Search depth.
+             *
+             * @return Search result.
+             */
+            search::Result run_search(Position* start, int depth);
+
         private:
             std::ostream& uci_out;
             Position root;

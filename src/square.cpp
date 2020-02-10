@@ -82,3 +82,9 @@ std::string square::to_string(u8 s) {
 
     return out;
 }
+
+u8 square::from_string(std::string s) {
+    if (s[0] == '-') return square::null;
+
+    return square::at(s[1] - '1', s[0] - 'a');
+}

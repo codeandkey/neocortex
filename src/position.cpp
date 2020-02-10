@@ -12,6 +12,7 @@
 #include "ttable.h"
 
 #include <iostream>
+#include <sstream>
 
 using namespace nc2;
 
@@ -91,7 +92,88 @@ Position::Position() {
 }
 
 Position::Position(std::string fen) {
-    throw std::runtime_error("FEN parsing not implemented!");
+    std::stringstream ss(fen);
+    std::string rinfo, col_to_move, castle, en_passant, halfmove, fullmove;
+
+    ttable_index = 0;
+
+    ss >> rinfo;
+    ss >> col_to_move;
+    ss >> castle;
+    ss >> en_passant;
+    ss >> halfmove;
+    ss >> fullmove;
+
+    color_to_move = (col_to_move[0] == 'w') ? piece::Color::WHITE : piece::Color::BLACK;
+
+    if (color_to_move == piece::Color::BLACK) {
+        ttable_index ^= ttable::get_black_to_move_key();
+    }
+
+    int crank = 7, cfile = 0;
+    for (auto c : rinfo) {
+        if (c == '/') {
+            crank--;
+            cfile = 0;
+            continue;
+        }
+
+        for (auto p : piece::from_uci(c)) {
+            u8 dst = square::at(crank, cfile++);
+            board[dst] = p;
+
+            if (piece::exists(p)) {
+                ttable_index ^= ttable::get_piece_key(dst, p);
+                color_occ[piece::color(p)].flip(dst);
+                global_occ.flip(dst);
+
+                /* Initialize king masks here too. */
+
+                if (p == piece::WHITE_KING) {
+                    king_masks[piece::Color::WHITE] = square::mask(dst);
+                } else if (p == piece::BLACK_KING) {
+                    king_masks[piece::Color::BLACK] = square::mask(dst);
+                }
+            }
+        }
+    }
+
+    castle_states[piece::Color::WHITE][0] = false;
+    castle_states[piece::Color::WHITE][1] = false;
+    castle_states[piece::Color::BLACK][0] = false;
+    castle_states[piece::Color::BLACK][1] = false;
+
+    for (auto c : castle) {
+        switch (c) {
+            case 'K':
+                castle_states[piece::Color::WHITE][1] = true;
+                ttable_index ^= ttable::get_castle_key(piece::Color::WHITE, 1);
+                break;
+            case 'Q':
+                castle_states[piece::Color::WHITE][0] = true;
+                ttable_index ^= ttable::get_castle_key(piece::Color::WHITE, 0);
+                break;
+            case 'k':
+                castle_states[piece::Color::BLACK][1] = true;
+                ttable_index ^= ttable::get_castle_key(piece::Color::BLACK, 1);
+                break;
+            case 'q':
+                castle_states[piece::Color::BLACK][0] = true;
+                ttable_index ^= ttable::get_castle_key(piece::Color::BLACK, 0);
+                break;
+        }
+    }
+
+    quiet = false;
+
+    /* Compute attack masks */
+    update_check_states();
+
+    en_passant_target = square::from_string(en_passant);
+
+    if (en_passant_target != square::null) {
+        ttable_index ^= ttable::get_en_passant_file_key(square::file(en_passant_target));
+    }
 }
 
 std::vector<Position::Transition> Position::gen_legal_moves() {

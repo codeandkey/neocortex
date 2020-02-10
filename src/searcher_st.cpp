@@ -61,6 +61,16 @@ void SearcherST::set_position(Position p) {
     root = p;
 }
 
+search::Result SearcherST::run_search(Position* start, int depth) {
+    search::Result output;
+
+    for (int i = 1; i <= depth; ++i) {
+        output = alpha_beta(start, i, Evaluation(0, true, -1), Evaluation(0, true, 1));
+    }
+
+    return output;
+}
+
 search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta) {
     ++nodes;
 
