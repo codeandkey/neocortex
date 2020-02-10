@@ -82,7 +82,7 @@ namespace nc2 {
              * @param col Color to test.
              * @param is_kingside Side to test.
              *
-             * @return true if color can castle on <is_kingside>, false otherwise.
+             * @return true if color can castle on `is_kingside`, false otherwise.
              */
             bool color_can_castle(u8 col, int is_kingside);
 
@@ -100,7 +100,7 @@ namespace nc2 {
              *
              * @param m Mask to test.
              *
-             * @return true if any squares in <m> are occupied, false otherwise.
+             * @return true if any squares in `m` are occupied, false otherwise.
              */
             bool test_mask(u64 m);
 

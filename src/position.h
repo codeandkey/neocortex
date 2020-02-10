@@ -74,7 +74,7 @@ namespace nc2 {
              *
              * @param col Color to test.
              *
-             * @return true if <col> is in check, false otherwise.
+             * @return true if `col` is in check, false otherwise.
              */
             bool get_color_in_check(u8 col);
 

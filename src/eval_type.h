@@ -84,10 +84,44 @@ namespace nc2 {
              */
             void set_mate_in(int m);
 
+            /**
+             * Compares the evaluation with another.
+             *
+             * @param rhs Right-hand side.
+             * @return true if this < `rhs`.
+             */
             bool operator < (const Evaluation& rhs) const;
+
+            /**
+             * Compares the evaluation with another.
+             *
+             * @param rhs Right-hand side.
+             * @return true if this > `rhs`.
+             */
             bool operator > (const Evaluation& rhs) const;
+
+            /**
+             * Compares the evaluation with another.
+             *
+             * @param rhs Right-hand side.
+             * @return true if this >= `rhs`.
+             */
             bool operator >= (const Evaluation& rhs) const;
+
+            /**
+             * Compares the evaluation with another.
+             *
+             * @param rhs Right-hand side.
+             * @return true if this <= `rhs`.
+             */
             bool operator <= (const Evaluation& rhs) const;
+
+            /**
+             * Compares the evaluation with another.
+             *
+             * @param rhs Right-hand side.
+             * @return true if this == `rhs`.
+             */
             bool operator == (const Evaluation& rhs) const;
         protected:
             float eval;
