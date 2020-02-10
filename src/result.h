@@ -80,7 +80,7 @@ namespace nc2 {
                 /**
                  * Inserts a new move into the line at the beginning and updates the score.
                  *
-                 * @param before_pos Position which <m> is made in.
+                 * @param before_pos Position which `m` is made in.
                  * @param m Move that results in this Result.
                  * @param depth_inc Depth increment.
                  */
