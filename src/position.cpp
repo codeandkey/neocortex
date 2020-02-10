@@ -163,25 +163,6 @@ u64 Position::get_ttable_key() {
     return ttable_index;
 }
 
-u8* Position::get_board() {
-    return board;
-}
-
-void Position::compute_eval() {
-    computed_eval = true;
-
-    float current_eval_value = 0.0f;
-    current_eval_value = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK]);
-
-    if (color_to_move == piece::Color::WHITE) {
-        current_eval_value += eval::TEMPO_VALUE;
-    } else {
-        current_eval_value -= eval::TEMPO_VALUE;
-    }
-
-    current_eval = current_eval_value + eval::noise();
-}
-
 float Position::get_eval_heuristic() {
     if (!computed_eval) compute_eval();
 
@@ -198,6 +179,10 @@ u8 Position::get_color_to_move() {
 
 bool Position::get_color_in_check(u8 col) {
     return check_states[col];
+}
+
+u8* Position::get_board() {
+    return board;
 }
 
 std::vector<Position::Transition> Position::gen_pseudolegal_moves() {
@@ -677,4 +662,19 @@ bool Position::update_check_states() {
 
     /* The color that just moved cannot be in check. */
     return !check_states[piece::colorflip(color_to_move)];
+}
+
+void Position::compute_eval() {
+    computed_eval = true;
+
+    float current_eval_value = 0.0f;
+    current_eval_value = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK]);
+
+    if (color_to_move == piece::Color::WHITE) {
+        current_eval_value += eval::TEMPO_VALUE;
+    } else {
+        current_eval_value -= eval::TEMPO_VALUE;
+    }
+
+    current_eval = current_eval_value + eval::noise();
 }
