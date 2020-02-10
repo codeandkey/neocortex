@@ -9,10 +9,6 @@ using namespace nc2;
 
 SearcherST::SearcherST(std::ostream& uci_out) : uci_out(uci_out) {}
 
-void SearcherST::set_position(Position p) {
-    root = p;
-}
-
 void SearcherST::go(int wtime, int btime) {
     int movetime = (root.get_color_to_move() == piece::Color::WHITE) ? wtime : btime;
     int search_depth;
@@ -59,6 +55,10 @@ void SearcherST::go(int wtime, int btime) {
     std::cerr << "Search stopped at depth " << (i - 1) << ", evaluation " << last_result.get_score().to_string() << " move " << last_result.get_bestmove().to_string() << "\n";
 
     uci_out << "bestmove " << last_result.get_bestmove().to_string() << "\n";
+}
+
+void SearcherST::set_position(Position p) {
+    root = p;
 }
 
 search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta) {
