@@ -9,16 +9,38 @@
 
 namespace nc2 {
     namespace eval {
+        /**
+         * Initializes the eval score tables.
+         * Must be called before any other eval calls.
+         */
         void init();
 
-        float development(u8* board);
+        /**
+         * Gets the center control score for a given attack mask.
+         * Always positive.
+         *
+         * @param attack_mask Mask to score.
+         * @return Center control score.
+         */
         float center_control(u64 attack_mask);
-        float material_diff(u8* board);
-        float advanced_pawns(u8* board, u8 col);
-        float phase(u8* board);
 
+        /**
+         * Evaluates a position.
+         *
+         * @param board Board state.
+         * @param white_attacks White attack mask.
+         * @param black_attacks Black attack mask.
+         *
+         * @return Heuristic position evaluation.
+         */
         float evaluate(u8* board, u64 white_attacks, u64 black_attacks);
 
+        /**
+         * Gets noise which can be added to a heuristic. May be positive or negative.
+         * Amplitude is determined by NOISE_THRESHOLD.
+         *
+         * @return Evaluation noise.
+         */
         float noise();
 
         constexpr float TEMPO_VALUE = 0.15f;

@@ -85,21 +85,6 @@ float eval::center_control(u64 attack_mask) {
     return CENTER_CONTROL_VALUE * ct;
 }
 
-float eval::phase(u8* board) {
-    /* compute non-pawn material, find difference */
-    float npm = 0.0f;
-
-    for (u8 s = 0; s < 64; ++s) {
-        u8 p = board[s];
-        if (!piece::exists(p)) continue;
-        if (piece::type(p) == piece::Type::PAWN) continue;
-
-        npm += _nc2_eval_type_values[piece::type(p)];
-    }
-
-    return 1.0f - (npm / _nc2_eval_total_npm);
-}
-
 float eval::evaluate(u8* board, u64 white_attacks, u64 black_attacks) {
     float score = 0.0f;
 
