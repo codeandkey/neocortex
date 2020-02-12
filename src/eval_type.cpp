@@ -1,4 +1,5 @@
 #include "eval_type.h"
+#include "piece.h"
 
 #include <stdexcept>
 
@@ -8,10 +9,17 @@ Evaluation::Evaluation(float eval, bool has_mate, int mate_in) {
     this->eval = eval;
     this->has_mate = has_mate;
     this->mate_in = mate_in;
+}
 
-    if (this->has_mate) {
-        this->eval = 0.0f;
+Evaluation::Evaluation(u8 col) {
+    if (col == piece::Color::WHITE) {
+        this->eval = -1.0f;
+    } else {
+        this->eval = 1.0f;
     }
+
+    this->has_mate = true;
+    this->mate_in = 0;
 }
 
 float Evaluation::get_eval() {
@@ -36,6 +44,9 @@ std::string Evaluation::to_string() {
     if (has_mate) {
         out += "#";
         out += std::to_string(mate_in);
+        out += " (";
+        out += std::to_string(eval);
+        out += ")";
     } else {
         out += std::to_string(eval);
     }

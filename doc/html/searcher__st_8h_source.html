@@ -89,25 +89,28 @@ $(function() {
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;            <span class="keywordtype">void</span> <a class="code" href="classnc2_1_1SearcherST.html#a6c0e08aed35b58eb04f4018bec7aa112">set_position</a>(<a class="code" href="classnc2_1_1Position.html">Position</a> p);</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keyword">private</span>:</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            std::ostream&amp; uci_out;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            <a class="code" href="classnc2_1_1Position.html">Position</a> root;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <span class="keyword">typedef</span> std::pair&lt;Move, search::Result&gt; Edge;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            <a class="code" href="classnc2_1_1search_1_1Result.html">search::Result</a> alpha_beta(<a class="code" href="classnc2_1_1Position.html">Position</a>* p, <span class="keywordtype">int</span> d, <a class="code" href="classnc2_1_1Evaluation.html">Evaluation</a> alpha, <a class="code" href="classnc2_1_1Evaluation.html">Evaluation</a> beta);</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            <a class="code" href="classnc2_1_1search_1_1Result.html">search::Result</a> quiescence(<a class="code" href="classnc2_1_1Position.html">Position</a>* p, <a class="code" href="classnc2_1_1Evaluation.html">Evaluation</a> alpha, <a class="code" href="classnc2_1_1Evaluation.html">Evaluation</a> beta);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            <span class="keywordtype">int</span> nodes;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            <span class="keywordtype">int</span> thits;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    };</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;}</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            <a class="code" href="classnc2_1_1Result.html">Result</a> <a class="code" href="classnc2_1_1SearcherST.html#a2ee2abcab8b01f29bb3d2331ffce0aaa">run_search</a>(<a class="code" href="classnc2_1_1Position.html">Position</a>* start, <span class="keywordtype">int</span> depth);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keyword">private</span>:</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            std::ostream&amp; uci_out;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <a class="code" href="classnc2_1_1Position.html">Position</a> root;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            <span class="keyword">typedef</span> std::pair&lt;Position::Transition, Result&gt; Edge;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            <a class="code" href="classnc2_1_1Result.html">Result</a> alpha_beta(<a class="code" href="classnc2_1_1Position.html">Position</a>* p, <span class="keywordtype">int</span> d, <a class="code" href="classnc2_1_1Evaluation.html">Evaluation</a> alpha, <a class="code" href="classnc2_1_1Evaluation.html">Evaluation</a> beta);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <a class="code" href="classnc2_1_1Result.html">Result</a> quiescence(<a class="code" href="classnc2_1_1Position.html">Position</a>* p, <a class="code" href="classnc2_1_1Evaluation.html">Evaluation</a> alpha, <a class="code" href="classnc2_1_1Evaluation.html">Evaluation</a> beta);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="keywordtype">int</span> nodes;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <span class="keywordtype">int</span> thits;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    };</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassnc2_1_1Evaluation_html"><div class="ttname"><a href="classnc2_1_1Evaluation.html">nc2::Evaluation</a></div><div class="ttdef"><b>Definition:</b> eval_type.h:6</div></div>
-<div class="ttc" id="aclassnc2_1_1Position_html"><div class="ttname"><a href="classnc2_1_1Position.html">nc2::Position</a></div><div class="ttdef"><b>Definition:</b> position.h:12</div></div>
+<div class="ttc" id="aclassnc2_1_1SearcherST_html_a2ee2abcab8b01f29bb3d2331ffce0aaa"><div class="ttname"><a href="classnc2_1_1SearcherST.html#a2ee2abcab8b01f29bb3d2331ffce0aaa">nc2::SearcherST::run_search</a></div><div class="ttdeci">Result run_search(Position *start, int depth)</div><div class="ttdef"><b>Definition:</b> searcher_st.cpp:64</div></div>
+<div class="ttc" id="aclassnc2_1_1Evaluation_html"><div class="ttname"><a href="classnc2_1_1Evaluation.html">nc2::Evaluation</a></div><div class="ttdef"><b>Definition:</b> eval_type.h:8</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html"><div class="ttname"><a href="classnc2_1_1Position.html">nc2::Position</a></div><div class="ttdef"><b>Definition:</b> position.h:13</div></div>
 <div class="ttc" id="aclassnc2_1_1SearcherST_html"><div class="ttname"><a href="classnc2_1_1SearcherST.html">nc2::SearcherST</a></div><div class="ttdef"><b>Definition:</b> searcher_st.h:13</div></div>
-<div class="ttc" id="aclassnc2_1_1search_1_1Result_html"><div class="ttname"><a href="classnc2_1_1search_1_1Result.html">nc2::search::Result</a></div><div class="ttdef"><b>Definition:</b> result.h:12</div></div>
+<div class="ttc" id="aclassnc2_1_1Result_html"><div class="ttname"><a href="classnc2_1_1Result.html">nc2::Result</a></div><div class="ttdef"><b>Definition:</b> result.h:10</div></div>
 <div class="ttc" id="aclassnc2_1_1SearcherST_html_a6c0e08aed35b58eb04f4018bec7aa112"><div class="ttname"><a href="classnc2_1_1SearcherST.html#a6c0e08aed35b58eb04f4018bec7aa112">nc2::SearcherST::set_position</a></div><div class="ttdeci">void set_position(Position p)</div><div class="ttdef"><b>Definition:</b> searcher_st.cpp:60</div></div>
 <div class="ttc" id="aclassnc2_1_1SearcherST_html_ae31267b3ee3b1024dc5f0e138d6dd218"><div class="ttname"><a href="classnc2_1_1SearcherST.html#ae31267b3ee3b1024dc5f0e138d6dd218">nc2::SearcherST::go</a></div><div class="ttdeci">void go(int wtime, int btime)</div><div class="ttdef"><b>Definition:</b> searcher_st.cpp:12</div></div>
 <div class="ttc" id="aclassnc2_1_1SearcherST_html_a59ec8462dcd92ed36bae21a1f022d1be"><div class="ttname"><a href="classnc2_1_1SearcherST.html#a59ec8462dcd92ed36bae21a1f022d1be">nc2::SearcherST::SearcherST</a></div><div class="ttdeci">SearcherST(std::ostream &amp;uci_out)</div><div class="ttdef"><b>Definition:</b> searcher_st.cpp:10</div></div>

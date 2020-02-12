@@ -3,101 +3,84 @@
 #include <string>
 #include <list>
 
-#include "position.h"
 #include "eval_type.h"
 #include "move.h"
 
 namespace nc2 {
-    namespace search {
-        class Result {
-            public:
-                /**
-                 * Construct a new Result.
-                 *
-                 * @param pos Result source position
-                 * @param score Search score
-                 * @param pv Principal variation line
-                 */
-                Result(Position pos = Position(), Evaluation score = Evaluation(), std::list<Move> pv = std::list<Move>());
+    class Result {
+        public:
+            /**
+             * Construct a new Result.
+             *
+             * @param key Transposition table key for the current position.
+             * @param score Search score
+             * @param pv Principal variation line
+             */
+            Result(u64 key = 0, Evaluation score = Evaluation(), std::list<Move> pv = std::list<Move>());
 
-                /**
-                 * Gets the best move in this line.
-                 *
-                 * @return Best move, if any.
-                 */
-                Move get_bestmove();
+            /**
+             * Gets the transposition key for the result.
+             *
+             * @return Transposition key.
+             */
+            u64 get_key();
 
-                /**
-                 * Gets the score for this line.
-                 *
-                 * @return Line evaluation.
-                 */
-                Evaluation get_score();
+            /**
+             * Gets the best move in this line.
+             *
+             * @return Best move, if any.
+             */
+            Move get_bestmove();
 
-                /**
-                 * Gets the immediate heuristic for the source position.
-                 *
-                 * @return Evaluation heuristic.
-                 */
-                float get_current();
+            /**
+             * Gets the score for this line.
+             *
+             * @return Line evaluation.
+             */
+            Evaluation get_score();
 
-                /**
-                 * Gets the source position.
-                 *
-                 * @return Position pointer
-                 */
-                Position* get_position();
+            /**
+             * Gets the PV line.
+             *
+             * @return PV moves.
+             */
+            std::list<Move> get_pv();
 
-                /**
-                 * Gets the PV line.
-                 *
-                 * @return PV moves.
-                 */
-                std::list<Move> get_pv();
+            /**
+             * Gets the PV in a printable format.
+             *
+             * @return PV string
+             */
+            std::string get_pv_string();
 
-                /**
-                 * Gets the PV in a printable format.
-                 *
-                 * @return PV string
-                 */
-                std::string get_pv_string();
+            /**
+             * Gets the depth of this result.
+             *
+             * @return Result depth.
+             */
+            int get_depth();
 
-                /**
-                 * Gets the depth of this result.
-                 *
-                 * @return Result depth.
-                 */
-                int get_depth();
+            /**
+             * Inserts a new move into the line at the beginning and updates the score.
+             *
+             * @param new_key New transposition key (Key from position moved from)
+             * @param m Move that results in this Result.
+             * @param depth_inc Depth increment.
+             */
+            void insert_move(u64 new_key, Move m, int depth_inc = 1);
 
-                /**
-                 * Tests if the line source position matches some other position.
-                 *
-                 * @param pos Position to test.
-                 * @return true if pos is equal to the source position, false otherwise
-                 */
-                bool check_position(Position* pos);
+            /**
+             * Updates the result from another one.
+             * Replaces all fields.
+             *
+             * @param from Search result to update from.
+             */
+            void update(Result& from);
 
-                /**
-                 * Inserts a new move into the line at the beginning and updates the score.
-                 *
-                 * @param before_pos Position which `m` is made in.
-                 * @param m Move that results in this Result.
-                 * @param depth_inc Depth increment.
-                 */
-                void insert_move(Position before_pos, Move m, int depth_inc = 1);
-
-                /**
-                 * Updates the result from another. Called when a new result is being stored in our place.
-                 *
-                 * @param from New result information.
-                 */
-                void update(search::Result& from);
-
-            private:
-                Position pos;
-                Evaluation score;
-                std::list<Move> pv;
-                int depth;
-        };
-    }
+        private:
+            u64 key;
+            Evaluation score;
+            std::list<Move> pv;
+            int depth;
+    };
 }

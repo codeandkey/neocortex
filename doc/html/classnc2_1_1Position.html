@@ -92,8 +92,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae9f0d5d9693288fb3cbeb5a1ea645a22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4cade1cb0d10f63c893a9973304c197"><td class="memItemLeft" align="right" valign="top">u64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Position.html#ae4cade1cb0d10f63c893a9973304c197">get_ttable_key</a> ()</td></tr>
 <tr class="separator:ae4cade1cb0d10f63c893a9973304c197"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33084d5030cf42c0a97c5c80764b0c16"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Position.html#a33084d5030cf42c0a97c5c80764b0c16">get_eval_heuristic</a> ()</td></tr>
-<tr class="separator:a33084d5030cf42c0a97c5c80764b0c16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5ed375053dfb195f0cfbd500aa178c7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classnc2_1_1Result.html">Result</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Position.html#ae5ed375053dfb195f0cfbd500aa178c7">get_best_line</a> (int *thit_counter)</td></tr>
+<tr class="separator:ae5ed375053dfb195f0cfbd500aa178c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f480f168fe03c33c19fac3d5c082caf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Position.html#a3f480f168fe03c33c19fac3d5c082caf">store_best_line</a> (<a class="el" href="classnc2_1_1Result.html">Result</a> &amp;line)</td></tr>
+<tr class="separator:a3f480f168fe03c33c19fac3d5c082caf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19cc70a4bfe86c521dc46bde650e056b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Position.html#a19cc70a4bfe86c521dc46bde650e056b">is_quiet</a> ()</td></tr>
 <tr class="separator:a19cc70a4bfe86c521dc46bde650e056b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6a811b225ba9b6e542b00a38bb28a43"><td class="memItemLeft" align="right" valign="top">u8&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Position.html#ad6a811b225ba9b6e542b00a38bb28a43">get_color_to_move</a> ()</td></tr>
@@ -164,6 +166,32 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Generates legal moves for the position.</p>
 <dl class="section return"><dt>Returns</dt><dd>Legal transition list. </dd></dl>
+
+</div>
+</div>
+<a id="ae5ed375053dfb195f0cfbd500aa178c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5ed375053dfb195f0cfbd500aa178c7">&#9670;&nbsp;</a></span>get_best_line()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classnc2_1_1Result.html">Result</a> &amp; Position::get_best_line </td>
+          <td>(</td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>thit_counter</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Gets the stored ttable result, or a 0-depth eval for the position.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">thit_counter</td><td>Incremented if transposition table hits. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Best known PV and score for this position. </dd></dl>
 
 </div>
 </div>
@@ -250,25 +278,6 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a33084d5030cf42c0a97c5c80764b0c16"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a33084d5030cf42c0a97c5c80764b0c16">&#9670;&nbsp;</a></span>get_eval_heuristic()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">float Position::get_eval_heuristic </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Gets the evaluation heuristic for this position. NOTE: this is NOT a search, but just the estimated position value.</p>
-<dl class="section return"><dt>Returns</dt><dd>Eval heuristic. </dd></dl>
-
-</div>
-</div>
 <a id="ae4cade1cb0d10f63c893a9973304c197"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae4cade1cb0d10f63c893a9973304c197">&#9670;&nbsp;</a></span>get_ttable_key()</h2>
 
@@ -304,6 +313,31 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <p>Checks if the node is quiet. Loud positions occur when a piece is captured or check is delivered.</p>
 <dl class="section return"><dt>Returns</dt><dd>true if position is quiet, false otherwise. </dd></dl>
+
+</div>
+</div>
+<a id="a3f480f168fe03c33c19fac3d5c082caf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f480f168fe03c33c19fac3d5c082caf">&#9670;&nbsp;</a></span>store_best_line()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Position::store_best_line </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnc2_1_1Result.html">Result</a> &amp;&#160;</td>
+          <td class="paramname"><em>line</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Stores a new best line for this position.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">line</td><td>New best line. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

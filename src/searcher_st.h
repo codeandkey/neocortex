@@ -43,13 +43,13 @@ namespace nc2 {
              *
              * @return Search result.
              */
-            search::Result run_search(Position* start, int depth);
+            Result run_search(Position* start, int depth);
 
         private:
             std::ostream& uci_out;
             Position root;
 
-            typedef std::pair<Move, search::Result> Edge;
+            typedef std::pair<Position::Transition, Result> Edge;
 
             /**
              * Runs an alpha beta search on a position.
@@ -61,7 +61,7 @@ namespace nc2 {
              *
              * @return Search result.
              */
-            search::Result alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta);
+            Result alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta);
 
             /**
              * Runs a quiescence search on a non-quiet position.
@@ -72,7 +72,7 @@ namespace nc2 {
              *
              * @return Search result (will be of 0 depth)
              */
-            search::Result quiescence(Position* p, Evaluation alpha, Evaluation beta);
+            Result quiescence(Position* p, Evaluation alpha, Evaluation beta);
 
             int nodes;
             int thits;

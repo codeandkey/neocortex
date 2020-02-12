@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "types.h"
+
 namespace nc2 {
     class Evaluation {
         public:
@@ -13,6 +15,13 @@ namespace nc2 {
              * @param mate_in Number of moves until mate. Negative for black.
              */
             Evaluation(float eval = 0.0f, bool has_mate = false, int mate_in = 0);
+
+            /**
+             * Initializes a checkmated evaluation.
+             *
+             * @param color Color that is checkmated
+             */
+            Evaluation(u8 col);
 
             /**
              * Returns the evaluation value.

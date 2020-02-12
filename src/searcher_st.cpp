@@ -13,7 +13,7 @@ void SearcherST::go(int wtime, int btime) {
     int movetime = (root.get_color_to_move() == piece::Color::WHITE) ? wtime : btime;
     int search_depth;
 
-    search::Result last_result;
+    Result last_result;
 
     if (movetime > 0) {
         if (movetime < 3500) {
@@ -61,8 +61,8 @@ void SearcherST::set_position(Position p) {
     root = p;
 }
 
-search::Result SearcherST::run_search(Position* start, int depth) {
-    search::Result output;
+Result SearcherST::run_search(Position* start, int depth) {
+    Result output;
 
     for (int i = 1; i <= depth; ++i) {
         output = alpha_beta(start, i, Evaluation(0, true, -1), Evaluation(0, true, 1));
@@ -71,25 +71,20 @@ search::Result SearcherST::run_search(Position* start, int depth) {
     return output;
 }
 
-search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta) {
+Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Evaluation beta) {
     ++nodes;
 
     if (!d) {
         if (p->is_quiet()) {
-            return search::Result(*p, Evaluation(p->get_eval_heuristic()));
+            return p->get_best_line(&thits);
         } else {
             return quiescence(p, alpha, beta);
         }
     }
 
-    /* Load any potential thits. */
-    search::Result* current_hit = ttable::lookup(p);
-
-    if (current_hit) {
-        if (current_hit->get_depth() >= d) {
-	    ++thits;
-            return *current_hit;
-        }
+    /* Check if the current position is a good thit. */
+    if (p->get_best_line(&thits).get_depth() >= d) {
+        return p->get_best_line(&thits);
     }
 
     /* No thit, grab legal next moves from position. */
@@ -97,9 +92,9 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
 
     if (!legal_moves.size()) {
         if (!p->get_color_in_check(p->get_color_to_move())) {
-            return search::Result(*p, Evaluation(0, false, 0), std::list<Move>());
+            return Result(p->get_ttable_key(), Evaluation(0, false, 0));
         } else {
-            return search::Result(*p, Evaluation(0, true, 0), std::list<Move>());
+            return Result(p->get_ttable_key(), Evaluation(p->get_color_to_move()));
         }
     }
 
@@ -107,13 +102,7 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
     std::list<Edge> next_edges;
 
     for (auto m : legal_moves) {
-        search::Result* hit = ttable::lookup(&m.second);
-
-        if (hit) {
-            next_edges.push_back(Edge(m.first, *hit));
-        } else {
-            next_edges.push_back(Edge(m.first, search::Result(m.second, Evaluation(m.second.get_eval_heuristic()))));
-        }
+        next_edges.push_back(Edge(m, m.second.get_best_line(&thits)));
     }
 
     if (p->get_color_to_move() == piece::Color::WHITE) {
@@ -125,11 +114,10 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
         /* Maximize evaluation. */
         std::list<Edge> best_lines;
         Evaluation current_best_score(0, true, -1);
-        best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
         for (auto e : next_edges) {
             if (e.second.get_depth() < d - 1) {
-                e.second = alpha_beta(e.second.get_position(), d - 1, alpha, beta);
+                e.second = alpha_beta(&e.first.second, d - 1, alpha, beta);
             }
 
             if (e.second.get_score().get_forced_mate() && e.second.get_score().get_mate_in() == 0) {
@@ -158,12 +146,11 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
         });
 
         /* Push the new move to the PV and return the new result. */
-        search::Result best_line = best_lines.front().second;
+        Result best_line = best_lines.front().second;
 
-        best_line.insert_move(*p, best_lines.front().first);
+        best_line.insert_move(p->get_ttable_key(), best_lines.front().first.first);
 
-        /* Position wasn't a table hit, so store it in the ttable. */
-        ttable::store(p, best_line);
+        p->store_best_line(best_line);
 
         return best_line;
     } else {
@@ -175,11 +162,10 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
         /* Maximize evaluation. */
         std::list<Edge> best_lines;
         Evaluation current_best_score(0, true, 1);
-        best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
         for (auto e : next_edges) {
             if (e.second.get_depth() < d - 1) {
-                e.second = alpha_beta(e.second.get_position(), d - 1, alpha, beta);
+                e.second = alpha_beta(&e.first.second, d - 1, alpha, beta);
             }
 
             if (e.second.get_score().get_forced_mate() && e.second.get_score().get_mate_in() == 0) {
@@ -208,56 +194,62 @@ search::Result SearcherST::alpha_beta(Position* p, int d, Evaluation alpha, Eval
         });
 
         /* Push the new move to the PV and return the new result. */
-        search::Result best_line = best_lines.front().second;
+        Result best_line = best_lines.front().second;
 
-        best_line.insert_move(*p, best_lines.front().first);
+        best_line.insert_move(p->get_ttable_key(), best_lines.front().first.first);
 
         /* Position wasn't a table hit, so store it in the ttable. */
-        ttable::store(p, best_line);
+        p->store_best_line(best_line);
 
         return best_line;
     }
 }
 
-search::Result SearcherST::quiescence(Position* p, Evaluation alpha, Evaluation beta) {
+Result SearcherST::quiescence(Position* p, Evaluation alpha, Evaluation beta) {
     ++nodes;
 
     if (p->is_quiet()) {
-        return search::Result(*p, p->get_eval_heuristic());
+        return p->get_best_line(&thits);
     }
 
     std::vector<Position::Transition> legal_moves = p->gen_legal_moves();
 
     if (!legal_moves.size()) {
         if (!p->get_color_in_check(p->get_color_to_move())) {
-            return search::Result(*p, Evaluation(0, false, 0));
+            return Result(p->get_ttable_key(), Evaluation(0, false, 0));
         } else {
-            return search::Result(*p, Evaluation(0, true, 0));
+            return Result(p->get_ttable_key(), Evaluation(p->get_color_to_move()));
         }
     }
 
+    /* Make into list of edges and try early lookups. */
+    std::list<Edge> next_edges;
+
+    for (auto m : legal_moves) {
+        next_edges.push_back(Edge(m, m.second.get_best_line(&thits)));
+    }
+
     if (p->get_color_to_move() == piece::Color::WHITE) {
-        std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval_heuristic() > b.second.get_eval_heuristic();
+        next_edges.sort([&](Edge& lhs, Edge& rhs) {
+            return lhs.second.get_score() > rhs.second.get_score();
         });
 
         /* Maximize evaluation. */
         std::list<Edge> best_lines;
         Evaluation current_best_score(0, true, -1);
-        best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
-        for (auto m : legal_moves) {
-            search::Result inner = quiescence(&m.second, alpha, beta);
+        for (auto e : next_edges) {
+            Result inner = quiescence(&e.first.second, alpha, beta);
 
             if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
                 best_lines.clear();
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
                 break;
             } else if (inner.get_score() == current_best_score) {
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
             } else if (inner.get_score() > current_best_score) {
                 best_lines.clear();
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
 
                 current_best_score = inner.get_score();
 
@@ -275,34 +267,33 @@ search::Result SearcherST::quiescence(Position* p, Evaluation alpha, Evaluation 
         });
 
         /* Push the new move to the PV and return the new result. */
-        search::Result best_line = best_lines.front().second;
+        Result best_line = best_lines.front().second;
 
         /* When inserting quiescence moves, don't consider them a searched depth. */
-        best_line.insert_move(*p, best_lines.front().first, 0);
+        best_line.insert_move(p->get_ttable_key(), best_lines.front().first.first, 0);
 
         return best_line;
     } else {
-        std::sort(legal_moves.begin(), legal_moves.end(), [=](Position::Transition& a, Position::Transition& b) {
-            return a.second.get_eval_heuristic() < b.second.get_eval_heuristic();
+        next_edges.sort([&](Edge& lhs, Edge& rhs) {
+            return lhs.second.get_score() < rhs.second.get_score();
         });
 
         /* Minimize evaluation. */
         std::list<Edge> best_lines;
         Evaluation current_best_score(0, true, 1);
-        best_lines.push_back(Edge(legal_moves[0].first, search::Result(*p, current_best_score, std::list<Move>{legal_moves[0].first})));
 
-        for (auto m : legal_moves) {
-            search::Result inner = quiescence(&m.second, alpha, beta);
+        for (auto e : next_edges) {
+            Result inner = quiescence(&e.first.second, alpha, beta);
 
             if (inner.get_score().get_forced_mate() && inner.get_score().get_mate_in() == 0) {
                 best_lines.clear();
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
                 break;
             } else if (inner.get_score() == current_best_score) {
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
             } else if (inner.get_score() < current_best_score) {
                 best_lines.clear();
-                best_lines.push_back(Edge(m.first, inner));
+                best_lines.push_back(e);
 
                 current_best_score = inner.get_score();
 
@@ -320,10 +311,10 @@ search::Result SearcherST::quiescence(Position* p, Evaluation alpha, Evaluation 
         });
 
         /* Push the new move to the PV and return the new result. */
-        search::Result best_line = best_lines.front().second;
+        Result best_line = best_lines.front().second;
 
         /* When inserting quiescence moves, don't consider them a searched depth. */
-        best_line.insert_move(*p, best_lines.front().first, 0);
+        best_line.insert_move(p->get_ttable_key(), best_lines.front().first.first, 0);
 
         return best_line;
     }

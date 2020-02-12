@@ -23,7 +23,7 @@ static const u64 _nc2_position_castle_noattack_masks[2][2] = {
     { square::MASK_E8 | square::MASK_D8 | square::MASK_C8, square::MASK_E8 | square::MASK_F8 | square::MASK_G8 },
 };
 
-Position::Position() {
+Position::Position() : best_line(0) {
     ttable_index = 0;
 
     /* Initialize board pieces. */
@@ -86,12 +86,9 @@ Position::Position() {
 
     /* Initialize en passant target */
     en_passant_target = square::null;
-
-    /* Not evaluated by default. */
-    computed_eval = false;
 }
 
-Position::Position(std::string fen) {
+Position::Position(std::string fen) : best_line(0) {
     std::stringstream ss(fen);
     std::string rinfo, col_to_move, castle, en_passant, halfmove, fullmove;
 
@@ -192,7 +189,6 @@ std::vector<Position::Transition> Position::gen_legal_moves() {
             it = pl_moves.erase(it);
         } else {
             //std::cerr << "Accepting " << (*it).first.to_string() << "\n";
-            (*it).second.computed_eval = false; // force the resulting position to be re-evaluated
             ++it;
         }
     }
@@ -245,10 +241,36 @@ u64 Position::get_ttable_key() {
     return ttable_index;
 }
 
-float Position::get_eval_heuristic() {
-    if (!computed_eval) compute_eval();
+Result& Position::get_best_line(int* thit_counter) {
+    if (best_line.get_key() != get_ttable_key()) {
+        /* Needs update! Try and get from ttable, or generate a new one if needed. */
+        Result* thit = ttable::lookup(ttable_index);
 
-    return current_eval;
+        if (thit) {
+            best_line.update(*thit);
+
+            if (thit_counter) ++*thit_counter;
+        } else {
+            float current_eval_value = 0.0f;
+            current_eval_value = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK]);
+
+            if (color_to_move == piece::Color::WHITE) {
+                current_eval_value += eval::TEMPO_VALUE;
+            } else {
+                current_eval_value -= eval::TEMPO_VALUE;
+            }
+
+            current_eval_value += eval::noise();
+            best_line = Result(ttable_index, Evaluation(current_eval_value));
+        }
+    }
+
+    return best_line;
+}
+
+void Position::store_best_line(Result& new_best_line) {
+    best_line.update(new_best_line);
+    ttable::store(best_line);
 }
 
 bool Position::is_quiet() {
@@ -744,19 +766,4 @@ bool Position::update_check_states() {
 
     /* The color that just moved cannot be in check. */
     return !check_states[piece::colorflip(color_to_move)];
-}
-
-void Position::compute_eval() {
-    computed_eval = true;
-
-    float current_eval_value = 0.0f;
-    current_eval_value = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK]);
-
-    if (color_to_move == piece::Color::WHITE) {
-        current_eval_value += eval::TEMPO_VALUE;
-    } else {
-        current_eval_value -= eval::TEMPO_VALUE;
-    }
-
-    current_eval = current_eval_value + eval::noise();
 }

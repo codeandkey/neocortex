@@ -10,18 +10,18 @@ namespace nc2 {
         /**
          * Looks up an entry in the transposition table.
          *
-         * @param p Position to look up.
+         * @param key Transposition key to look up.
          *
          * @return Saved position result, or NULL if not found.
          */
-        search::Result* lookup(Position* p);
+        Result* lookup(u64 key);
 
         /**
          * Stores a new result in the transposition table.
          *
-         * @param p Position to store.
+         * @param key Transposition key to store under.
          * @param res Search result for position.
          */
-        void store(Position* p, search::Result res);
+        void store(Result& res);
     }
 }

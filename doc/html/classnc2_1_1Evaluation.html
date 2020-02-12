@@ -78,6 +78,8 @@ $(function() {
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a0282eec663eb026d80e762bf5bede81a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Evaluation.html#a0282eec663eb026d80e762bf5bede81a">Evaluation</a> (float eval=0.0f, bool has_mate=false, int mate_in=0)</td></tr>
 <tr class="separator:a0282eec663eb026d80e762bf5bede81a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8cfad82dbb49a3bf740dfcd221c22b09"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Evaluation.html#a8cfad82dbb49a3bf740dfcd221c22b09">Evaluation</a> (u8 col)</td></tr>
+<tr class="separator:a8cfad82dbb49a3bf740dfcd221c22b09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4c1bd01bd50a18049ca85bdf01037a2"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Evaluation.html#ae4c1bd01bd50a18049ca85bdf01037a2">get_eval</a> ()</td></tr>
 <tr class="separator:ae4c1bd01bd50a18049ca85bdf01037a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a568916ef5341726800ffc80a70bcaf63"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnc2_1_1Evaluation.html#a568916ef5341726800ffc80a70bcaf63">get_forced_mate</a> ()</td></tr>
@@ -121,7 +123,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>mate_in</b></td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0282eec663eb026d80e762bf5bede81a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0282eec663eb026d80e762bf5bede81a">&#9670;&nbsp;</a></span>Evaluation()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0282eec663eb026d80e762bf5bede81a">&#9670;&nbsp;</a></span>Evaluation() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -157,6 +159,31 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>mate_in</b></td></tr>
     <tr><td class="paramname">eval</td><td><a class="el" href="classnc2_1_1Evaluation.html">Evaluation</a> value. </td></tr>
     <tr><td class="paramname">has_mate</td><td>Should be true if there is mate on the board. </td></tr>
     <tr><td class="paramname">mate_in</td><td>Number of moves until mate. Negative for black. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a8cfad82dbb49a3bf740dfcd221c22b09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8cfad82dbb49a3bf740dfcd221c22b09">&#9670;&nbsp;</a></span>Evaluation() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Evaluation::Evaluation </td>
+          <td>(</td>
+          <td class="paramtype">u8&#160;</td>
+          <td class="paramname"><em>col</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Initializes a checkmated evaluation.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">color</td><td>Color that is checkmated </td></tr>
   </table>
   </dd>
 </dl>

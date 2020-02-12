@@ -7,6 +7,7 @@
 #include "move.h"
 #include "occ.h"
 #include "eval_type.h"
+#include "result.h"
 
 namespace nc2 {
     class Position {
@@ -47,12 +48,19 @@ namespace nc2 {
             u64 get_ttable_key();
 
             /**
-             * Gets the evaluation heuristic for this position.
-             * NOTE: this is NOT a search, but just the estimated position value.
+             * Gets the stored ttable result, or a 0-depth eval for the position.
              *
-             * @return Eval heuristic.
+             * @param thit_counter Incremented if transposition table hits.
+             * @return Best known PV and score for this position.
              */
-            float get_eval_heuristic();
+            Result& get_best_line(int* thit_counter);
+
+            /**
+             * Stores a new best line for this position.
+             *
+             * @param line New best line.
+             */
+            void store_best_line(Result& line);
 
             /**
              * Checks if the node is quiet.
@@ -103,8 +111,7 @@ namespace nc2 {
             bool castle_states[2][2]; /* [color][kingside] */
             int fullmove_number, halfmove_clock;
 
-            bool computed_eval;
-            float current_eval;
+            Result best_line;
 
             /**
              * Generates all pseudolegal moves.
@@ -152,10 +159,5 @@ namespace nc2 {
              * @return true if the position is legal, false otherwise.
              */
             bool update_check_states();
-
-            /**
-             * Computes the eval heuristic if it needs an update.
-             */
-            void compute_eval();
     };
 }
