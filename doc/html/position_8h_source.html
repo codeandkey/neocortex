@@ -117,42 +117,43 @@ $(function() {
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            u64 attack_masks[2]; <span class="comment">/* [color] */</span></div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            u64 king_masks[2]; <span class="comment">/* [color] */</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            <span class="keywordtype">bool</span> check_states[2]; <span class="comment">/* [color] */</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            <span class="keywordtype">bool</span> quiet;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            <span class="comment">/* FEN bits, game state */</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            <span class="keywordtype">bool</span> castle_states[2][2]; <span class="comment">/* [color][kingside] */</span></div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            <span class="keywordtype">int</span> fullmove_number, halfmove_clock;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            <a class="code" href="classnc2_1_1Result.html">Result</a> best_line;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            std::vector&lt;Transition&gt; gen_pseudolegal_moves();</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            </div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            <span class="keywordtype">void</span> filter_basic_moves(<span class="keyword">const</span> std::vector&lt;Move&gt;&amp; source, std::vector&lt;Transition&gt;* out);</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            <span class="keywordtype">void</span> filter_pawn_captures(<span class="keyword">const</span> std::vector&lt;Move&gt;&amp; source, std::vector&lt;Transition&gt;* out);</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160; </div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            <span class="keywordtype">void</span> filter_pawn_advances(<span class="keyword">const</span> std::vector&lt;Move&gt;&amp; source, std::vector&lt;Transition&gt;* out);</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            std::vector&lt;Transition&gt; gen_castle_moves();</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            <span class="keywordtype">bool</span> update_check_states();</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    };</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;}</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            u64 king_attack_masks[2]; <span class="comment">/* [color] */</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keywordtype">bool</span> check_states[2]; <span class="comment">/* [color] */</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            <span class="keywordtype">bool</span> quiet;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            <span class="comment">/* FEN bits, game state */</span></div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            <span class="keywordtype">bool</span> castle_states[2][2]; <span class="comment">/* [color][kingside] */</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            <span class="keywordtype">int</span> fullmove_number, halfmove_clock;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            <a class="code" href="classnc2_1_1Result.html">Result</a> best_line;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            std::vector&lt;Transition&gt; gen_pseudolegal_moves();</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            </div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            <span class="keywordtype">void</span> filter_basic_moves(<span class="keyword">const</span> std::vector&lt;Move&gt;&amp; source, std::vector&lt;Transition&gt;* out);</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            <span class="keywordtype">void</span> filter_pawn_captures(<span class="keyword">const</span> std::vector&lt;Move&gt;&amp; source, std::vector&lt;Transition&gt;* out);</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            <span class="keywordtype">void</span> filter_pawn_advances(<span class="keyword">const</span> std::vector&lt;Move&gt;&amp; source, std::vector&lt;Transition&gt;* out);</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            std::vector&lt;Transition&gt; gen_castle_moves();</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            <span class="keywordtype">bool</span> update_check_states();</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    };</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;}</div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassnc2_1_1Position_html_ad6a811b225ba9b6e542b00a38bb28a43"><div class="ttname"><a href="classnc2_1_1Position.html#ad6a811b225ba9b6e542b00a38bb28a43">nc2::Position::get_color_to_move</a></div><div class="ttdeci">u8 get_color_to_move()</div><div class="ttdef"><b>Definition:</b> position.cpp:280</div></div>
-<div class="ttc" id="aclassnc2_1_1Position_html_afe21546539a66839f5fa0de0d9220ca5"><div class="ttname"><a href="classnc2_1_1Position.html#afe21546539a66839f5fa0de0d9220ca5">nc2::Position::get_color_in_check</a></div><div class="ttdeci">bool get_color_in_check(u8 col)</div><div class="ttdef"><b>Definition:</b> position.cpp:284</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html_ad6a811b225ba9b6e542b00a38bb28a43"><div class="ttname"><a href="classnc2_1_1Position.html#ad6a811b225ba9b6e542b00a38bb28a43">nc2::Position::get_color_to_move</a></div><div class="ttdeci">u8 get_color_to_move()</div><div class="ttdef"><b>Definition:</b> position.cpp:284</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html_afe21546539a66839f5fa0de0d9220ca5"><div class="ttname"><a href="classnc2_1_1Position.html#afe21546539a66839f5fa0de0d9220ca5">nc2::Position::get_color_in_check</a></div><div class="ttdeci">bool get_color_in_check(u8 col)</div><div class="ttdef"><b>Definition:</b> position.cpp:288</div></div>
 <div class="ttc" id="aclassnc2_1_1Position_html"><div class="ttname"><a href="classnc2_1_1Position.html">nc2::Position</a></div><div class="ttdef"><b>Definition:</b> position.h:13</div></div>
-<div class="ttc" id="aclassnc2_1_1Position_html_a19cc70a4bfe86c521dc46bde650e056b"><div class="ttname"><a href="classnc2_1_1Position.html#a19cc70a4bfe86c521dc46bde650e056b">nc2::Position::is_quiet</a></div><div class="ttdeci">bool is_quiet()</div><div class="ttdef"><b>Definition:</b> position.cpp:276</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html_a19cc70a4bfe86c521dc46bde650e056b"><div class="ttname"><a href="classnc2_1_1Position.html#a19cc70a4bfe86c521dc46bde650e056b">nc2::Position::is_quiet</a></div><div class="ttdeci">bool is_quiet()</div><div class="ttdef"><b>Definition:</b> position.cpp:280</div></div>
 <div class="ttc" id="aclassnc2_1_1Result_html"><div class="ttname"><a href="classnc2_1_1Result.html">nc2::Result</a></div><div class="ttdef"><b>Definition:</b> result.h:10</div></div>
-<div class="ttc" id="aclassnc2_1_1Position_html_aa292e396ab1a2f090400c22a1dc67508"><div class="ttname"><a href="classnc2_1_1Position.html#aa292e396ab1a2f090400c22a1dc67508">nc2::Position::gen_legal_moves</a></div><div class="ttdeci">std::vector&lt; Transition &gt; gen_legal_moves()</div><div class="ttdef"><b>Definition:</b> position.cpp:176</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html_aa292e396ab1a2f090400c22a1dc67508"><div class="ttname"><a href="classnc2_1_1Position.html#aa292e396ab1a2f090400c22a1dc67508">nc2::Position::gen_legal_moves</a></div><div class="ttdeci">std::vector&lt; Transition &gt; gen_legal_moves()</div><div class="ttdef"><b>Definition:</b> position.cpp:180</div></div>
 <div class="ttc" id="aclassnc2_1_1Position_html_a369a577425f8ba02e8750d04b6a088db"><div class="ttname"><a href="classnc2_1_1Position.html#a369a577425f8ba02e8750d04b6a088db">nc2::Position::Position</a></div><div class="ttdeci">Position()</div><div class="ttdef"><b>Definition:</b> position.cpp:26</div></div>
-<div class="ttc" id="aclassnc2_1_1Position_html_ae9f0d5d9693288fb3cbeb5a1ea645a22"><div class="ttname"><a href="classnc2_1_1Position.html#ae9f0d5d9693288fb3cbeb5a1ea645a22">nc2::Position::get_debug_string</a></div><div class="ttdeci">std::string get_debug_string()</div><div class="ttdef"><b>Definition:</b> position.cpp:201</div></div>
-<div class="ttc" id="aclassnc2_1_1Position_html_ae5ed375053dfb195f0cfbd500aa178c7"><div class="ttname"><a href="classnc2_1_1Position.html#ae5ed375053dfb195f0cfbd500aa178c7">nc2::Position::get_best_line</a></div><div class="ttdeci">Result &amp; get_best_line(int *thit_counter)</div><div class="ttdef"><b>Definition:</b> position.cpp:244</div></div>
-<div class="ttc" id="aclassnc2_1_1Position_html_a3f480f168fe03c33c19fac3d5c082caf"><div class="ttname"><a href="classnc2_1_1Position.html#a3f480f168fe03c33c19fac3d5c082caf">nc2::Position::store_best_line</a></div><div class="ttdeci">void store_best_line(Result &amp;line)</div><div class="ttdef"><b>Definition:</b> position.cpp:271</div></div>
-<div class="ttc" id="aclassnc2_1_1Position_html_ae4cade1cb0d10f63c893a9973304c197"><div class="ttname"><a href="classnc2_1_1Position.html#ae4cade1cb0d10f63c893a9973304c197">nc2::Position::get_ttable_key</a></div><div class="ttdeci">u64 get_ttable_key()</div><div class="ttdef"><b>Definition:</b> position.cpp:240</div></div>
-<div class="ttc" id="aclassnc2_1_1Position_html_a98a016c8c59a89f347c027236271c746"><div class="ttname"><a href="classnc2_1_1Position.html#a98a016c8c59a89f347c027236271c746">nc2::Position::get_board</a></div><div class="ttdeci">u8 * get_board()</div><div class="ttdef"><b>Definition:</b> position.cpp:288</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html_ae9f0d5d9693288fb3cbeb5a1ea645a22"><div class="ttname"><a href="classnc2_1_1Position.html#ae9f0d5d9693288fb3cbeb5a1ea645a22">nc2::Position::get_debug_string</a></div><div class="ttdeci">std::string get_debug_string()</div><div class="ttdef"><b>Definition:</b> position.cpp:205</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html_ae5ed375053dfb195f0cfbd500aa178c7"><div class="ttname"><a href="classnc2_1_1Position.html#ae5ed375053dfb195f0cfbd500aa178c7">nc2::Position::get_best_line</a></div><div class="ttdeci">Result &amp; get_best_line(int *thit_counter)</div><div class="ttdef"><b>Definition:</b> position.cpp:248</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html_a3f480f168fe03c33c19fac3d5c082caf"><div class="ttname"><a href="classnc2_1_1Position.html#a3f480f168fe03c33c19fac3d5c082caf">nc2::Position::store_best_line</a></div><div class="ttdeci">void store_best_line(Result &amp;line)</div><div class="ttdef"><b>Definition:</b> position.cpp:275</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html_ae4cade1cb0d10f63c893a9973304c197"><div class="ttname"><a href="classnc2_1_1Position.html#ae4cade1cb0d10f63c893a9973304c197">nc2::Position::get_ttable_key</a></div><div class="ttdeci">u64 get_ttable_key()</div><div class="ttdef"><b>Definition:</b> position.cpp:244</div></div>
+<div class="ttc" id="aclassnc2_1_1Position_html_a98a016c8c59a89f347c027236271c746"><div class="ttname"><a href="classnc2_1_1Position.html#a98a016c8c59a89f347c027236271c746">nc2::Position::get_board</a></div><div class="ttdeci">u8 * get_board()</div><div class="ttdef"><b>Definition:</b> position.cpp:292</div></div>
 <div class="ttc" id="aclassnc2_1_1Occboard_html"><div class="ttname"><a href="classnc2_1_1Occboard.html">nc2::Occboard</a></div><div class="ttdef"><b>Definition:</b> occ.h:10</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

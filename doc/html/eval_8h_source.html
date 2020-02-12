@@ -84,17 +84,23 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keywordtype">float</span> center_control(u64 attack_mask);</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keywordtype">float</span> evaluate(u8* board, u64 white_attacks, u64 black_attacks);</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordtype">float</span> noise();</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        constexpr <span class="keywordtype">float</span> TEMPO_VALUE = 0.15f;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        constexpr <span class="keywordtype">float</span> CENTER_CONTROL_VALUE = 1.0f;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        constexpr <span class="keywordtype">float</span> DEVELOPMENT_VALUE = 0.95f;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        constexpr <span class="keywordtype">float</span> ADV_PAWN_VALUE = 0.5f;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        constexpr <span class="keywordtype">float</span> NOISE_THRESHOLD = 0.01f;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    }</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keywordtype">float</span> king_safety(u64 king_attacks, u64 self_attacks);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keywordtype">float</span> king_attacks(u64 king_attacks, u64 self_attacks);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keywordtype">float</span> evaluate(u8* board, u64 white_attacks, u64 black_attacks, u64 white_king_attacks, u64 black_king_attacks);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keywordtype">float</span> noise();</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        constexpr <span class="keywordtype">float</span> TEMPO_VALUE = 0.15f;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        constexpr <span class="keywordtype">float</span> CENTER_CONTROL_VALUE = 1.0f;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        constexpr <span class="keywordtype">float</span> DEVELOPMENT_VALUE = 0.95f;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        constexpr <span class="keywordtype">float</span> ADV_PAWN_VALUE = 0.5f;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        constexpr <span class="keywordtype">float</span> NOISE_THRESHOLD = 0.01f;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        constexpr <span class="keywordtype">float</span> KING_SAFETY_VALUE = 0.3f; <span class="comment">/* value safety equal to attacks.. for now */</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        constexpr <span class="keywordtype">float</span> KING_ATTACK_VALUE = 0.3f;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;}</div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

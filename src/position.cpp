@@ -43,6 +43,8 @@ Position::Position() : best_line(0) {
     /* Initialize king masks, although not really needed. */
     king_masks[piece::Color::WHITE] = square::MASK_E1;
     king_masks[piece::Color::BLACK] = square::MASK_E8;
+    king_attack_masks[piece::Color::WHITE] = lookup::king_attacks(square::Squares::e1);
+    king_attack_masks[piece::Color::BLACK] = lookup::king_attacks(square::Squares::e8);
 
     /* Initialize check states -- no color is in check. */
     check_states[piece::Color::WHITE] = false;
@@ -128,8 +130,10 @@ Position::Position(std::string fen) : best_line(0) {
 
                 if (p == piece::WHITE_KING) {
                     king_masks[piece::Color::WHITE] = square::mask(dst);
+                    king_attack_masks[piece::Color::WHITE] = lookup::king_attacks(dst);
                 } else if (p == piece::BLACK_KING) {
                     king_masks[piece::Color::BLACK] = square::mask(dst);
+                    king_attack_masks[piece::Color::BLACK] = lookup::king_attacks(dst);
                 }
             }
         }
@@ -252,7 +256,7 @@ Result& Position::get_best_line(int* thit_counter) {
             if (thit_counter) ++*thit_counter;
         } else {
             float current_eval_value = 0.0f;
-            current_eval_value = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK]);
+            current_eval_value = eval::evaluate(board, attack_masks[piece::Color::WHITE], attack_masks[piece::Color::BLACK], king_attack_masks[piece::Color::WHITE], king_attack_masks[piece::Color::BLACK]);
 
             if (color_to_move == piece::Color::WHITE) {
                 current_eval_value += eval::TEMPO_VALUE;
@@ -374,6 +378,7 @@ void Position::filter_basic_moves(const std::vector<Move>& source, std::vector<P
         /* Update king masks if needed. */
         if (piece::type(board[from]) == piece::Type::KING) {
             result.king_masks[color_to_move] = square::mask(to);
+            result.king_attack_masks[color_to_move] = lookup::king_attacks(to);
 
             /* King moves remove castle rights */
             result.castle_states[color_to_move][0] = false;
@@ -685,6 +690,7 @@ std::vector<Position::Transition> Position::gen_castle_moves() {
 
                     /* Update resulting king mask */
                     result.king_masks[color_to_move] = square::mask(to);
+                    result.king_attack_masks[color_to_move] = lookup::king_attacks(to);
 
                     /* Update resulting en passant target, ttable index */
                     if (en_passant_target != square::null) {

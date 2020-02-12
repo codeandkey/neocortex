@@ -85,7 +85,15 @@ float eval::center_control(u64 attack_mask) {
     return CENTER_CONTROL_VALUE * ct;
 }
 
-float eval::evaluate(u8* board, u64 white_attacks, u64 black_attacks) {
+float eval::king_safety(u64 king_attacks, u64 self_attacks) {
+    return KING_SAFETY_VALUE * __builtin_popcount(king_attacks & self_attacks);
+}
+
+float eval::king_attacks(u64 other_king_attacks, u64 attack_mask) {
+    return KING_ATTACK_VALUE * __builtin_popcount(other_king_attacks & attack_mask);
+}
+
+float eval::evaluate(u8* board, u64 white_attacks, u64 black_attacks, u64 white_king_attacks, u64 black_king_attacks) {
     float score = 0.0f;
 
     float npm = 0.0f;
@@ -106,6 +114,12 @@ float eval::evaluate(u8* board, u64 white_attacks, u64 black_attacks) {
 
     score += eval::center_control(white_attacks);
     score -= eval::center_control(black_attacks);
+
+    score += eval::king_safety(white_king_attacks, white_attacks);
+    score -= eval::king_safety(black_king_attacks, black_attacks);
+
+    score += eval::king_attacks(black_king_attacks, white_attacks);
+    score -= eval::king_attacks(white_king_attacks, black_attacks);
 
     return score;
 }

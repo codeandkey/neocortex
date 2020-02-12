@@ -103,6 +103,7 @@ namespace nc2 {
 
             u64 attack_masks[2]; /* [color] */
             u64 king_masks[2]; /* [color] */
+            u64 king_attack_masks[2]; /* [color] */
             bool check_states[2]; /* [color] */
 
             bool quiet;
