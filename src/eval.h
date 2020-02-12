@@ -67,7 +67,7 @@ namespace nc2 {
         constexpr float DEVELOPMENT_VALUE = 0.95f;
         constexpr float ADV_PAWN_VALUE = 0.5f;
         constexpr float NOISE_THRESHOLD = 0.01f;
-        constexpr float KING_SAFETY_VALUE = 0.3f; /* value safety equal to attacks.. for now */
-        constexpr float KING_ATTACK_VALUE = 0.3f;
+        constexpr float KING_SAFETY_VALUE = 0.05f; /* value safety equal to attacks.. for now */
+        constexpr float KING_ATTACK_VALUE = 0.05f;
     }
 }
