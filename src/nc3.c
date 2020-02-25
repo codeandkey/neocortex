@@ -2,6 +2,7 @@
 #include "util.h"
 #include "zobrist.h"
 #include "position.h"
+#include "basic.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@ int main(int argc, char** argv) {
     srand(time(NULL));
 
     nc_magic_init();
+    nc_basic_init();
     nc_zobrist_init(0xdeadbeef);
 
     nc_position p;
