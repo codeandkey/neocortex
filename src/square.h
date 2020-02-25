@@ -6,7 +6,7 @@
 
 #include "util.h"
 
-typedef int nc_square_t;
+typedef int nc_square;
 
 /* Square literals */
 #define NC_SQ_NULL -1
@@ -93,29 +93,29 @@ typedef int nc_square_t;
 #define NC_SQ_NORTH 8
 #define NC_SQ_NORTHEAST 9
 
-const char* nc_square_tostr(nc_square_t in);
-nc_square_t nc_square_fromstr(const char* inp);
+const char* nc_square_tostr(nc_square in);
+nc_square nc_square_fromstr(const char* inp);
 
-static inline int nc_square_is_valid(nc_square_t in) {
+static inline int nc_square_is_valid(nc_square in) {
     return (in >= 0 && in < 64);
 }
 
-static inline nc_square_t nc_square_at(int r, int f) {
+static inline nc_square nc_square_at(int r, int f) {
     nc_assert(r >= 0 && f >= 0 && r < 8 && f < 8);
     return (r * 8 + f);
 }
 
-static inline nc_square_t nc_square_shift(nc_square_t in, int dir) {
+static inline nc_square nc_square_shift(nc_square in, int dir) {
     nc_assert(nc_square_is_valid(in));
     return in + dir;
 }
 
-static inline nc_square_t nc_square_rank(nc_square_t in) {
+static inline nc_square nc_square_rank(nc_square in) {
     nc_assert(nc_square_is_valid(in));
     return in >> 3;
 }
 
-static inline nc_square_t nc_square_file(nc_square_t in) {
+static inline nc_square nc_square_file(nc_square in) {
     nc_assert(nc_square_is_valid(in));
     return in & 7;
 }

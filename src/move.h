@@ -14,7 +14,7 @@
 #include "piece.h"
 #include "square.h"
 
-typedef int nc_move_t;
+typedef int nc_move;
 
 /* Move literals */
 #define NC_MOVE_NULL -1
@@ -28,42 +28,42 @@ typedef int nc_move_t;
 #define NC_MOVELIST_LEN 256
 
 typedef struct {
-    nc_move_t moves[NC_MOVELIST_LEN];
+    nc_move moves[NC_MOVELIST_LEN];
     int len;
 } nc_movelist;
 
-const char* nc_move_tostr(nc_move_t in);
-nc_move_t nc_move_fromstr(const char* in);
+const char* nc_move_tostr(nc_move in);
+nc_move nc_move_fromstr(const char* in);
 
-static inline nc_move_t nc_move_make(nc_square_t from, nc_square_t to) {
+static inline nc_move nc_move_make(nc_square from, nc_square to) {
     return (from << 6) | to;
 } 
 
-static inline nc_move_t nc_move_promotion(nc_move_t inp, int ptype) {
+static inline nc_move nc_move_promotion(nc_move inp, int ptype) {
     return inp | NC_PROMOTION | (ptype << 20);
 }
 
-static inline nc_move_t nc_move_capture(nc_move_t inp, int ctype) {
+static inline nc_move nc_move_capture(nc_move inp, int ctype) {
     return inp | NC_CAPTURE | (ctype << 16);
 }
 
-static inline nc_square_t nc_move_get_src(nc_move_t inp) {
+static inline nc_square nc_move_get_src(nc_move inp) {
     return (inp >> 6) & 0x3F;
 }
 
-static inline nc_square_t nc_move_get_dst(nc_move_t inp) {
+static inline nc_square nc_move_get_dst(nc_move inp) {
     return inp & 0x3F;
 }
 
-static inline int nc_move_get_ptype(nc_move_t inp) {
+static inline int nc_move_get_ptype(nc_move inp) {
     return (inp >> 20) & 0xF;
 }
 
-static inline int nc_move_get_ctype(nc_move_t inp) {
+static inline int nc_move_get_ctype(nc_move inp) {
     return (inp >> 16) & 0xF;
 }
 
-static inline void nc_movelist_push(nc_movelist* out, nc_move_t m) {
+static inline void nc_movelist_push(nc_movelist* out, nc_move m) {
     out->moves[out->len++] = m;
 }
 
@@ -71,4 +71,4 @@ static inline void nc_movelist_clear(nc_movelist* out) {
     out->len = 0;
 }
 
-nc_move_t nc_movelist_match(nc_movelist* lst, nc_move_t in);
+nc_move nc_movelist_match(nc_movelist* lst, nc_move in);

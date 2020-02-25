@@ -1,6 +1,6 @@
 #include "magic_consts.h"
 
-const nc_bb_t _nc_rook_magics[64] = {
+const nc_bb _nc_rook_magics[64] = {
   0xa8002c000108020ULL,
   0x6c00049b0002001ULL,
   0x100200010090040ULL,
@@ -67,7 +67,7 @@ const nc_bb_t _nc_rook_magics[64] = {
   0x26002114058042ULL,
 };
 
-const nc_bb_t _nc_bishop_magics[64] = {
+const nc_bb _nc_bishop_magics[64] = {
   0x89a1121896040240ULL,
   0x2004844802002010ULL,
   0x2068080051921000ULL,
@@ -135,7 +135,7 @@ const nc_bb_t _nc_bishop_magics[64] = {
 };
 
 
-const nc_bb_t _nc_rook_masks[64] = {
+const nc_bb _nc_rook_masks[64] = {
   0x101010101017eULL,
   0x202020202027cULL,
   0x404040404047aULL,
@@ -202,7 +202,7 @@ const nc_bb_t _nc_rook_masks[64] = {
   0x7e80808080808000ULL,
 };
 
-const nc_bb_t _nc_bishop_masks[64] = {
+const nc_bb _nc_bishop_masks[64] = {
   0x40201008040200ULL,
   0x402010080400ULL,
   0x4020100a00ULL,

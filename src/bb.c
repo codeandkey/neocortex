@@ -2,7 +2,7 @@
 
 static char _nc_bb_strbuf[73];
 
-const char* nc_bb_tostr(nc_bb_t bb) {
+const char* nc_bb_tostr(nc_bb bb) {
     int i = 0;
     for (int r = 7; r >= 0; --r) {
         for (int f = 0; f < 8; ++f) {

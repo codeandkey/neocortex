@@ -8,7 +8,7 @@
 
 #include "square.h"
 
-typedef uint64_t nc_bb_t;
+typedef uint64_t nc_bb;
 
 /* Useful bitboard literals */
 #define NC_BB_RANK1 0x00000000000000FFULL
@@ -34,25 +34,25 @@ typedef uint64_t nc_bb_t;
 #define NC_BB_FILEH NC_BB_FILE(7)
 
 /* String conversion */
-const char* nc_bb_tostr(nc_bb_t bb);
+const char* nc_bb_tostr(nc_bb bb);
 
 /* Inline manipulation */
-static inline nc_bb_t nc_bb_shift(nc_bb_t bb, int dir) {
+static inline nc_bb nc_bb_shift(nc_bb bb, int dir) {
     return (dir > 0) ? (bb << dir) : (bb >> -dir);
 }
 
-static inline nc_bb_t nc_bb_mask(nc_square_t sq) {
+static inline nc_bb nc_bb_mask(nc_square sq) {
     if (!nc_square_is_valid(sq)) return 0;
-    return ((nc_bb_t) 1) << sq;
+    return ((nc_bb) 1) << sq;
 }
 
-static inline nc_square_t nc_bb_getlsb(nc_bb_t bb) {
+static inline nc_square nc_bb_getlsb(nc_bb bb) {
     nc_assert(bb);
     return __builtin_ctzll(bb);
 }
 
-static inline nc_square_t nc_bb_poplsb(nc_bb_t* bb) {
-    nc_square_t lsb = nc_bb_getlsb(*bb);
+static inline nc_square nc_bb_poplsb(nc_bb* bb) {
+    nc_square lsb = nc_bb_getlsb(*bb);
     *bb ^= nc_bb_mask(lsb);
     return lsb;
 }

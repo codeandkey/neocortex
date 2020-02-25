@@ -5,7 +5,7 @@
 
 static char _nc_move_strbuf[6];
 
-const char* nc_move_tostr(nc_move_t in) {
+const char* nc_move_tostr(nc_move in) {
     if (in == NC_MOVE_NULL) return "0000";
 
     const char* fromstr = nc_square_tostr(nc_move_get_src(in));
@@ -27,16 +27,16 @@ const char* nc_move_tostr(nc_move_t in) {
     return _nc_move_strbuf;
 }
 
-nc_move_t nc_move_fromstr(const char* in) {
+nc_move nc_move_fromstr(const char* in) {
     int len = strlen(in);
     if (len < 4 || len > 6) return NC_MOVE_NULL;
 
-    nc_square_t src = nc_square_fromstr(in);
-    nc_square_t dst = nc_square_fromstr(in + 2);
+    nc_square src = nc_square_fromstr(in);
+    nc_square dst = nc_square_fromstr(in + 2);
 
     if (src == NC_SQ_NULL || dst == NC_SQ_NULL) return NC_MOVE_NULL;
 
-    nc_move_t out = nc_move_make(src, dst);
+    nc_move out = nc_move_make(src, dst);
 
     if (len == 5) {
         out = nc_move_promotion(out, nc_ptype_fromchar(in[4]));
@@ -45,9 +45,9 @@ nc_move_t nc_move_fromstr(const char* in) {
     return out;
 }
 
-nc_move_t nc_movelist_match(nc_movelist* lst, nc_move_t in) {
+nc_move nc_movelist_match(nc_movelist* lst, nc_move in) {
     for (int i = 0; i < lst->len; ++i) {
-        nc_move_t cur = lst->moves[i];
+        nc_move cur = lst->moves[i];
 
         if ((cur & 0xFFF) == (in & 0xFFF) && (cur & NC_PROMOTION) == (in & NC_PROMOTION)) {
             if (nc_move_get_ptype(cur) == nc_move_get_ptype(in)) {

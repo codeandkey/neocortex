@@ -11,12 +11,12 @@
  */
 
 static struct {
-    nc_bb_t* rook_attack_masks[64];
-    nc_bb_t* bishop_attack_masks[64];
+    nc_bb* rook_attack_masks[64];
+    nc_bb* bishop_attack_masks[64];
 } nc_magic_database;
 
-static int _nc_magic_index(nc_bb_t occ, nc_bb_t magic, int bits);
-static nc_bb_t _nc_make_relevant_occ(int index, nc_bb_t mask, int bits);
+static int _nc_magic_index(nc_bb occ, nc_bb magic, int bits);
+static nc_bb _nc_make_relevant_occ(int index, nc_bb mask, int bits);
 
 void nc_magic_init() {
     /* 
@@ -48,11 +48,11 @@ void nc_magic_init() {
 
         int num_rook_bits = _nc_rook_bits[sq];
         int num_rook_occs = (1 << num_rook_bits);
-        nc_bb_t rook_rocc_mask = _nc_rook_masks[sq];
-        nc_bb_t rook_magic = _nc_rook_magics[sq];
+        nc_bb rook_rocc_mask = _nc_rook_masks[sq];
+        nc_bb rook_magic = _nc_rook_magics[sq];
 
         for (int occ_index = 0; occ_index < num_rook_occs; ++occ_index) {
-            nc_bb_t relevant_occ = _nc_make_relevant_occ(occ_index, rook_rocc_mask, num_rook_bits);
+            nc_bb relevant_occ = _nc_make_relevant_occ(occ_index, rook_rocc_mask, num_rook_bits);
 
             /* Find where the magic takes us with the occupancy. */
             int magic_index = _nc_magic_index(relevant_occ, rook_magic, num_rook_bits);
@@ -62,7 +62,7 @@ void nc_magic_init() {
             }
 
             /* Walk in 4 directions, adding bits to the attack mask and moves to the movelist. */
-            nc_square_t cur;
+            nc_square cur;
 
             /* East */
             for (int ar = nc_square_rank(sq), af = nc_square_file(sq) + 1; af <= 7; ++af) {
@@ -106,11 +106,11 @@ void nc_magic_init() {
 
         int num_bishop_bits = _nc_bishop_bits[sq];
         int num_bishop_occs = (1 << num_bishop_bits);
-        nc_bb_t bishop_rocc_mask = _nc_bishop_masks[sq];
-        nc_bb_t bishop_magic = _nc_bishop_magics[sq];
+        nc_bb bishop_rocc_mask = _nc_bishop_masks[sq];
+        nc_bb bishop_magic = _nc_bishop_magics[sq];
 
         for (int occ_index = 0; occ_index < num_bishop_occs; ++occ_index) {
-            nc_bb_t relevant_occ = _nc_make_relevant_occ(occ_index, bishop_rocc_mask, num_bishop_bits);
+            nc_bb relevant_occ = _nc_make_relevant_occ(occ_index, bishop_rocc_mask, num_bishop_bits);
 
             /* Find where the magic takes us with the occupancy. */
             int magic_index = _nc_magic_index(relevant_occ, bishop_magic, num_bishop_bits);
@@ -120,7 +120,7 @@ void nc_magic_init() {
             }
 
             /* Walk in 4 directions, adding bits to the attack mask and moves to the movelist. */
-            nc_square_t cur;
+            nc_square cur;
 
             /* Northeast */
             for (int ar = nc_square_rank(sq) + 1, af = nc_square_file(sq) + 1; af <= 7 && ar <= 7; ++af, ++ar) {
@@ -164,25 +164,25 @@ void nc_magic_free() {
     nc_debug("Cleaned up magic bitboard lookups.");
 }
 
-nc_bb_t nc_magic_query_rook_attacks(nc_square_t sq, nc_bb_t occ) {
+nc_bb nc_magic_query_rook_attacks(nc_square sq, nc_bb occ) {
     int magic = _nc_magic_index(occ & _nc_rook_masks[sq], _nc_rook_magics[sq], _nc_rook_bits[sq]);
     return nc_magic_database.rook_attack_masks[sq][magic];
 }
 
-nc_bb_t nc_magic_query_bishop_attacks(nc_square_t sq, nc_bb_t occ) {
+nc_bb nc_magic_query_bishop_attacks(nc_square sq, nc_bb occ) {
     int magic = _nc_magic_index(occ & _nc_bishop_masks[sq], _nc_bishop_magics[sq], _nc_bishop_bits[sq]);
     return nc_magic_database.bishop_attack_masks[sq][magic];
 }
 
-int _nc_magic_index(nc_bb_t masked_occ, nc_bb_t magic, int bits) {
+int _nc_magic_index(nc_bb masked_occ, nc_bb magic, int bits) {
     return (int)((masked_occ * magic) >> (64 - bits));
 }
 
-nc_bb_t _nc_make_relevant_occ(int index, nc_bb_t mask, int bits) {
+nc_bb _nc_make_relevant_occ(int index, nc_bb mask, int bits) {
     /* The bits of index need to be wrapped in a one-to-one manner into the mask's place. */
     /* This is definitely NOT optimal at all. But it is correct and only called on startup. */
 
-    nc_bb_t output = 0;
+    nc_bb output = 0;
 
     for (int i = 0; i < bits; ++i) {
         if ((index >> i) & 1) {
