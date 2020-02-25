@@ -1,5 +1,5 @@
 CC      = gcc
-CCFLAGS = -std=c99 -Wall -Werror -g
+CCFLAGS = -std=gnu99 -Wall -Werror -g -DNC_DEBUG
 LDFLAGS  = -pthread
 OUTPUT   = nc3
 
