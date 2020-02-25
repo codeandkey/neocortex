@@ -21,17 +21,13 @@ int main(int argc, char** argv) {
 
     nc_position_dump(&p, stderr);
 
-    nc_position_make_move(&p, nc_move_make(NC_SQ_A2, NC_SQ_A4) | NC_PAWNJUMP);
-    nc_position_dump(&p, stderr);
+    nc_movelist lst;
+    nc_movelist_clear(&lst);
+    nc_position_legal_moves(&p, &lst);
 
-    nc_position_make_move(&p, nc_move_make(NC_SQ_A7, NC_SQ_A5) | NC_PAWNJUMP);
-    nc_position_dump(&p, stderr);
-
-    nc_position_unmake_move(&p, nc_move_make(NC_SQ_A7, NC_SQ_A5) | NC_PAWNJUMP);
-    nc_position_dump(&p, stderr);
-
-    nc_position_unmake_move(&p, nc_move_make(NC_SQ_A2, NC_SQ_A4) | NC_PAWNJUMP);
-    nc_position_dump(&p, stderr);
+    for (int i = 0; i < lst.len; ++i) {
+        nc_debug("legal move: %s", nc_move_tostr(lst.moves[i]));
+    }
 
     nc_magic_free();
 

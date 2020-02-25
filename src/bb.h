@@ -23,7 +23,7 @@ typedef uint64_t nc_bb;
 #define NC_BB_RANK8 NC_BB_RANK(7)
 
 #define NC_BB_FILEA 0x0101010101010101ULL
-#define NC_BB_FILE(f) (NC_BB_FILE1 << f)
+#define NC_BB_FILE(f) (NC_BB_FILEA << f)
 
 #define NC_BB_FILEB NC_BB_FILE(1)
 #define NC_BB_FILEC NC_BB_FILE(2)

@@ -45,21 +45,43 @@ typedef struct {
     nc_piece board[64];
 } nc_position;
 
+/* Standard position init */
 void nc_position_init(nc_position* dst);
+
+/* Position move interface */
 void nc_position_make_move(nc_position* dst, nc_move move);
 void nc_position_unmake_move(nc_position* dst, nc_move move);
-void nc_position_legal_moves(nc_position* dst, nc_movelist* out);
 
-/* Updates the current ply and zkey. */
+/* State transition helpers */
 void nc_position_update_castling(nc_position* dst, int old, int next);
 void nc_position_update_ep_target(nc_position* dst, nc_square old, nc_square target);
 
+/* Board manipulation */
 void nc_position_place_piece(nc_position* dst, nc_piece p, nc_square at);
 void nc_position_replace_piece(nc_position* dst, nc_piece p, nc_square at);
 void nc_position_move_piece(nc_position* dst, nc_square from, nc_square to);
 nc_piece nc_position_remove_piece(nc_position* dst, nc_square at);
 nc_piece nc_position_capture_piece(nc_position* dst, nc_square from, nc_square to);
 
+/* Occupancy manipulation */
 void nc_position_flip_piece(nc_position* dst, nc_piece p, nc_square at);
 
+/* Debugging */
 void nc_position_dump(nc_position* p, FILE* out);
+
+/* Move generation */
+void nc_position_legal_moves(nc_position* dst, nc_movelist* out);
+
+/* Specific pseudolegal move generation. Used to influence move ordering */
+void nc_position_gen_castles(nc_position* dst, nc_movelist* out);
+void nc_position_gen_captures(nc_position* dst, nc_movelist* out);
+void nc_position_gen_quiets(nc_position* dst, nc_movelist* out);
+
+void nc_position_gen_pawn_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_rook_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_knight_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_bishop_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_queen_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_king_moves(nc_position* dst, nc_movelist* out, int captures);
+
+int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by);
