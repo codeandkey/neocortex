@@ -9,7 +9,10 @@
 #include "square.h"
 #include "zobrist.h"
 
+#include <stdlib.h>
+
 /* Castle right flags */
+
 #define NC_WHITE_QUEENSIDE 1
 #define NC_WHITE_KINGSIDE  2
 #define NC_BLACK_QUEENSIDE 4
@@ -23,6 +26,9 @@ typedef struct {
     int castling;
     nc_square ep_target;
     int halfmove_clock;
+    nc_piece captured;
+    nc_square captured_at;
+    nc_move lastmove;
 } nc_pstate;
 
 typedef struct {
@@ -45,10 +51,15 @@ void nc_position_unmake_move(nc_position* dst, nc_move move);
 void nc_position_legal_moves(nc_position* dst, nc_movelist* out);
 
 /* Updates the current ply and zkey. */
-void nc_position_update_castling(nc_position* dst, int castling);
+void nc_position_update_castling(nc_position* dst, int old, int next);
+void nc_position_update_ep_target(nc_position* dst, nc_square old, nc_square target);
 
 void nc_position_place_piece(nc_position* dst, nc_piece p, nc_square at);
+void nc_position_replace_piece(nc_position* dst, nc_piece p, nc_square at);
 void nc_position_move_piece(nc_position* dst, nc_square from, nc_square to);
+nc_piece nc_position_remove_piece(nc_position* dst, nc_square at);
 nc_piece nc_position_capture_piece(nc_position* dst, nc_square from, nc_square to);
 
 void nc_position_flip_piece(nc_position* dst, nc_piece p, nc_square at);
+
+void nc_position_dump(nc_position* p, FILE* out);

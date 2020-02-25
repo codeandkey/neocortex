@@ -15,7 +15,7 @@ void nc_zobrist_init(int seed) {
 
     for (int sq = 0; sq < 64; ++sq) {
         for (int p = 0; p < 12; ++p) {
-            _nc_zobrist_piece_keys[64][12] = _nc_zobrist_gen_key();
+            _nc_zobrist_piece_keys[sq][p] = _nc_zobrist_gen_key();
         }
     }
 

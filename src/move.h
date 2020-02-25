@@ -6,8 +6,7 @@
  * LSB
  * 0-5: target square
  * 6-11: source square
- * 12-15: flags
- * 16-19: captured piece type
+ * 12-19: flags
  * 20-23: promotion type
  */
 
@@ -23,6 +22,8 @@ typedef int nc_move;
 #define NC_PROMOTION 0x1000
 #define NC_CAPTURE   0x2000
 #define NC_PAWNJUMP  0x4000
+#define NC_CASTLE    0x8000
+#define NC_EPCAPTURE 0x10000
 
 /* Movelist compile time config. */
 #define NC_MOVELIST_LEN 256
@@ -43,8 +44,8 @@ static inline nc_move nc_move_promotion(nc_move inp, int ptype) {
     return inp | NC_PROMOTION | (ptype << 20);
 }
 
-static inline nc_move nc_move_capture(nc_move inp, int ctype) {
-    return inp | NC_CAPTURE | (ctype << 16);
+static inline nc_move nc_move_capture(nc_move inp) {
+    return inp | NC_CAPTURE;
 }
 
 static inline nc_square nc_move_get_src(nc_move inp) {
@@ -57,10 +58,6 @@ static inline nc_square nc_move_get_dst(nc_move inp) {
 
 static inline int nc_move_get_ptype(nc_move inp) {
     return (inp >> 20) & 0xF;
-}
-
-static inline int nc_move_get_ctype(nc_move inp) {
-    return (inp >> 16) & 0xF;
 }
 
 static inline void nc_movelist_push(nc_movelist* out, nc_move m) {
