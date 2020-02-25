@@ -29,7 +29,7 @@ void nc_zobrist_init(int seed) {
     nc_debug("Initialized zobrist hash indices on seed 0x%08x.", seed);
 }
 
-nc_zkey nc_zobrist_piece(nc_square sq, int piece) {
+nc_zkey nc_zobrist_piece(nc_square sq, nc_piece piece) {
     return _nc_zobrist_piece_keys[piece][sq];
 }
 
