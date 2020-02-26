@@ -101,7 +101,7 @@ static inline int nc_square_is_valid(nc_square in) {
 }
 
 static inline nc_square nc_square_at(int r, int f) {
-    nc_assert(r >= 0 && f >= 0 && r < 8 && f < 8);
+    nc_assertf(r >= 0 && f >= 0 && r < 8 && f < 8, "Invalid coordinates: r%d, f%d", r, f);
     return (r * 8 + f);
 }
 
