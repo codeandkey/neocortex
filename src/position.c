@@ -419,15 +419,8 @@ void nc_position_gen_pawn_moves(nc_position* p, nc_movelist* out, int captures) 
     nc_bb all_pawns = p->piece[NC_PAWN] & p->color[p->color_to_move];
     nc_bb promotion_mask = (p->color_to_move == NC_WHITE) ? NC_BB_RANK7 : NC_BB_RANK2;
 
-    nc_debug("called, captures=%d", captures);
-    nc_debug("all_pawns = \n%s", nc_bb_tostr(all_pawns));
-
     nc_bb promoting_pawns = all_pawns & promotion_mask;
     nc_bb pawns = all_pawns & ~promotion_mask;
-
-    nc_debug("promoting_pawns = \n%s", nc_bb_tostr(promoting_pawns));
-    nc_debug("pawns = \n%s", nc_bb_tostr(pawns));
-    nc_debug("global = \n%s", nc_bb_tostr(p->global));
 
     if (captures) {
         /* Add pawn captures */
