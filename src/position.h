@@ -8,6 +8,8 @@
 #include "move.h"
 #include "square.h"
 #include "zobrist.h"
+#include "eval.h"
+#include "pst.h"
 
 #include <stdlib.h>
 
@@ -37,6 +39,9 @@ typedef struct {
 
     nc_zkey key;
     nc_color color_to_move;
+
+    /* Incremental evaluation (NOT from the perspective of CTM) */
+    nc_pst_eval score;
 
     /* Occupancy bitboards */
     nc_bb color[2], piece[6], global;
@@ -87,4 +92,8 @@ nc_bb nc_position_gen_attack_mask_for(nc_position* dst, nc_color by, nc_bb illeg
 /* Position examining */
 static inline int nc_position_is_quiet(nc_position* p) {
     return (p->states[p->ply].captured == NC_PIECE_NULL) && !p->states[p->ply].check;
+}
+
+static inline nc_eval nc_position_get_score(nc_position* p) {
+    return p->score.mg[p->color_to_move] - p->score.mg[nc_colorflip(p->color_to_move)];
 }

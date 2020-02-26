@@ -7,6 +7,10 @@
 void nc_position_init(nc_position* dst) {
     memset(dst, 0, sizeof *dst);
 
+    /* Start at neutral eval. */
+    dst->score.mg[NC_WHITE] = 0;
+    dst->score.mg[NC_BLACK] = 0;
+
     /* Start at 0 ply */
     dst->ply = 0;
 
@@ -244,10 +248,15 @@ void nc_position_place_piece(nc_position* dst, nc_piece p, nc_square at) {
     nc_assert(dst->board[at] == NC_PIECE_NULL);
 
     nc_position_flip_piece(dst, p, at);
+    nc_pst_add(&dst->score, p, at);
+
     dst->board[at] = p;
 }
 
 void nc_position_replace_piece(nc_position* dst, nc_piece p, nc_square at) {
+    nc_pst_remove(&dst->score, dst->board[at], at);
+    nc_pst_add(&dst->score, p, at);
+
     nc_position_flip_piece(dst, dst->board[at], at);
     nc_position_flip_piece(dst, p, at);
 
@@ -271,6 +280,9 @@ void nc_position_move_piece(nc_position* dst, nc_square from, nc_square to) {
     nc_position_flip_piece(dst, dst->board[from], from);
     nc_position_flip_piece(dst, dst->board[from], to);
 
+    nc_pst_remove(&dst->score, dst->board[from], from);
+    nc_pst_add(&dst->score, dst->board[from], to);
+
     dst->board[to] = dst->board[from];
     dst->board[from] = NC_PIECE_NULL;
 }
@@ -279,6 +291,7 @@ nc_piece nc_position_remove_piece(nc_position* dst, nc_square at) {
     nc_assert(dst->board[at] != NC_PIECE_NULL);
 
     nc_position_flip_piece(dst, dst->board[at], at);
+    nc_pst_remove(&dst->score, dst->board[at], at);
 
     nc_piece ret = dst->board[at];
     dst->board[at] = NC_PIECE_NULL;
@@ -297,6 +310,10 @@ nc_piece nc_position_capture_piece(nc_position* dst, nc_square from, nc_square t
     nc_position_flip_piece(dst, psrc, from);
     nc_position_flip_piece(dst, pdst, to);
     nc_position_flip_piece(dst, psrc, to);
+
+    nc_pst_remove(&dst->score, pdst, to);
+    nc_pst_remove(&dst->score, psrc, from);
+    nc_pst_add(&dst->score, psrc, to);
 
     dst->board[to] = psrc;
     dst->board[from] = NC_PIECE_NULL;

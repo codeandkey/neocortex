@@ -24,7 +24,7 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
     ++_nc_search_nodes;
 
     if (nc_position_is_quiet(p) || (max_time && nc_timer_current() >= max_time)) {
-        return nc_eval_position(p);
+        return nc_position_get_score(p);
     }
 
     nc_movelist next_moves;

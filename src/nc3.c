@@ -14,6 +14,7 @@
 int main(int argc, char** argv) {
     srand(time(NULL));
 
+    nc_pst_init();
     nc_magic_init();
     nc_basic_init();
     nc_zobrist_init(0xdeadbeef);

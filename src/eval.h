@@ -4,8 +4,6 @@
  * Evaluation heuristic
  */
 
-#include "position.h"
-
 #include <limits.h>
 
 #define NC_EVAL_MATE_THRESHOLD 512
@@ -14,5 +12,4 @@
 
 typedef int nc_eval;
 
-nc_eval nc_eval_position(nc_position* p);
 const char* nc_eval_tostr(nc_eval score);
