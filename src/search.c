@@ -23,8 +23,7 @@ nc_eval nc_search(nc_position* root, int depth, nc_move* pv_line, nc_timepoint m
 nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint max_time) {
     ++_nc_search_nodes;
 
-    /* TODO: add actual method for detecting quiet moves */
-    if (p->states[p->ply].captured == NC_PIECE_NULL || (max_time && nc_timer_current() >= max_time)) {
+    if (nc_position_is_quiet(p) || (max_time && nc_timer_current() >= max_time)) {
         return nc_eval_position(p);
     }
 
@@ -34,7 +33,7 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
 
     if (!next_moves.len) {
         /* Color to move is in checkmate or stalemate. Do a check test quick. */
-        if (nc_position_test_mask_is_attacked(p, p->piece[NC_KING] | p->color[p->color_to_move], nc_colorflip(p->color_to_move))) {
+        if (p->states[p->ply].check) {
             /* Checkmate! */
             return NC_EVAL_MIN;
         } else {
@@ -101,7 +100,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
 
     if (!next_moves.len) {
         /* Color to move is in checkmate or stalemate. Do a check test quick. */
-        if (nc_position_test_mask_is_attacked(p, p->piece[NC_KING] | p->color[p->color_to_move], nc_colorflip(p->color_to_move))) {
+        if (p->states[p->ply].check) {
             /* Checkmate! */
             return NC_EVAL_MIN;
         } else {

@@ -23,7 +23,7 @@
 #define NC_MAX_PLY 512
 
 typedef struct {
-    int castling;
+    int castling, check;
     nc_square ep_target;
     int halfmove_clock;
     nc_piece captured;
@@ -81,4 +81,10 @@ void nc_position_gen_queen_moves(nc_position* dst, nc_movelist* out, int capture
 void nc_position_gen_king_moves(nc_position* dst, nc_movelist* out, int captures);
 void nc_position_gen_castle_moves(nc_position* dst, nc_movelist* out);
 
-int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by);
+/* Attack mask reloading */
+nc_bb nc_position_gen_attack_mask_for(nc_position* dst, nc_color by, nc_bb illegal_mask);
+
+/* Position examining */
+static inline int nc_position_is_quiet(nc_position* p) {
+    return (p->states[p->ply].captured == NC_PIECE_NULL) && !p->states[p->ply].check;
+}

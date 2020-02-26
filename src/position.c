@@ -20,6 +20,7 @@ void nc_position_init(nc_position* dst) {
     dst->states[dst->ply].captured = NC_PIECE_NULL;
     dst->states[dst->ply].captured_at = NC_SQ_NULL;
     dst->states[dst->ply].lastmove = NC_MOVE_NULL;
+    dst->states[dst->ply].check = 0;
 
     /* Sets the initial castle state. */
     nc_position_update_castling(dst, -1, NC_CASTLE_ALL);
@@ -64,6 +65,9 @@ void nc_position_make_move(nc_position* p, nc_move move) {
 
     /* Set lastmove */
     next->lastmove = move;
+
+    /* Set check */
+    next->check = move & NC_CHECK;
 
     nc_square src = nc_move_get_src(move);
     nc_square dst = nc_move_get_dst(move);
@@ -400,9 +404,23 @@ void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
 
         nc_position_make_move(dst, cur);
 
-        if (!nc_position_test_mask_is_attacked(dst, badmask, dst->color_to_move)) {
-            /* None of the required safe squares are attacked. So the move is legal! */
-            nc_movelist_push(out, cur);
+        /* Check if the move is legal here, and also check if the move delivers check. */
+        /* If the move is illegal, it is tossed. */
+        /* If the move delivers check, the NC_CHECK flag is added to the move. */
+
+        nc_bb other_att = nc_position_gen_attack_mask_for(dst, dst->color_to_move, badmask);
+
+        if (!(other_att & badmask)) {
+            /* Move is legal. Test if it delivers check. */
+
+            nc_bb other_king = dst->piece[NC_KING] & dst->color[dst->color_to_move];
+            nc_bb att = nc_position_gen_attack_mask_for(dst, nc_colorflip(dst->color_to_move), other_king);
+
+            if (att & other_king) {
+                nc_movelist_push(out, cur | NC_CHECK);
+            } else {
+                nc_movelist_push(out, cur);
+            }
         }
 
         nc_position_unmake_move(dst, cur);
@@ -675,7 +693,7 @@ void nc_position_gen_castle_moves(nc_position* dst, nc_movelist* out) {
     }
 }
 
-int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by) {
+nc_bb nc_position_gen_attack_mask_for(nc_position* dst, nc_color by, nc_bb mask) {
     nc_bb attacked_mask = 0;
 
     /* Try pieces with the greatest attack span first to try and fail early. */
@@ -689,7 +707,7 @@ int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by)
         attacked_mask |= nc_magic_query_bishop_attacks(src, dst->global);
     }
 
-    if (attacked_mask & mask) return 1;
+    if (attacked_mask & mask) return attacked_mask;
 
     /* Test rook attacks */
     nc_bb rooks = dst->piece[NC_ROOK] & dst->color[by];
@@ -699,7 +717,7 @@ int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by)
         attacked_mask |= nc_magic_query_rook_attacks(src, dst->global);
     }
 
-    if (attacked_mask & mask) return 1;
+    if (attacked_mask & mask) return attacked_mask;
 
     /* Test bishop attacks */
     nc_bb bishops = dst->piece[NC_BISHOP] & dst->color[by];
@@ -709,7 +727,7 @@ int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by)
         attacked_mask |= nc_magic_query_bishop_attacks(src, dst->global);
     }
 
-    if (attacked_mask & mask) return 1;
+    if (attacked_mask & mask) return attacked_mask;
 
     /* Test knight attacks */
     nc_bb knights = dst->piece[NC_KNIGHT] & dst->color[by];
@@ -719,7 +737,7 @@ int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by)
         attacked_mask |= nc_basic_knight_attacks(src);
     }
 
-    if (attacked_mask & mask) return 1;
+    if (attacked_mask & mask) return attacked_mask;
 
     /* Test king attacks */
     nc_bb kings = dst->piece[NC_KING] & dst->color[by];
@@ -729,7 +747,7 @@ int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by)
         attacked_mask |= nc_basic_king_attacks(src);
     }
 
-    if (attacked_mask & mask) return 1;
+    if (attacked_mask & mask) return attacked_mask;
 
     /* Test pawn attacks conditionally */
     nc_bb pawns = dst->piece[NC_PAWN] & dst->color[by];
@@ -744,5 +762,5 @@ int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by)
         attacked_mask |= nc_bb_shift(pawns_withleft, NC_SQ_SOUTHWEST);
     }
 
-    return (attacked_mask & mask);
+    return attacked_mask;
 }
