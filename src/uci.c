@@ -2,6 +2,7 @@
 #include "position.h"
 #include "move.h"
 #include "util.h"
+#include "search.h"
 
 #include <string.h>
 
@@ -27,9 +28,9 @@ int nc_uci_start(FILE* in, FILE* out) {
         return -1;
     }
 
-    fprintf(out, "uciok\n");
     fprintf(out, "id name " NC_UCI_NAME "\n");
     fprintf(out, "id author " NC_UCI_AUTHOR "\n");
+    fprintf(out, "uciok\n");
 
     /* Initialize a game position. */
     nc_position game_pos;
@@ -91,7 +92,32 @@ int nc_uci_start(FILE* in, FILE* out) {
         }
 
         if (!strcmp(command, "go")) {
-            nc_abort("No searching implemented yet!");
+            int movetime[2] = {0};
+
+            for (char* arg = strtok(NULL, " "); arg; arg = strtok(NULL, " ")) {
+                if (!strcmp(arg, "wtime")) {
+                    movetime[NC_WHITE] = strtol(strtok(NULL, " "), NULL, 10);
+                }
+
+                if (!strcmp(arg, "btime")) {
+                    movetime[NC_BLACK] = strtol(strtok(NULL, " "), NULL, 10);
+                }
+            }
+
+            int maxtime = movetime[game_pos.color_to_move] ? nc_timer_futurems(movetime[game_pos.color_to_move]) : 0;
+
+            nc_move pv[NC_UCI_MAXDEPTH];
+            pv[0] = NC_MOVE_NULL;
+
+            for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
+                nc_eval score = nc_search(&game_pos, d, pv, maxtime);
+
+                fprintf(out, "info depth %d nodes %d nps %d time %d score %s pv %s\n", d, nc_search_get_nodes(), nc_search_get_nps(), nc_search_get_time(), nc_eval_tostr(score), nc_move_tostr(pv[0]));
+
+                if (maxtime && nc_timer_current() >= maxtime) break;
+            }
+
+            fprintf(out, "bestmove %s\n", nc_move_tostr(pv[0]));
         }
     }
 

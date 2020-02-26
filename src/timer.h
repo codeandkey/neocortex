@@ -19,3 +19,7 @@ static inline int nc_timer_elapsed_ms(nc_timepoint t) {
 static inline float nc_timer_elapsed_s(nc_timepoint t) {
     return nc_timer_elapsed_ms(t) / 1000.0f;
 }
+
+static inline nc_timepoint nc_timer_futurems(int ms) {
+    return nc_timer_current() + ms * (CLOCKS_PER_SEC / 1000);
+}

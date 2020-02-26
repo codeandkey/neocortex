@@ -10,4 +10,6 @@
 #define NC_UCI_NAME   "neocortex-nc3 0.1"
 #define NC_UCI_AUTHOR "codeandkey"
 
+#define NC_UCI_MAXDEPTH 7
+
 int nc_uci_start(FILE* in, FILE* out);
