@@ -73,15 +73,12 @@ void nc_position_dump(nc_position* p, FILE* out);
 void nc_position_legal_moves(nc_position* dst, nc_movelist* out);
 
 /* Specific pseudolegal move generation. Used to influence move ordering */
-void nc_position_gen_castles(nc_position* dst, nc_movelist* out);
-void nc_position_gen_captures(nc_position* dst, nc_movelist* out);
-void nc_position_gen_quiets(nc_position* dst, nc_movelist* out);
-
 void nc_position_gen_pawn_moves(nc_position* dst, nc_movelist* out, int captures);
 void nc_position_gen_rook_moves(nc_position* dst, nc_movelist* out, int captures);
 void nc_position_gen_knight_moves(nc_position* dst, nc_movelist* out, int captures);
 void nc_position_gen_bishop_moves(nc_position* dst, nc_movelist* out, int captures);
 void nc_position_gen_queen_moves(nc_position* dst, nc_movelist* out, int captures);
 void nc_position_gen_king_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_castle_moves(nc_position* dst, nc_movelist* out);
 
 int nc_position_test_mask_is_attacked(nc_position* dst, nc_bb mask, nc_color by);

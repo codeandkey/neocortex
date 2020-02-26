@@ -354,6 +354,8 @@ void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
     nc_movelist pseudolegal;
     nc_movelist_clear(&pseudolegal);
 
+    nc_position_gen_castle_moves(dst, &pseudolegal);
+
     nc_position_gen_pawn_moves(dst, &pseudolegal, 1);
     nc_position_gen_queen_moves(dst, &pseudolegal, 1);
     nc_position_gen_rook_moves(dst, &pseudolegal, 1);
@@ -405,14 +407,6 @@ void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
 
         nc_position_unmake_move(dst, cur);
     }
-}
-
-void nc_position_gen_quiets(nc_position* dst, nc_movelist* out) {
-    nc_abort("Not implemented!");
-}
-
-void nc_position_gen_castles(nc_position* dst, nc_movelist* out) {
-    nc_abort("Not implemented!");
 }
 
 void nc_position_gen_pawn_moves(nc_position* p, nc_movelist* out, int captures) {
@@ -646,6 +640,36 @@ void nc_position_gen_king_moves(nc_position* p, nc_movelist* out, int captures) 
             while (moves) {
                 nc_square dst = nc_bb_poplsb(&moves);
                 nc_movelist_push(out, nc_move_make(src, dst));
+            }
+        }
+    }
+}
+
+void nc_position_gen_castle_moves(nc_position* dst, nc_movelist* out) {
+    if (dst->color_to_move == NC_WHITE) {
+        /* check white castles */
+        if (dst->states[dst->ply].castling & NC_WHITE_QUEENSIDE) {
+            if (!(dst->global & (nc_bb_mask(NC_SQ_B1) | nc_bb_mask(NC_SQ_C1) | nc_bb_mask(NC_SQ_D1)))) {
+                nc_movelist_push(out, nc_move_make(NC_SQ_E1, NC_SQ_C1) | NC_CASTLE);
+            }
+        }
+
+        if (dst->states[dst->ply].castling & NC_WHITE_KINGSIDE) {
+            if (!(dst->global & (nc_bb_mask(NC_SQ_F1) | nc_bb_mask(NC_SQ_G1)))) {
+                nc_movelist_push(out, nc_move_make(NC_SQ_E1, NC_SQ_G1) | NC_CASTLE);
+            }
+        }
+    } else {
+        /* check black castles */
+        if (dst->states[dst->ply].castling & NC_BLACK_QUEENSIDE) {
+            if (!(dst->global & (nc_bb_mask(NC_SQ_B8) | nc_bb_mask(NC_SQ_C8) | nc_bb_mask(NC_SQ_D8)))) {
+                nc_movelist_push(out, nc_move_make(NC_SQ_E8, NC_SQ_C8) | NC_CASTLE);
+            }
+        }
+
+        if (dst->states[dst->ply].castling & NC_BLACK_KINGSIDE) {
+            if (!(dst->global & (nc_bb_mask(NC_SQ_F8) | nc_bb_mask(NC_SQ_G8)))) {
+                nc_movelist_push(out, nc_move_make(NC_SQ_E8, NC_SQ_G8) | NC_CASTLE);
             }
         }
     }
