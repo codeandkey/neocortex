@@ -1,6 +1,5 @@
 compiler: gcc
-language: c++
+language: c
 
 script:
     - make
-    - ./nc2 test
