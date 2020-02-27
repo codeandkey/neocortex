@@ -1,10 +1,10 @@
-CXX      = g++
-CXXFLAGS = -std=c++11 -Wall -Werror -O3 -ffast-math
-LDFLAGS  = -pthread
-OUTPUT   = nc2
+CC      = gcc
+CCFLAGS = -std=gnu99 -Wall -Werror -g -DNC_DEBUG
+LDFLAGS  = -pthread -rdynamic
+OUTPUT   = nc3
 
-SOURCES = $(wildcard src/*.cpp) $(wildcard src/tests/*.cpp)
-OBJECTS = $(SOURCES:.cpp=.o)
+SOURCES = $(wildcard src/*.c)
+OBJECTS = $(SOURCES:.c=.o)
 
 .PHONY: clean
 
@@ -12,11 +12,11 @@ all: $(OUTPUT)
 
 $(OUTPUT): $(OBJECTS)
 	@echo ld $@
-	@$(CXX) $^ $(LDFLAGS) -o $@
+	@$(CC) $^ $(LDFLAGS) -o $@
 
-%.o: %.cpp
+%.o: %.c
 	@echo cc $<
-	@$(CXX) $(CXXFLAGS) -c $< -o $@
+	@$(CC) $(CCFLAGS) -c $< -o $@
 
 clean:
 	@echo clean

@@ -1,110 +1,124 @@
 #pragma once
 
+#include "util.h"
+
+#include <ctype.h>
+
 /*
- * Piece constants and helpers.
+ * Piece types and constants
  */
 
-#include <vector>
-#include "types.h"
+/* Piece types */
+typedef int nc_ptype;
 
-namespace nc2 {
-    namespace piece {
-        enum Type {
-            PAWN   = 0,
-            KNIGHT = 1,
-            BISHOP = 2,
-            ROOK   = 3,
-            KING   = 4,
-            QUEEN  = 5,
-            NONE   = 7,
-        };
+#define NC_PTYPE_NULL -1
+#define NC_PAWN 0
+#define NC_ROOK 1
+#define NC_KNIGHT 2
+#define NC_BISHOP 3
+#define NC_QUEEN 4
+#define NC_KING 5
 
-        enum Color {
-            WHITE = 0,
-            BLACK = 1,
-        };
+/* Piece type manipulation */
+static inline int nc_ptype_is_valid(nc_ptype pt) {
+    return (pt >= 0 && pt <= 5);
+}
 
-        constexpr u8 null = 0xF;
+static inline char nc_ptype_tochar(nc_ptype pt) {
+    nc_assert(nc_ptype_is_valid(pt));
+    return "prkbqk"[pt]; /* sneaky */
+}
 
-        constexpr u8 WHITE_PAWN = 0;
-        constexpr u8 BLACK_PAWN = 1;
-        constexpr u8 WHITE_KNIGHT= 2;
-        constexpr u8 BLACK_KNIGHT = 3;
-        constexpr u8 WHITE_BISHOP = 4;
-        constexpr u8 BLACK_BISHOP = 5;
-        constexpr u8 WHITE_ROOK = 6;
-        constexpr u8 BLACK_ROOK = 7;
-        constexpr u8 WHITE_KING = 8;
-        constexpr u8 BLACK_KING = 9;
-        constexpr u8 WHITE_QUEEN = 10;
-        constexpr u8 BLACK_QUEEN = 11;
-
-        /**
-         * Makes a piece from a type and color.
-         *
-         * @param type Piece type.
-         * @param color Piece color.
-         *
-         * @return New piece value.
-         */
-        u8 make(u8 type, u8 color);
-
-        /**
-         * Gets the type of a piece.
-         *
-         * @param p Piece value.
-         * @return Piece type.
-         */
-        u8 type(u8 p);
-
-        /**
-         * Gets the color of a piece.
-         *
-         * @param p Piece value.
-         * @return Piece type.
-         */
-        u8 color(u8 p);
-
-        /**
-         * Gets the inverse of a color.
-         *
-         * @param c Input color.
-         * @return Flipped color.
-         */
-        u8 colorflip(u8 c);
-
-        /**
-         * Gets a printable UCI character for a piece.
-         *
-         * @param p Input piece.
-         * @return UCI character.
-         */
-        char uci(u8 p);
-
-        /**
-         * Gets a printable type character for a piece. Always lowercase.
-         *
-         * @param p Input piece.
-         * @return Type character.
-         */
-        char type_char(u8 t);
-
-        /**
-         * Tests if a piece exists and is not null.
-         *
-         * @param p Input piece.
-         * @return true if p is a piece, false otherwise.
-         */
-        bool exists(u8 p);
-
-        /**
-         * Initializes a vector of pieces from a FEN piece character.
-         * '8' will translate to 8 empty squares, otherwise the vector will be of size 1 and contain the UCI
-         * equivalent.
-         *
-         * @param FEN input character
-         * @return List of pieces.
-         */
-        std::vector<u8> from_uci(char c);
+static inline nc_ptype nc_ptype_fromchar(char c) {
+    switch (c) {
+    case 'p':
+        return NC_PAWN;
+    case 'r':
+        return NC_ROOK;
+    case 'n':
+        return NC_KNIGHT;
+    case 'b':
+        return NC_BISHOP;
+    case 'q':
+        return NC_QUEEN;
+    case 'k':
+        return NC_KING;
+    default:
+        return NC_PTYPE_NULL;
     }
+}
+
+/* Piece colors */
+typedef int nc_color;
+
+#define NC_WHITE 0
+#define NC_BLACK 1
+
+/* Color manipulation */
+static inline int nc_color_is_valid(nc_color in) {
+    return (in >= 0 && in <= 1);
+}
+
+static inline nc_color nc_colorflip(nc_color in) {
+    nc_assert(nc_color_is_valid(in));
+    return !in;
+}
+
+static inline char nc_colorchar(nc_color in) {
+    nc_assert(nc_color_is_valid(in));
+    return (in == NC_WHITE) ? 'w' : 'b';
+}
+
+/* Generic piece type. */
+typedef int nc_piece;
+
+/* Piece literals */
+#define NC_PIECE_NULL -1
+#define NC_WHITE_PAWN 0
+#define NC_BLACK_PAWN 1
+#define NC_WHITE_ROOK 2
+#define NC_BLACK_ROOK 3
+#define NC_WHITE_KNIGHT 4
+#define NC_BLACK_KNIGHT 5
+#define NC_WHITE_BISHOP 6
+#define NC_BLACK_BISHOP 7
+#define NC_WHITE_QUEEN 8
+#define NC_BLACK_QUEEN 9
+#define NC_WHITE_KING 10
+#define NC_BLACK_KING 11
+
+/* Piece manipulation */
+static inline int nc_piece_is_valid(nc_piece p) {
+    return (p >= 0 && p <= 11);
+}
+
+static inline nc_piece nc_piece_make(nc_color col, nc_ptype t) {
+    nc_assert(nc_color_is_valid(col));
+    nc_assert(nc_ptype_is_valid(t));
+
+    return (t << 1) | col;
+}
+
+static inline nc_color nc_piece_color(nc_piece p) {
+    nc_assert(nc_piece_is_valid(p));
+    return p & 1;
+}
+
+static inline nc_ptype nc_piece_type(nc_piece p) {
+    nc_assertf(nc_piece_is_valid(p), "Invalid piece %d", p);
+    return p >> 1;
+}
+
+static inline char nc_piece_touci(nc_piece p) {
+    if (p == NC_PIECE_NULL) return '-';
+    nc_assert(nc_piece_is_valid(p));
+    return "PpRrNnBbQqKk"[p];
+}
+
+static inline nc_piece nc_piece_fromuci(char in) {
+    char lc = tolower(in);
+    nc_ptype pt = nc_ptype_fromchar(lc);
+
+    if (!nc_ptype_is_valid(pt)) return NC_PIECE_NULL;
+    return nc_piece_make((lc == in) ? NC_BLACK : NC_WHITE, pt);
 }

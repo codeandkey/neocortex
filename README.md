@@ -1,18 +1,20 @@
 ## neocortex
 
 ### about
-neocortex is an improved total rewrite of [cortex](https://github.com/codeandkey/cortex/). It aims to be
-a significantly stronger and faster engine.
+neocortex is a UCI chess engine, designed to be efficient and powerful.
 
-### implemented features
-- Alpha-beta iterative deepening search
-- Bitboard move generation
-- UCI interface
-- Transposition table with Zobrist keys
+You can play against it [here!](https://lichess.org/?user=cortexbot#friend)
+
+### architecture
+- Prinipcal variation search with iterative deepening
+- Bitboard representation, magic bitboard move generation
+- Transposition table with Zobrist hashing
+- Incremental position update, lazy PST evaluation
 - Time control management
+- UCI interface
 
 ### dependencies
-To compile neocortex, you need a compiler supporting c++11 (gcc >= 4.8.1).
+neocortex will build on any gcc supporting c99.
 
 To build docs, you will need [Doxygen](http://www.doxygen.nl/) installed and available in your `PATH`.
 

@@ -1,163 +1,102 @@
 #pragma once
 
-#include <vector>
-#include <utility>
+/*
+ * Represents a single game position.
+ */
 
-#include "types.h"
+#include "bb.h"
 #include "move.h"
-#include "occ.h"
-#include "eval_type.h"
-#include "result.h"
+#include "square.h"
+#include "zobrist.h"
+#include "eval.h"
+#include "pst.h"
 
-namespace nc2 {
-    class Position {
-        public:
-            typedef std::pair<Move, Position> Transition;
+#include <stdlib.h>
 
-            /**
-             * Constructs a new standard position.
-             */
-            Position(); /* standard */
+/* Castle right flags */
 
-            /**
-             * Constructs a position from a FEN source.
-             *
-             * @param fen FEN input.
-             */
-            Position(std::string fen);
+#define NC_WHITE_QUEENSIDE 1
+#define NC_WHITE_KINGSIDE  2
+#define NC_BLACK_QUEENSIDE 4
+#define NC_BLACK_KINGSIDE  8
+#define NC_CASTLE_ALL 0xF
 
-            /**
-             * Generates legal moves for the position.
-             *
-             * @return Legal transition list.
-             */
-            std::vector<Transition> gen_legal_moves();
+/* Position configuration */
+#define NC_MAX_PLY 512
 
-            /**
-             * Gets a printable string with lots of info about the Position.
-             *
-             * @return Debug string.
-             */
-            std::string get_debug_string();
+typedef struct {
+    int castling, check;
+    nc_square ep_target;
+    int halfmove_clock;
+    nc_piece captured;
+    nc_square captured_at;
+    nc_move lastmove;
+} nc_pstate;
 
-            /**
-             * Gets the transposition table index for this position.
-             *
-             * @return Transposition table key.
-             */
-            u64 get_ttable_key();
+typedef struct {
+    nc_pstate states[NC_MAX_PLY];
+    int ply;
 
-            /**
-             * Gets the stored ttable result, or a 0-depth eval for the position.
-             *
-             * @param thit_counter Incremented if transposition table hits.
-             * @return Best known PV and score for this position.
-             */
-            Result& get_best_line(int* thit_counter);
+    nc_zkey key;
+    nc_color color_to_move;
 
-            /**
-             * Stores a new best line for this position.
-             *
-             * @param line New best line.
-             */
-            void store_best_line(Result& line);
+    /* Incremental evaluation (NOT from the perspective of CTM) */
+    nc_pst_eval score;
 
-            /**
-             * Checks if the node is quiet.
-             * Loud positions occur when a piece is captured or check is delivered.
-             *
-             * @return true if position is quiet, false otherwise.
-             */
-            bool is_quiet();
+    /* Occupancy bitboards */
+    nc_bb color[2], piece[6], global;
 
-            /**
-             * Gets the color to move.
-             *
-             * @return Color to move.
-             */
-            u8 get_color_to_move();
+    /* Piece array */
+    nc_piece board[64];
+} nc_position;
 
-            /**
-             * Tests if a color is in check.
-             *
-             * @param col Color to test.
-             *
-             * @return true if `col` is in check, false otherwise.
-             */
-            bool get_color_in_check(u8 col);
+/* Standard position init */
+void nc_position_init(nc_position* dst);
 
-            /**
-             * Gets a pointer to the board state.
-             *
-             * @return Board pointer.
-             */
-            u8* get_board();
-            
-        private:
-            Occboard global_occ;
-            Occboard color_occ[2];
-            u8 color_to_move;
-            u8 board[64];
-            u8 en_passant_target;
-            u64 ttable_index;
+/* FEN parsing */
+void nc_position_init_fen(nc_position* dst, const char* fen);
 
-            u64 attack_masks[2]; /* [color] */
-            u64 king_masks[2]; /* [color] */
-            bool check_states[2]; /* [color] */
+/* Position move interface */
+void nc_position_make_move(nc_position* dst, nc_move move);
+void nc_position_unmake_move(nc_position* dst, nc_move move);
 
-            bool quiet;
+/* State transition helpers */
+void nc_position_update_castling(nc_position* dst, int old, int next);
+void nc_position_update_ep_target(nc_position* dst, nc_square old, nc_square target);
 
-            /* FEN bits, game state */
-            bool castle_states[2][2]; /* [color][kingside] */
-            int fullmove_number, halfmove_clock;
+/* Board manipulation */
+void nc_position_place_piece(nc_position* dst, nc_piece p, nc_square at);
+void nc_position_replace_piece(nc_position* dst, nc_piece p, nc_square at);
+void nc_position_move_piece(nc_position* dst, nc_square from, nc_square to);
+nc_piece nc_position_remove_piece(nc_position* dst, nc_square at);
+nc_piece nc_position_capture_piece(nc_position* dst, nc_square from, nc_square to);
 
-            Result best_line;
+/* Occupancy manipulation */
+void nc_position_flip_piece(nc_position* dst, nc_piece p, nc_square at);
 
-            /**
-             * Generates all pseudolegal moves.
-             * Does not test if the resulting position has the king in check, this is done later in gen_legal_moves().
-             *
-             * @return List of pseudolegal transitions.
-             */
-            std::vector<Transition> gen_pseudolegal_moves();
-            
-            /**
-             * Filters basic input moves for well-behaved pieces (rook, knight, bishop, king, queen).
-             *
-             * @param source Input move list.
-             * @param out Destination move list.
-             */
-            void filter_basic_moves(const std::vector<Move>& source, std::vector<Transition>* out);
+/* Debugging */
+void nc_position_dump(nc_position* p, FILE* out, int include_moves);
 
-            /**
-             * Filters valid pawn captures into a transition output.
-             *
-             * @param source Input move list.
-             * @param out Destination move list.
-             */
-            void filter_pawn_captures(const std::vector<Move>& source, std::vector<Transition>* out);
+/* Move generation */
+void nc_position_legal_moves(nc_position* dst, nc_movelist* out);
 
-            /**
-             * Filters pawn advances.
-             *
-             * @param source Input move list.
-             * @param out Destination move list.
-             */
-            void filter_pawn_advances(const std::vector<Move>& source, std::vector<Transition>* out);
+/* Specific pseudolegal move generation. Used to influence move ordering */
+void nc_position_gen_pawn_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_rook_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_knight_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_bishop_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_queen_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_king_moves(nc_position* dst, nc_movelist* out, int captures);
+void nc_position_gen_castle_moves(nc_position* dst, nc_movelist* out);
 
-            /**
-             * Generates legal castling moves.
-             *
-             * @return Legal move list.
-             */
-            std::vector<Transition> gen_castle_moves();
+/* Attack mask reloading */
+nc_bb nc_position_gen_attack_mask_for(nc_position* dst, nc_color by, nc_bb illegal_mask);
 
-            /**
-             * Updates the position check states.
-             * If the color not to move is currently in check then the position is illegal.
-             *
-             * @return true if the position is legal, false otherwise.
-             */
-            bool update_check_states();
-    };
+/* Position examining */
+static inline int nc_position_is_quiet(nc_position* p) {
+    return (p->states[p->ply].captured == NC_PIECE_NULL) && !p->states[p->ply].check;
+}
+
+static inline nc_eval nc_position_get_score(nc_position* p) {
+    return p->score.mg[p->color_to_move] - p->score.mg[nc_colorflip(p->color_to_move)];
 }

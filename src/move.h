@@ -1,61 +1,71 @@
 #pragma once
 
 /*
- * Basic move structure.
- * Only stores to, from squares and promotion type.
+ * Moves are packed into a single int.
+ *
+ * LSB
+ * 0-5: target square
+ * 6-11: source square
+ * 12-19: flags
+ * 20-23: promotion type
  */
 
-#include <string>
-
 #include "piece.h"
-#include "types.h"
+#include "square.h"
 
-namespace nc2 {
-    class Move {
-        public:
-            /**
-             * Initializes a null move.
-             */
-            Move();
+typedef int nc_move;
 
-            /**
-             * Initializes a uci move.
-             *
-             * @param from From square.
-             * @param to To square.
-             * @param ptype Promotion type.
-             */
-            Move(u8 from, u8 to, u8 ptype = piece::Type::NONE);
+/* Move literals */
+#define NC_MOVE_NULL -1
 
-            /**
-             * Gets the source square.
-             *
-             * @return From square.
-             */
-            u8 get_from();
+/* Move flags */
+#define NC_PROMOTION 0x1000
+#define NC_CAPTURE   0x2000
+#define NC_PAWNJUMP  0x4000
+#define NC_CASTLE    0x8000
+#define NC_CHECK     0x10000
 
-            /**
-             * Gets the destination square.
-             *
-             * @return To square.
-             */
-            u8 get_to();
+/* Movelist compile time config. */
+#define NC_MOVELIST_LEN 256
 
-            /**
-             * Gets the promotion type.
-             *
-             * @return Promotion piece type.
-             */
-            u8 get_ptype();
+typedef struct {
+    nc_move moves[NC_MOVELIST_LEN];
+    int len;
+} nc_movelist;
 
-            /**
-             * Gets the move as a printable string (UCI notation)
-             *
-             * @return Printable move string.
-             */
-            std::string to_string();
+const char* nc_move_tostr(nc_move in);
+nc_move nc_move_fromstr(const char* in);
 
-        private:
-            u8 from, to, ptype;
-    };
+static inline nc_move nc_move_make(nc_square from, nc_square to) {
+    return (from << 6) | to;
+} 
+
+static inline nc_move nc_move_promotion(nc_move inp, int ptype) {
+    return inp | NC_PROMOTION | (ptype << 20);
 }
+
+static inline nc_move nc_move_capture(nc_move inp) {
+    return inp | NC_CAPTURE;
+}
+
+static inline nc_square nc_move_get_src(nc_move inp) {
+    return (inp >> 6) & 0x3F;
+}
+
+static inline nc_square nc_move_get_dst(nc_move inp) {
+    return inp & 0x3F;
+}
+
+static inline int nc_move_get_ptype(nc_move inp) {
+    return (inp >> 20) & 0xF;
+}
+
+static inline void nc_movelist_push(nc_movelist* out, nc_move m) {
+    out->moves[out->len++] = m;
+}
+
+static inline void nc_movelist_clear(nc_movelist* out) {
+    out->len = 0;
+}
+
+nc_move nc_movelist_match(nc_movelist* lst, nc_move in);
