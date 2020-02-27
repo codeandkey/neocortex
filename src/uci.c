@@ -118,11 +118,11 @@ int nc_uci_start(FILE* in, FILE* out) {
 
             for (char* arg = strtok(NULL, " "); arg; arg = strtok(NULL, " ")) {
                 if (!strcmp(arg, "wtime")) {
-                    movetime[NC_WHITE] = strtol(strtok(NULL, " "), NULL, 10) / 2;
+                    movetime[NC_WHITE] = strtol(strtok(NULL, " "), NULL, 10) / NC_UCI_TIME_FACTOR;
                 }
 
                 if (!strcmp(arg, "btime")) {
-                    movetime[NC_BLACK] = strtol(strtok(NULL, " "), NULL, 10) / 2;
+                    movetime[NC_BLACK] = strtol(strtok(NULL, " "), NULL, 10) / NC_UCI_TIME_FACTOR;
                 }
             }
 

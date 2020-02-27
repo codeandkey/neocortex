@@ -12,5 +12,6 @@
 
 #define NC_UCI_MAXDEPTH 10
 #define NC_UCI_MAX_MOVETIME 13500
+#define NC_UCI_TIME_FACTOR 12
 
 int nc_uci_start(FILE* in, FILE* out);
