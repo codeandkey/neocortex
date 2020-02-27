@@ -118,15 +118,18 @@ int nc_uci_start(FILE* in, FILE* out) {
 
             for (char* arg = strtok(NULL, " "); arg; arg = strtok(NULL, " ")) {
                 if (!strcmp(arg, "wtime")) {
-                    movetime[NC_WHITE] = strtol(strtok(NULL, " "), NULL, 10) / 7;
+                    movetime[NC_WHITE] = strtol(strtok(NULL, " "), NULL, 10) / NC_UCI_TIME_FACTOR;
                 }
 
                 if (!strcmp(arg, "btime")) {
-                    movetime[NC_BLACK] = strtol(strtok(NULL, " "), NULL, 10) / 7;
+                    movetime[NC_BLACK] = strtol(strtok(NULL, " "), NULL, 10) / NC_UCI_TIME_FACTOR;
                 }
             }
 
-            int maxtime = movetime[game_pos.color_to_move] ? nc_timer_futurems(movetime[game_pos.color_to_move]) : 0;
+            int ourtime = movetime[game_pos.color_to_move];
+            if (ourtime > NC_UCI_MAX_MOVETIME) ourtime = NC_UCI_MAX_MOVETIME; /* don't wait too long */
+
+            int maxtime = ourtime ? nc_timer_futurems(ourtime) : 0;
 
             nc_move pv[NC_UCI_MAXDEPTH];
             pv[0] = NC_MOVE_NULL;
