@@ -117,7 +117,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_move best_move = pv_move;
 
     nc_position_make_move(p, pv_move);
-    best_value = -_nc_search_pv(p, depth - 1, -beta, -alpha, NULL, max_time);
+    best_value = -_nc_search_pv(p, (pv_move & NC_CHECK) ? depth : depth - 1, -beta, -alpha, NULL, max_time);
     nc_position_unmake_move(p, pv_move);
 
     if (best_value > alpha) {
@@ -130,10 +130,10 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         if (cur == pv_move) continue; /* PV move was already searched */
 
         nc_position_make_move(p, cur);
-        nc_eval score = -_nc_search_pv(p, depth - 1, -alpha - 1, -alpha, NULL, max_time);
+        nc_eval score = -_nc_search_pv(p, (cur & NC_CHECK) ? depth : depth - 1, -alpha - 1, -alpha, NULL, max_time);
 
         if (alpha < score && score < beta) {
-            score = -_nc_search_pv(p, depth - 1, -alpha - 1, -alpha, NULL, max_time);
+            score = -_nc_search_pv(p, (cur & NC_CHECK) ? depth : depth - 1, -alpha - 1, -alpha, NULL, max_time);
         }
         nc_position_unmake_move(p, cur);
 
