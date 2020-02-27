@@ -11,5 +11,6 @@
 #define NC_UCI_AUTHOR "codeandkey"
 
 #define NC_UCI_MAXDEPTH 10
+#define NC_UCI_MAX_MOVETIME 13500
 
 int nc_uci_start(FILE* in, FILE* out);
