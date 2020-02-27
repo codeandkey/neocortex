@@ -13,6 +13,8 @@
 #include "piece.h"
 #include "square.h"
 
+#include <string.h>
+
 typedef int nc_move;
 
 /* Move literals */
@@ -66,6 +68,11 @@ static inline void nc_movelist_push(nc_movelist* out, nc_move m) {
 
 static inline void nc_movelist_clear(nc_movelist* out) {
     out->len = 0;
+}
+
+static inline void nc_movelist_concat(nc_movelist* dst, nc_movelist* src) {
+    memcpy(dst->moves + dst->len, src->moves, src->len * sizeof src->moves[0]);
+    dst->len += src->len;
 }
 
 nc_move nc_movelist_match(nc_movelist* lst, nc_move in);

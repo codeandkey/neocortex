@@ -9,7 +9,7 @@
  * Position searcher
  */
 
-nc_eval nc_search(nc_position* root, int depth, nc_move* pv_line, nc_timepoint max_time);
+nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_line, nc_timepoint max_time);
 
 int nc_search_get_nodes();
 int nc_search_get_nps();

@@ -2,19 +2,19 @@
 #include "tt.h"
 
 static nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint max_time);
-static nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_move* pv_line, nc_timepoint max_time);
+static nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_movelist* pv_out, nc_timepoint max_time);
 
 static int _nc_search_nodes;
 static int _nc_search_leaves;
 static nc_timepoint _nc_search_start;
 static nc_timepoint _nc_search_end;
 
-nc_eval nc_search(nc_position* root, int depth, nc_move* pv_line, nc_timepoint max_time) {
+nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_out, nc_timepoint max_time) {
     _nc_search_nodes = 0;
     _nc_search_leaves = 0;
 
     _nc_search_start = nc_timer_current();
-    nc_eval ret = _nc_search_pv(root, depth, NC_EVAL_MIN, NC_EVAL_MAX, pv_line, max_time);
+    nc_eval ret = _nc_search_pv(root, depth, NC_EVAL_MIN, NC_EVAL_MAX, pv_out, max_time);
     _nc_search_end = nc_timer_current();
 
     return ret;
@@ -64,8 +64,11 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
     return nc_eval_parent(best_score);
 }
 
-nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_move* pv_line, nc_timepoint max_time) {
+nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_movelist* pv_out, nc_timepoint max_time) {
     ++_nc_search_nodes;
+
+    nc_movelist best_pv, current_pv;
+    nc_movelist_clear(pv_out);
 
     if (depth <= 0 || (max_time && nc_timer_current() >= max_time)) {
         return _nc_search_q(p, alpha, beta, max_time);
@@ -78,15 +81,21 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
 
     if (tt->key == p->key && tt->depth >= depth) {
         if (tt->type == NC_TT_EXACT) {
-            if (pv_line) *pv_line = tt->bestmove;
+            /* Walk to the end of the pv. */
+            nc_position_make_move(p, tt->bestmove);
+
+            _nc_search_pv(p, depth - 1, -beta, -alpha, &best_pv, max_time);
+            nc_movelist_push(pv_out, tt->bestmove);
+            nc_movelist_concat(pv_out, &best_pv);
+
+            nc_position_unmake_move(p, tt->bestmove);
+
             return tt->score;
         } else if (tt->type == NC_TT_LOWERBOUND) {
             if (tt->score > alpha) alpha = tt->score;
         } else if (tt->type == NC_TT_UPPERBOUND) {
             if (tt->score < beta) beta = tt->score;
         }
-
-        if (alpha >= beta) return tt->score;
     }
 
     /* Grab PV move from TT entry */
@@ -117,7 +126,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_move best_move = pv_move;
 
     nc_position_make_move(p, pv_move);
-    best_value = -_nc_search_pv(p, (pv_move & NC_CHECK) ? depth : depth - 1, -beta, -alpha, NULL, max_time);
+    best_value = -_nc_search_pv(p, (pv_move & NC_CHECK) ? depth : depth - 1, -beta, -alpha, &best_pv, max_time);
     nc_position_unmake_move(p, pv_move);
 
     if (best_value > alpha) {
@@ -130,16 +139,18 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         if (cur == pv_move) continue; /* PV move was already searched */
 
         nc_position_make_move(p, cur);
-        nc_eval score = -_nc_search_pv(p, (cur & NC_CHECK) ? depth : depth - 1, -alpha - 1, -alpha, NULL, max_time);
+        nc_eval score = -_nc_search_pv(p, (cur & NC_CHECK) ? depth : depth - 1, -alpha - 1, -alpha, &current_pv, max_time);
 
         if (alpha < score && score < beta) {
-            score = -_nc_search_pv(p, (cur & NC_CHECK) ? depth : depth - 1, -alpha - 1, -alpha, NULL, max_time);
+            score = -_nc_search_pv(p, (cur & NC_CHECK) ? depth : depth - 1, -alpha - 1, -alpha, &current_pv, max_time);
         }
         nc_position_unmake_move(p, cur);
 
         if (score > best_value) {
             best_value = score;
             best_move = cur;
+
+            memcpy(&best_pv, &current_pv, sizeof current_pv);
 
             if (score > beta) break;
         }
@@ -159,7 +170,10 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         tt->type = NC_TT_EXACT;
     }
 
-    if (pv_line) *pv_line = best_move;
+    /* Generate output pv */
+    nc_movelist_push(pv_out, best_move);
+    nc_movelist_concat(pv_out, &best_pv);
+
     return nc_eval_parent(best_value);
 }
 

@@ -131,20 +131,25 @@ int nc_uci_start(FILE* in, FILE* out) {
 
             int maxtime = ourtime ? nc_timer_futurems(ourtime) : 0;
 
-            nc_move pv[NC_UCI_MAXDEPTH];
-            pv[0] = NC_MOVE_NULL;
+            nc_movelist best_pv;
 
             for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
-                nc_move bestmove;
-                nc_eval score = nc_search(&game_pos, d, &bestmove, maxtime);
+                nc_movelist current_pv;
+                nc_eval score = nc_search(&game_pos, d, &current_pv, maxtime);
 
-                if (nc_timer_current() >= maxtime) break; /* don't use incomplete searches */
+                if (nc_timer_current() >= maxtime && d > 1) break; /* don't use incomplete searches */
 
-                pv[0] = bestmove;
-                fprintf(out, "info depth %d nodes %d nps %d time %d score %s pv %s\n", d, nc_search_get_nodes(), nc_search_get_nps(), nc_search_get_time(), nc_eval_tostr(score), nc_move_tostr(pv[0]));
+                fprintf(out, "info depth %d nodes %d nps %d time %d score %s pv", d, nc_search_get_nodes(), nc_search_get_nps(), nc_search_get_time(), nc_eval_tostr(score));
+
+                for (int i = 0; i < current_pv.len; ++i) {
+                    fprintf(out, " %s", nc_move_tostr(current_pv.moves[i]));
+                }
+
+                fprintf(out, "\n");
+                best_pv = current_pv;
             }
 
-            fprintf(out, "bestmove %s\n", nc_move_tostr(pv[0]));
+            fprintf(out, "bestmove %s\n", nc_move_tostr(best_pv.moves[0]));
         }
     }
 

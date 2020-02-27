@@ -177,6 +177,9 @@ void nc_position_make_move(nc_position* p, nc_move move) {
     nc_pstate* last = p->states + p->ply, *next = p->states + ++p->ply;
     *next = *last;
 
+    /* Flip BTM key */
+    p->key ^= nc_zobrist_black_to_move();
+
     /* Set lastmove */
     next->lastmove = move;
 
@@ -287,7 +290,10 @@ void nc_position_unmake_move(nc_position* p, nc_move move) {
     nc_pstate* cur = p->states + p->ply, *prev = p->states + --p->ply;
 
     /* Check the move is the right one */
-    nc_assert(move == cur->lastmove);
+    nc_passertf(p, move == cur->lastmove, "Expected move %d, got move %d", cur->lastmove, move);
+
+    /* Flip BTM key */
+    p->key ^= nc_zobrist_black_to_move();
 
     /* Flip color to move early */
     /* p->color_to_move is the color that made the move we are unmaking. */
@@ -423,9 +429,9 @@ nc_piece nc_position_capture_piece(nc_position* dst, nc_square from, nc_square t
     nc_piece psrc = dst->board[from];
     nc_piece pdst = dst->board[to];
 
-    nc_assert(psrc != NC_PIECE_NULL);
-    nc_assert(pdst != NC_PIECE_NULL);
-    nc_assert(nc_piece_color(psrc) != nc_piece_color(pdst));
+    nc_passertf(dst, psrc != NC_PIECE_NULL, "Source piece is null! from=%d to=%d", from, to);
+    nc_passertf(dst, pdst != NC_PIECE_NULL, "Destination piece is null! from=%d to=%d", from, to);
+    nc_passertf(dst, nc_piece_color(psrc) != nc_piece_color(pdst), "Source color matches dest color!");
 
     nc_position_flip_piece(dst, psrc, from);
     nc_position_flip_piece(dst, pdst, to);
