@@ -12,11 +12,13 @@
 #define NC_LOG_CYAN "\e[0;36m"
 #define NC_LOG_RESET "\e[0m"
 
+void nc_backtrace();
+
 #define nc_log(x, ...) fprintf(NC_LOG_FD, "[%s] " x "\n", __func__, ##__VA_ARGS__)
 
 #define nc_info(x, ...) nc_log(x, ##__VA_ARGS__)
 #define nc_error(x, ...) nc_log(NC_LOG_RED "(ERROR) " x NC_LOG_RESET, ##__VA_ARGS__)
-#define nc_abort(x, ...) (nc_error("(CRITICAL) " x, ##__VA_ARGS__), exit(1))
+#define nc_abort(x, ...) (nc_error("(CRITICAL) " x, ##__VA_ARGS__), nc_backtrace(), exit(1))
 
 #ifdef NC_DEBUG
 #define nc_debug(x, ...) nc_log(NC_LOG_CYAN "(DEBUG) " x NC_LOG_RESET, ##__VA_ARGS__)

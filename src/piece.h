@@ -105,11 +105,12 @@ static inline nc_color nc_piece_color(nc_piece p) {
 }
 
 static inline nc_ptype nc_piece_type(nc_piece p) {
-    nc_assert(nc_piece_is_valid(p));
+    nc_assertf(nc_piece_is_valid(p), "Invalid piece %d", p);
     return p >> 1;
 }
 
 static inline char nc_piece_touci(nc_piece p) {
+    if (p == NC_PIECE_NULL) return '-';
     nc_assert(nc_piece_is_valid(p));
     return "PpRrNnBbQqKk"[p];
 }

@@ -45,6 +45,12 @@ int nc_uci_start(FILE* in, FILE* out) {
 
         char* command = strtok(uci_buf, " \n");
 
+        if (!command) continue;
+
+        if (!strcmp(command, "dump")) {
+            nc_position_dump(&game_pos, stderr, 1);
+        }
+
         if (!strcmp(command, "quit")) {
             return 0;
         }
@@ -56,11 +62,27 @@ int nc_uci_start(FILE* in, FILE* out) {
         if (!strcmp(command, "position")) {
             char* next = strtok(NULL, " \n");
 
-            if (strcmp(next, "startpos")) {
-                nc_abort("FEN parsing not implemented!");
-            }
+            if (!strcmp(next, "startpos")) {
+                nc_position_init(&game_pos);
+            } else {
+                /* Build a FENbuf */
+                char fen[256];
+                int ind = 0;
 
-            nc_position_init(&game_pos);
+                memcpy(fen + ind, next, strlen(next));
+                ind += strlen(next);
+                fen[ind++] = ' ';
+
+                for (int i = 0; i < 5; ++i) {
+                    next = strtok(NULL, " \n");
+                    nc_assert(next);
+                    memcpy(fen + ind, next, strlen(next));
+                    ind += strlen(next);
+                    fen[ind++] = ' ';
+                };
+
+                nc_position_init_fen(&game_pos, fen);
+            }
 
             char* moves_word = strtok(NULL, " \n");
 

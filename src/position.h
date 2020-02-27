@@ -53,6 +53,9 @@ typedef struct {
 /* Standard position init */
 void nc_position_init(nc_position* dst);
 
+/* FEN parsing */
+void nc_position_init_fen(nc_position* dst, const char* fen);
+
 /* Position move interface */
 void nc_position_make_move(nc_position* dst, nc_move move);
 void nc_position_unmake_move(nc_position* dst, nc_move move);
@@ -72,7 +75,7 @@ nc_piece nc_position_capture_piece(nc_position* dst, nc_square from, nc_square t
 void nc_position_flip_piece(nc_position* dst, nc_piece p, nc_square at);
 
 /* Debugging */
-void nc_position_dump(nc_position* p, FILE* out);
+void nc_position_dump(nc_position* p, FILE* out, int include_moves);
 
 /* Move generation */
 void nc_position_legal_moves(nc_position* dst, nc_movelist* out);

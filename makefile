@@ -1,6 +1,6 @@
 CC      = gcc
 CCFLAGS = -std=gnu99 -Wall -Werror -g -DNC_DEBUG
-LDFLAGS  = -pthread
+LDFLAGS  = -pthread -rdynamic
 OUTPUT   = nc3
 
 SOURCES = $(wildcard src/*.c)

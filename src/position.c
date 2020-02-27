@@ -4,6 +4,8 @@
 
 #include <string.h>
 
+#define nc_passertf(p, c, x, ...) if (!(c)) { nc_position_dump(p, stderr, 0); nc_assertf(0, x, ##__VA_ARGS__); }
+
 void nc_position_init(nc_position* dst) {
     memset(dst, 0, sizeof *dst);
 
@@ -60,6 +62,114 @@ void nc_position_init(nc_position* dst) {
         nc_position_place_piece(dst, NC_WHITE_PAWN, nc_square_at(1, f));
         nc_position_place_piece(dst, NC_BLACK_PAWN, nc_square_at(6, f));
     }
+}
+
+void nc_position_init_fen(nc_position* dst, const char* fen) {
+    if (!strcmp(fen, "startpos")) {
+        nc_position_init(dst);
+        return;
+    }
+
+    memset(dst, 0, sizeof *dst);
+
+    /* Copy FEN for parsing */
+    int fen_len = strlen(fen);
+    char* fen_copy = malloc(fen_len + 1);
+    memcpy(fen_copy, fen, fen_len + 1);
+
+    /* Grab FEN fields */
+    char* fen_board = strtok(fen_copy, " \n");
+    char* fen_ctm = strtok(NULL, " \n");
+    char* fen_castling = strtok(NULL, " \n");
+    char* fen_ep_target = strtok(NULL, " \n");
+    char* fen_halfmove_clock = strtok(NULL, " \n");
+    char* fen_fullmove_number = strtok(NULL, " \n");
+
+    if (!fen_board || !fen_ctm || !fen_castling || !fen_ep_target || !fen_halfmove_clock || !fen_fullmove_number) {
+        nc_abort("Invalid FEN: missing fields!");
+    }
+
+    /* Set ply and other unknown state */
+    dst->ply = 0;
+    dst->states[dst->ply].captured = NC_PIECE_NULL;
+    dst->states[dst->ply].captured_at = NC_SQ_NULL;
+    dst->states[dst->ply].lastmove = NC_MOVE_NULL;
+
+    /* Initialize board memory to null */
+    for (int sq = 0; sq < 64; ++sq) {
+        dst->board[sq] = NC_PIECE_NULL;
+    }
+
+    /* Parse board pieces */
+    int rind = 7;
+    for (char* rank = strtok(fen_board, "/"); rank; rank = strtok(NULL, "/"), --rind) {
+        int len = strlen(rank), file = 0;
+        for (int i = 0; i < len; ++i) {
+            if (rank[i] >= '1' && rank[i] <= '8') {
+                /* skip pieces, set board to null */
+                int count = rank[i] - '0';
+                for (int k = 0; k < count; ++k) {
+                    dst->board[nc_square_at(rind, file + k)] = NC_PIECE_NULL;
+                }
+
+                file += count;
+            } else {
+                nc_position_place_piece(dst, nc_piece_fromuci(rank[i]), nc_square_at(rind, file));
+                ++file;
+            }
+        }
+    }
+
+    /* Set color to move */
+    switch (*fen_ctm) {
+        case 'w':
+            dst->color_to_move = NC_WHITE;
+            break;
+        case 'b':
+            dst->color_to_move = NC_BLACK;
+            break;
+        default:
+            nc_abort("Invalid FEN: bad color to move '%s'", fen_ctm);
+    }
+
+    /* Set castling state */
+    int new_castling = 0;
+
+    for (char* c = fen_castling; *c; ++c) {
+        switch (*c) {
+            case 'K':
+                new_castling |= NC_WHITE_KINGSIDE;
+                break;
+            case 'Q':
+                new_castling |= NC_WHITE_QUEENSIDE;
+                break;
+            case 'k':
+                new_castling |= NC_BLACK_KINGSIDE;
+                break;
+            case 'q':
+                new_castling |= NC_BLACK_QUEENSIDE;
+                break;
+            default:
+                nc_abort("Invalid FEN: invalid char '%c' in castling state", *c);
+        }
+    }
+
+    nc_position_update_castling(dst, -1, new_castling);
+
+    /* Set EP target */
+    nc_square ep = nc_square_fromstr(fen_ep_target);
+    nc_position_update_ep_target(dst, NC_SQ_NULL, ep);
+
+    /* Set halfmove clock */
+    dst->states[dst->ply].halfmove_clock = strtol(fen_halfmove_clock, NULL, 10);
+
+    /* Ignore the full move number for now */
+
+    /* Update check state */
+    nc_bb kingmask = dst->piece[NC_KING] & dst->color[dst->color_to_move];
+    dst->states[dst->ply].check = (nc_position_gen_attack_mask_for(dst, nc_colorflip(dst->color_to_move), kingmask) & kingmask) != 0ULL;
+
+    free(fen_copy);
 }
 
 void nc_position_make_move(nc_position* p, nc_move move) {
@@ -146,13 +256,21 @@ void nc_position_make_move(nc_position* p, nc_move move) {
             newrights &= NC_BLACK_QUEENSIDE | NC_BLACK_KINGSIDE;
         } else if (src == NC_SQ_E8) {
             newrights &= NC_WHITE_QUEENSIDE | NC_WHITE_KINGSIDE;
-        } else if (src == NC_SQ_A1 || dst == NC_SQ_A1) {
+        }
+        
+        if (src == NC_SQ_A1 || dst == NC_SQ_A1) {
             newrights &= ~NC_WHITE_QUEENSIDE;
-        } else if (src == NC_SQ_H1 || dst == NC_SQ_H1) {
+        }
+
+        if (src == NC_SQ_H1 || dst == NC_SQ_H1) {
             newrights &= ~NC_WHITE_KINGSIDE;
-        } else if (src == NC_SQ_A8 || dst == NC_SQ_A8) {
+        }
+
+        if (src == NC_SQ_A8 || dst == NC_SQ_A8) {
             newrights &= ~NC_BLACK_QUEENSIDE;
-        } else if (src == NC_SQ_H8 || dst == NC_SQ_H8) {
+        }
+
+        if (src == NC_SQ_H8 || dst == NC_SQ_H8) {
             newrights &= ~NC_BLACK_KINGSIDE;
         }
 
@@ -245,7 +363,7 @@ void nc_position_update_ep_target(nc_position* dst, nc_square old, nc_square new
 }
 
 void nc_position_place_piece(nc_position* dst, nc_piece p, nc_square at) {
-    nc_assert(dst->board[at] == NC_PIECE_NULL);
+    nc_passertf(dst, dst->board[at] == NC_PIECE_NULL, "Destination piece not null! (%c)", nc_piece_touci(dst->board[at]));
 
     nc_position_flip_piece(dst, p, at);
     nc_pst_add(&dst->score, p, at);
@@ -254,6 +372,8 @@ void nc_position_place_piece(nc_position* dst, nc_piece p, nc_square at) {
 }
 
 void nc_position_replace_piece(nc_position* dst, nc_piece p, nc_square at) {
+    nc_passertf(dst, dst->board[at] != NC_PIECE_NULL, "Destination piece null! (%c)", nc_piece_touci(dst->board[at]));
+
     nc_pst_remove(&dst->score, dst->board[at], at);
     nc_pst_add(&dst->score, p, at);
 
@@ -274,8 +394,8 @@ void nc_position_flip_piece(nc_position* dst, nc_piece p, nc_square at) {
 }
 
 void nc_position_move_piece(nc_position* dst, nc_square from, nc_square to) {
-    nc_assert(dst->board[from] != NC_PIECE_NULL);
-    nc_assert(dst->board[to] == NC_PIECE_NULL);
+    nc_passertf(dst, dst->board[from] != NC_PIECE_NULL, "Source piece null! (%c), from=%d, to=%d", nc_piece_touci(dst->board[from]), from, to);
+    nc_passertf(dst, dst->board[to] == NC_PIECE_NULL, "Destination piece not null! (%c) from=%d, to=%d", nc_piece_touci(dst->board[to]), from, to);
 
     nc_position_flip_piece(dst, dst->board[from], from);
     nc_position_flip_piece(dst, dst->board[from], to);
@@ -321,7 +441,7 @@ nc_piece nc_position_capture_piece(nc_position* dst, nc_square from, nc_square t
     return pdst;
 }
 
-void nc_position_dump(nc_position* p, FILE* out) {
+void nc_position_dump(nc_position* p, FILE* out, int include_moves) {
     /* Pretty-print the board and current state */
 
     char boardbits[8][9];
@@ -362,20 +482,44 @@ void nc_position_dump(nc_position* p, FILE* out) {
     fprintf(out, " 8 |%s| captured: %c, captured_at: %s\n", boardbits[0], captured, nc_square_tostr(p->states[p->ply].captured_at));
     fprintf(out, " 7 |%s| color_to_move: %c, key = %llx\n", boardbits[1], nc_colorchar(p->color_to_move), (unsigned long long) p->key);
     fprintf(out, " 6 |%s| lastmove: %s, castling: %s\n", boardbits[2], nc_move_tostr(p->states[p->ply].lastmove), castlestr);
-    fprintf(out, " 5 |%s|\n", boardbits[3]);
-    fprintf(out, " 4 |%s|\n", boardbits[4]);
+    fprintf(out, " 5 |%s| global: %llx\n", boardbits[3], (unsigned long long) p->global);
+    fprintf(out, " 4 |%s| check: %d\n", boardbits[4], p->states[p->ply].check != 0);
     fprintf(out, " 3 |%s|\n", boardbits[5]);
     fprintf(out, " 2 |%s|\n", boardbits[6]);
     fprintf(out, " 1 |%s|\n", boardbits[7]);
     fprintf(out, "   +--------+\n");
     fprintf(out, "    abcdefgh\n");
+
+    fprintf(out, "^ game history: ");
+
+    for (int i = 1; i <= p->ply; ++i) {
+        fprintf(out, "%s ", nc_move_tostr(p->states[i].lastmove));
+    }
+
+    fprintf(out, "\n");
+
+    if (include_moves) {
+        nc_movelist moves;
+        nc_movelist_clear(&moves);
+        nc_position_legal_moves(p, &moves);
+
+        fprintf(out, "^ legal moves (%d): ", moves.len);
+
+        for (int i = 0; i < moves.len; ++i) {
+            fprintf(out, "%s ", nc_move_tostr(moves.moves[i]));
+        }
+
+        fprintf(out, "\n");
+    }
+
+    fprintf(out, "^ opposite_attacks:\n%s", nc_bb_tostr(nc_position_gen_attack_mask_for(p, nc_colorflip(p->color_to_move), 0)));
 }
 
 void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
     nc_movelist pseudolegal;
     nc_movelist_clear(&pseudolegal);
 
-    nc_position_gen_castle_moves(dst, &pseudolegal);
+    if (!dst->states[dst->ply].check) nc_position_gen_castle_moves(dst, &pseudolegal);
 
     nc_position_gen_pawn_moves(dst, &pseudolegal, 1);
     nc_position_gen_queen_moves(dst, &pseudolegal, 1);
@@ -398,6 +542,8 @@ void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
         /* Here we also have to perform castle check testing. */
         nc_bb badmask = 0;
 
+        nc_position_make_move(dst, cur);
+
         if (cur & NC_CASTLE) {
             nc_square mvdst = nc_move_get_dst(cur);
 
@@ -416,10 +562,8 @@ void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
                 break;
             }
         } else {
-            badmask = dst->piece[NC_KING] & dst->color[dst->color_to_move];
+            badmask = dst->piece[NC_KING] & dst->color[nc_colorflip(dst->color_to_move)];
         }
-
-        nc_position_make_move(dst, cur);
 
         /* Check if the move is legal here, and also check if the move delivers check. */
         /* If the move is illegal, it is tossed. */
