@@ -13,3 +13,4 @@
 typedef int nc_eval;
 
 const char* nc_eval_tostr(nc_eval score);
+nc_eval nc_eval_parent(nc_eval score);

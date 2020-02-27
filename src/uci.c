@@ -118,11 +118,11 @@ int nc_uci_start(FILE* in, FILE* out) {
 
             for (char* arg = strtok(NULL, " "); arg; arg = strtok(NULL, " ")) {
                 if (!strcmp(arg, "wtime")) {
-                    movetime[NC_WHITE] = strtol(strtok(NULL, " "), NULL, 10) / 3;
+                    movetime[NC_WHITE] = strtol(strtok(NULL, " "), NULL, 10) / 7;
                 }
 
                 if (!strcmp(arg, "btime")) {
-                    movetime[NC_BLACK] = strtol(strtok(NULL, " "), NULL, 10) / 3;
+                    movetime[NC_BLACK] = strtol(strtok(NULL, " "), NULL, 10) / 7;
                 }
             }
 
@@ -132,11 +132,13 @@ int nc_uci_start(FILE* in, FILE* out) {
             pv[0] = NC_MOVE_NULL;
 
             for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
-                nc_eval score = nc_search(&game_pos, d, pv, maxtime);
+                nc_move bestmove;
+                nc_eval score = nc_search(&game_pos, d, &bestmove, maxtime);
 
+                if (nc_timer_current() >= maxtime) break; /* don't use incomplete searches */
+
+                pv[0] = bestmove;
                 fprintf(out, "info depth %d nodes %d nps %d time %d score %s pv %s\n", d, nc_search_get_nodes(), nc_search_get_nps(), nc_search_get_time(), nc_eval_tostr(score), nc_move_tostr(pv[0]));
-
-                if (maxtime && nc_timer_current() >= maxtime) break;
             }
 
             fprintf(out, "bestmove %s\n", nc_move_tostr(pv[0]));

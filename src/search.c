@@ -23,7 +23,7 @@ nc_eval nc_search(nc_position* root, int depth, nc_move* pv_line, nc_timepoint m
 nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint max_time) {
     ++_nc_search_nodes;
 
-    if (nc_position_is_quiet(p) || (max_time && nc_timer_current() >= max_time)) {
+    if (nc_position_is_quiet(p) || (max_time && (nc_timer_current() >= max_time))) {
         return nc_position_get_score(p);
     }
 
@@ -61,7 +61,7 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
         if (alpha >= beta) break;
     }
 
-    return best_score;
+    return nc_eval_parent(best_score);
 }
 
 nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_move* pv_line, nc_timepoint max_time) {
@@ -160,7 +160,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     }
 
     if (pv_line) *pv_line = best_move;
-    return best_value;
+    return nc_eval_parent(best_value);
 }
 
 int nc_search_get_nodes() {
