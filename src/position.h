@@ -31,6 +31,7 @@ typedef struct {
     nc_piece captured;
     nc_square captured_at;
     nc_move lastmove;
+    nc_zkey key; /* history key, stored for detecting repetition */
 } nc_pstate;
 
 typedef struct {
@@ -79,6 +80,9 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves);
 
 /* Move generation */
 void nc_position_legal_moves(nc_position* dst, nc_movelist* out);
+
+/* Repetition detection */
+int nc_position_is_repetition(nc_position* dst);
 
 /* Specific pseudolegal move generation. Used to influence move ordering */
 void nc_position_gen_pawn_moves(nc_position* dst, nc_movelist* out, int captures);

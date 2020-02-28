@@ -70,6 +70,10 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_movelist best_pv, current_pv;
     nc_movelist_clear(pv_out);
 
+    if (nc_position_is_repetition(p)) {
+        return NC_SEARCH_CONTEMPT;
+    }
+
     if (depth <= 0 || (max_time && nc_timer_current() >= max_time)) {
         return _nc_search_q(p, alpha, beta, max_time);
     }

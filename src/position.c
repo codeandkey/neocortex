@@ -173,6 +173,9 @@ void nc_position_init_fen(nc_position* dst, const char* fen) {
 }
 
 void nc_position_make_move(nc_position* p, nc_move move) {
+    /* Put key in history */
+    p->states[p->ply].key = p->key;
+
     /* Copy state to next ply */
     nc_pstate* last = p->states + p->ply, *next = p->states + ++p->ply;
     *next = *last;
@@ -592,6 +595,15 @@ void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
 
         nc_position_unmake_move(dst, cur);
     }
+}
+
+int nc_position_is_repetition(nc_position* p) {
+    /* walk through the ply and see if we've seen the key before */
+    for (int i = p->ply - 1; i >= 0; --i) {
+        if (p->states[i].key == p->key) return 1;
+    }
+
+    return 0;
 }
 
 void nc_position_gen_pawn_moves(nc_position* p, nc_movelist* out, int captures) {
