@@ -4,7 +4,11 @@
 
 #include <string.h>
 
+#ifdef NC_DEBUG
 #define nc_passertf(p, c, x, ...) if (!(c)) { nc_position_dump(p, stderr, 0); nc_assertf(0, x, ##__VA_ARGS__); }
+#else
+#define nc_passertf(p, c, x, ...)
+#endif
 
 void nc_position_init(nc_position* dst) {
     memset(dst, 0, sizeof *dst);
@@ -558,16 +562,16 @@ void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
 
             switch (mvdst) {
             case NC_SQ_C1:
-                badmask = NC_SQ_E1 | NC_SQ_D1 | NC_SQ_C1;
+                badmask = nc_bb_mask(NC_SQ_E1) | nc_bb_mask(NC_SQ_D1) | nc_bb_mask(NC_SQ_C1);
                 break;
             case NC_SQ_G1:
-                badmask = NC_SQ_E1 | NC_SQ_F1 | NC_SQ_G1;
+                badmask = nc_bb_mask(NC_SQ_E1) | nc_bb_mask(NC_SQ_F1) | nc_bb_mask(NC_SQ_G1);
                 break;
             case NC_SQ_C8:
-                badmask = NC_SQ_E8 | NC_SQ_D8 | NC_SQ_C8;
+                badmask = nc_bb_mask(NC_SQ_E8) | nc_bb_mask(NC_SQ_D8) | nc_bb_mask(NC_SQ_C8);
                 break;
             case NC_SQ_G8:
-                badmask = NC_SQ_E8 | NC_SQ_F8 | NC_SQ_G8;
+                badmask = nc_bb_mask(NC_SQ_E8) | nc_bb_mask(NC_SQ_F8) | nc_bb_mask(NC_SQ_G8);
                 break;
             }
         } else {
