@@ -137,6 +137,7 @@ int nc_uci_start(FILE* in, FILE* out) {
             int maxtime = (ourtime && !forcedepth) ? nc_timer_futurems(ourtime) : 0;
 
             nc_movelist best_pv;
+            nc_movelist_clear(&best_pv);
 
             for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
                 if (forcedepth && d > forcedepth) break;
