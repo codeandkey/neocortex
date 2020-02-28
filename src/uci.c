@@ -115,6 +115,7 @@ int nc_uci_start(FILE* in, FILE* out) {
 
         if (!strcmp(command, "go")) {
             int movetime[2] = {0};
+            int forcedepth = 0;
 
             for (char* arg = strtok(NULL, " "); arg; arg = strtok(NULL, " ")) {
                 if (!strcmp(arg, "wtime")) {
@@ -124,16 +125,22 @@ int nc_uci_start(FILE* in, FILE* out) {
                 if (!strcmp(arg, "btime")) {
                     movetime[NC_BLACK] = strtol(strtok(NULL, " "), NULL, 10) / NC_UCI_TIME_FACTOR;
                 }
+
+                if (!strcmp(arg, "forcedepth")) {
+                    forcedepth = strtol(strtok(NULL, " "), NULL, 10);
+                }
             }
 
             int ourtime = movetime[game_pos.color_to_move];
             if (ourtime > NC_UCI_MAX_MOVETIME) ourtime = NC_UCI_MAX_MOVETIME; /* don't wait too long */
 
-            int maxtime = ourtime ? nc_timer_futurems(ourtime) : 0;
+            int maxtime = (ourtime && !forcedepth) ? nc_timer_futurems(ourtime) : 0;
 
             nc_movelist best_pv;
 
             for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
+                if (forcedepth && d > forcedepth) break;
+
                 nc_movelist current_pv;
                 nc_eval score = nc_search(&game_pos, d, &current_pv, maxtime);
 
