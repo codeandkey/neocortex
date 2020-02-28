@@ -145,7 +145,7 @@ int nc_uci_start(FILE* in, FILE* out) {
                 nc_movelist current_pv;
                 nc_eval score = nc_search(&game_pos, d, &current_pv, maxtime);
 
-                if (nc_timer_current() >= maxtime && d > 1) break; /* don't use incomplete searches */
+                if (!forcedepth && (nc_timer_current() >= maxtime && d > 1)) break; /* don't use incomplete searches */
 
                 fprintf(out, "info depth %d nodes %d nps %d time %d score %s pv", d, nc_search_get_nodes(), nc_search_get_nps(), nc_search_get_time(), nc_eval_tostr(score));
 
