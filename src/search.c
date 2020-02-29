@@ -38,11 +38,9 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
             return NC_EVAL_MIN;
         } else {
             /* Stalemate! */
-            return 0;
+            return NC_SEARCH_CONTEMPT;
         }
     }
-
-    nc_eval best_score = NC_EVAL_MIN;
 
     for (int i = 0; i < next_moves.len; ++i) {
         nc_move cur = next_moves.moves[i];
@@ -52,23 +50,20 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
         nc_position_unmake_move(p, cur);
 
         if (score > alpha) alpha = score;
-        if (score < beta) beta = score;
-
-        if (score > best_score) {
-            best_score = score;
-        }
-
         if (alpha >= beta) break;
     }
 
-    return nc_eval_parent(best_score);
+    return nc_eval_parent(alpha);
 }
 
 nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_movelist* pv_out, nc_timepoint max_time) {
+    nc_move best_move;
+
     ++_nc_search_nodes;
 
     nc_movelist best_pv, current_pv;
     nc_movelist_clear(pv_out);
+    nc_movelist_clear(&best_pv);
 
     if (nc_position_is_repetition(p)) {
         return NC_SEARCH_CONTEMPT;
@@ -118,57 +113,84 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
             return NC_EVAL_MIN;
         } else {
             /* Stalemate! */
-            return 0;
+            return NC_SEARCH_CONTEMPT;
         }
     }
 
-    nc_eval best_value = NC_EVAL_MIN;
+    /* Perform move ordering */
 
-    /* Try the PV move first, with a full window. */
-    if (pv_move == NC_MOVE_NULL) pv_move = next_moves.moves[0];
+    /* First, score each move for ordering. */
+    nc_eval move_scores[NC_MOVELIST_LEN];
+    for (int i = 0; i < next_moves.len; ++i) {
+        if (next_moves.moves[i] == pv_move) move_scores[i] = NC_EVAL_MAX;
 
-    nc_move best_move = pv_move;
-
-    nc_position_make_move(p, pv_move);
-    best_value = -_nc_search_pv(p, (pv_move & NC_CHECK) ? depth : depth - 1, -beta, -alpha, &best_pv, max_time);
-    nc_position_unmake_move(p, pv_move);
-
-    if (best_value > alpha) {
-        alpha = best_value;
+        nc_position_make_move(p, next_moves.moves[i]);
+        move_scores[i] = -nc_position_get_score(p);
+        nc_position_unmake_move(p, next_moves.moves[i]);
     }
 
-    /* Search the rest of the moves with a null window PVS. */
+    /* Perform a decreasing selection sort  */
+    for (int i = 0; i < next_moves.len - 1; ++i) {
+        nc_eval best = move_scores[i];
+        int swap_with = i;
+
+        for (int j = i + 1; j < next_moves.len; ++j) {
+            if (move_scores[i] > best) {
+                best = move_scores[i];
+                swap_with = j;
+            }
+        }
+
+        if (i != swap_with) {
+            nc_move tmp = next_moves.moves[i];
+            next_moves.moves[i] = next_moves.moves[swap_with];
+            next_moves.moves[swap_with] = tmp;
+        }
+    }
+
+    /* Walk through the ordered moves */
     for (int i = 0; i < next_moves.len; ++i) {
         nc_move cur = next_moves.moves[i];
-        if (cur == pv_move) continue; /* PV move was already searched */
+
+        /* Check search extension */
+        int next_depth = (cur & NC_CHECK) ? depth : depth - 1;
 
         nc_position_make_move(p, cur);
-        nc_eval score = -_nc_search_pv(p, (cur & NC_CHECK) ? depth : depth - 1, -alpha - 1, -alpha, &current_pv, max_time);
 
-        if (alpha < score && score < beta) {
-            score = -_nc_search_pv(p, (cur & NC_CHECK) ? depth : depth - 1, -alpha - 1, -alpha, &current_pv, max_time);
+        /* Perform scout search if first node */ 
+        nc_eval score;
+
+        if (!i) {
+            score = -_nc_search_pv(p, next_depth, -beta, -alpha, &current_pv, max_time);
+        } else {
+            score = -_nc_search_pv(p, next_depth, -alpha - 1, -alpha, &current_pv, max_time);
+
+            if (alpha < score && score < beta) {
+                score = -_nc_search_pv(p, next_depth, -beta, -alpha, &current_pv, max_time);
+            }
         }
+
         nc_position_unmake_move(p, cur);
 
-        if (score > best_value) {
-            best_value = score;
+        if (score >= alpha) {
+            alpha = score;
             best_move = cur;
 
             memcpy(&best_pv, &current_pv, sizeof current_pv);
-
-            if (score > beta) break;
         }
+
+        if (alpha >= beta) break;
     }
 
     /* Store search result back into ttable */
-    tt->score = best_value;
+    tt->score = alpha;
     tt->bestmove = best_move;
     tt->depth = depth;
     tt->key = p->key;
 
-    if (best_value <= alpha_orig) {
+    if (alpha <= alpha_orig) {
         tt->type = NC_TT_UPPERBOUND;
-    } else if (best_value >= beta) {
+    } else if (alpha >= beta) {
         tt->type = NC_TT_LOWERBOUND;
     } else {
         tt->type = NC_TT_EXACT;
@@ -178,7 +200,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_movelist_push(pv_out, best_move);
     nc_movelist_concat(pv_out, &best_pv);
 
-    return nc_eval_parent(best_value);
+    return nc_eval_parent(alpha);
 }
 
 int nc_search_get_nodes() {
