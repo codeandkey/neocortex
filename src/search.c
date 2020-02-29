@@ -31,6 +31,8 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
     nc_movelist_clear(&next_moves);
     nc_position_legal_moves(p, &next_moves);
 
+    nc_eval best_score = NC_EVAL_MIN;
+
     if (!next_moves.len) {
         /* Color to move is in checkmate or stalemate. Do a check test quick. */
         if (p->states[p->ply].check) {
@@ -49,15 +51,17 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
         nc_eval score = -_nc_search_q(p, -beta, -alpha, max_time);
         nc_position_unmake_move(p, cur);
 
+        if (score > best_score) best_score = score;
         if (score > alpha) alpha = score;
         if (alpha >= beta) break;
     }
 
-    return nc_eval_parent(alpha);
+    return nc_eval_parent(best_score);
 }
 
 nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_movelist* pv_out, nc_timepoint max_time) {
     nc_move best_move = NC_MOVE_NULL;
+    nc_eval best_score = NC_EVAL_MIN;
 
     ++_nc_search_nodes;
 
@@ -172,25 +176,28 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
 
         nc_position_unmake_move(p, cur);
 
+        if (score > best_score) {
+            best_move = cur;
+            best_score = score;
+            memcpy(&best_pv, &current_pv, sizeof current_pv);
+        }
+
         if (score >= alpha) {
             alpha = score;
-            best_move = cur;
-
-            memcpy(&best_pv, &current_pv, sizeof current_pv);
         }
 
         if (alpha >= beta) break;
     }
 
     /* Store search result back into ttable */
-    tt->score = alpha;
+    tt->score = best_score;
     tt->bestmove = best_move;
     tt->depth = depth;
     tt->key = p->key;
 
-    if (alpha <= alpha_orig) {
+    if (best_score <= alpha_orig) {
         tt->type = NC_TT_UPPERBOUND;
-    } else if (alpha >= beta) {
+    } else if (best_score >= beta) {
         tt->type = NC_TT_LOWERBOUND;
     } else {
         tt->type = NC_TT_EXACT;
