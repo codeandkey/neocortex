@@ -3,6 +3,7 @@
 #include "move.h"
 #include "util.h"
 #include "search.h"
+#include "perft.h"
 
 #include <string.h>
 
@@ -158,6 +159,18 @@ int nc_uci_start(FILE* in, FILE* out) {
             }
 
             fprintf(out, "bestmove %s\n", nc_move_tostr(best_pv.moves[0]));
+        }
+
+        if (!strcmp(command, "perft")) {
+            char* depthstr = strtok(NULL, " ");
+
+            if (!depthstr) {
+                continue;
+            }
+
+            int depth = strtol(depthstr, NULL, 10);
+
+            nc_perft_run(out, &game_pos, depth);
         }
     }
 
