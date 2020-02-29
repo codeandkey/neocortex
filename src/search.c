@@ -57,7 +57,7 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
 }
 
 nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_movelist* pv_out, nc_timepoint max_time) {
-    nc_move best_move;
+    nc_move best_move = NC_MOVE_NULL;
 
     ++_nc_search_nodes;
 
