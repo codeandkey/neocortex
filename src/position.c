@@ -153,6 +153,8 @@ void nc_position_init_fen(nc_position* dst, const char* fen) {
             case 'q':
                 new_castling |= NC_BLACK_QUEENSIDE;
                 break;
+            case '-':
+                break;
             default:
                 nc_abort("Invalid FEN: invalid char '%c' in castling state", *c);
         }
