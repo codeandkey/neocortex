@@ -30,7 +30,7 @@ void nc_zobrist_init(int seed) {
 }
 
 nc_zkey nc_zobrist_piece(nc_square sq, nc_piece piece) {
-    return _nc_zobrist_piece_keys[piece][sq];
+    return _nc_zobrist_piece_keys[sq][piece];
 }
 
 nc_zkey nc_zobrist_castle(int castle_rights) {
