@@ -63,6 +63,9 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_move best_move = NC_MOVE_NULL;
     nc_eval best_score = NC_EVAL_MIN;
 
+    /* Grab current eval */
+    nc_eval current_heuristic = nc_position_get_score(p);
+
     ++_nc_search_nodes;
 
     nc_movelist best_pv, current_pv;
@@ -104,6 +107,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     /* Grab PV move from TT entry */
     if (tt->key == p->key && tt->type == NC_TT_EXACT) {
         pv_move = tt->bestmove;
+        current_heuristic = tt->score;
     }
 
     nc_movelist next_moves;
@@ -158,9 +162,6 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
 
         /* Check search extension */
         int next_depth = (cur & NC_CHECK) ? depth : depth - 1;
-
-        /* Grab current eval */
-        nc_eval current_heuristic = nc_position_get_score(p);
 
         nc_position_make_move(p, cur);
 
