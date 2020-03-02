@@ -43,7 +43,8 @@ int nc_uci_start(FILE* in, FILE* out) {
             uci_buf[strlen(uci_buf) - 1] = '\0';
         }
 
-        char* command = strtok(uci_buf, " \n");
+        char* saveptr = NULL;
+        char* command = strtok_r(uci_buf, " \n", &saveptr);
 
         if (!command) continue;
 
@@ -60,13 +61,13 @@ int nc_uci_start(FILE* in, FILE* out) {
         }
 
         if (!strcmp(command, "position")) {
-            char* next = strtok(NULL, " \n");
+            char* next = strtok_r(NULL, " \n", &saveptr);
 
             if (!strcmp(next, "startpos")) {
                 nc_position_init(&game_pos);
             } else {
                 /* Build a FENbuf */
-                char fen[256];
+                char fen[256] = {0};
                 int ind = 0;
 
                 memcpy(fen + ind, next, strlen(next));
@@ -74,7 +75,7 @@ int nc_uci_start(FILE* in, FILE* out) {
                 fen[ind++] = ' ';
 
                 for (int i = 0; i < 5; ++i) {
-                    next = strtok(NULL, " \n");
+                    next = strtok_r(NULL, " \n", &saveptr);
                     nc_assert(next);
                     memcpy(fen + ind, next, strlen(next));
                     ind += strlen(next);
@@ -84,14 +85,14 @@ int nc_uci_start(FILE* in, FILE* out) {
                 nc_position_init_fen(&game_pos, fen);
             }
 
-            char* moves_word = strtok(NULL, " \n");
+            char* moves_word = strtok_r(NULL, " \n", &saveptr);
 
             if (moves_word) {
                 if (strcmp(moves_word, "moves")) {
                     nc_abort("Expected 'moves', read '%s'", moves_word);
                 }
 
-                for (char* movestr = strtok(NULL, " \n"); movestr; movestr = strtok(NULL, " \n")) {
+                for (char* movestr = strtok_r(NULL, " \n", &saveptr); movestr; movestr = strtok_r(NULL, " \n", &saveptr)) {
                     nc_movelist next_moves;
                     nc_movelist_clear(&next_moves);
                     nc_position_legal_moves(&game_pos, &next_moves);
@@ -117,17 +118,17 @@ int nc_uci_start(FILE* in, FILE* out) {
             int movetime[2] = {0};
             int forcedepth = 0;
 
-            for (char* arg = strtok(NULL, " "); arg; arg = strtok(NULL, " ")) {
+            for (char* arg = strtok_r(NULL, " ", &saveptr); arg; arg = strtok_r(NULL, " ", &saveptr)) {
                 if (!strcmp(arg, "wtime")) {
-                    movetime[NC_WHITE] = strtol(strtok(NULL, " "), NULL, 10) / NC_UCI_TIME_FACTOR;
+                    movetime[NC_WHITE] = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10) / NC_UCI_TIME_FACTOR;
                 }
 
                 if (!strcmp(arg, "btime")) {
-                    movetime[NC_BLACK] = strtol(strtok(NULL, " "), NULL, 10) / NC_UCI_TIME_FACTOR;
+                    movetime[NC_BLACK] = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10) / NC_UCI_TIME_FACTOR;
                 }
 
                 if (!strcmp(arg, "forcedepth")) {
-                    forcedepth = strtol(strtok(NULL, " "), NULL, 10);
+                    forcedepth = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10);
                 }
             }
 
