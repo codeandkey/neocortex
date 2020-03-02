@@ -8,18 +8,16 @@ static int _nc_perft_captures;
 
 static void _nc_perft_pos(nc_position* p, int depth);
 
-void nc_perft_run(FILE* out, int depth) {
+void nc_perft_run(FILE* out, nc_position* p, int depth) {
     for (int i = 0; i <= depth; ++i) {
         fprintf(out, "perft[%d]: starting..\n", i);
         nc_timepoint start = nc_timer_current();
-        nc_position p;
-        nc_position_init(&p);
 
         _nc_perft_nodes = 0;
         _nc_perft_leaves = 0;
         _nc_perft_captures = 0;
 
-        _nc_perft_pos(&p, i);
+        _nc_perft_pos(p, i);
 
         float final = nc_timer_elapsed_s(start);
 
