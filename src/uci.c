@@ -163,7 +163,7 @@ int nc_uci_start(FILE* in, FILE* out) {
         }
 
         if (!strcmp(command, "perft")) {
-            char* depthstr = strtok(NULL, " ");
+            char* depthstr = strtok_r(NULL, " ", &saveptr);
 
             if (!depthstr) {
                 continue;
