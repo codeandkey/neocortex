@@ -159,20 +159,37 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         /* Check search extension */
         int next_depth = (cur & NC_CHECK) ? depth : depth - 1;
 
+        /* Grab current eval */
+        nc_eval current_heuristic = nc_position_get_score(p);
+
         nc_position_make_move(p, cur);
 
-        /* Perform scout search if first node */ 
         nc_eval score;
 
-        if (!i) {
-            score = -_nc_search_pv(p, next_depth, -beta, -alpha, &current_pv, max_time);
-        } else {
-            score = -_nc_search_pv(p, next_depth, -alpha - 1, -alpha, &current_pv, max_time);
+        int asp_alpha = current_heuristic - NC_SEARCH_ASPIRATION;
+        int asp_beta = current_heuristic + NC_SEARCH_ASPIRATION;
 
-            if (alpha < score && score < beta) {
-                score = -_nc_search_pv(p, next_depth, -beta, -alpha, &current_pv, max_time);
+        /* Perform aspiration search */
+
+        int failed;
+        int reset_alpha = 0, reset_beta = 0;
+        do {
+            failed = 0;
+            score = -_nc_search_pv(p, next_depth, -asp_beta, -asp_alpha, &current_pv, max_time);
+
+            /* If fails, release aspiration bounds on direction of failure */
+            if (score < asp_alpha && !reset_alpha) {
+                asp_alpha = alpha;
+                reset_alpha = 1;
+                failed = 1;
             }
-        }
+
+            if (score > asp_beta && !reset_beta) {
+                asp_beta = beta;
+                failed = 1;
+                reset_beta = 1;
+            }
+        } while (failed);
 
         nc_position_unmake_move(p, cur);
 
