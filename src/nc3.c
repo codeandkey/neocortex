@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     nc_pst_init();
     nc_magic_init();
     nc_basic_init();
-    nc_zobrist_init(0xdeadbeef);
+    nc_zobrist_init(0x82fd8a72);
 
     nc_uci_start(stdin, stdout);
 
