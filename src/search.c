@@ -23,29 +23,19 @@ nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_out, nc_timepoin
 nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint max_time) {
     ++_nc_search_nodes;
 
-    if (nc_position_is_quiet(p) || (max_time && (nc_timer_current() >= max_time))) {
-        return nc_position_get_score(p);
-    }
+    nc_movelist moves;
+    nc_eval static_score = nc_position_score(p, &moves);
 
-    nc_movelist next_moves;
-    nc_movelist_clear(&next_moves);
-    nc_position_legal_moves(p, &next_moves);
+    if (nc_position_is_quiet(p)) return static_score;
+
+    if (static_score == NC_EVAL_MIN) return NC_EVAL_MIN;
+    if (static_score >= beta) return beta;
+    if (alpha < static_score) alpha = static_score;
 
     nc_eval best_score = NC_EVAL_MIN;
 
-    if (!next_moves.len) {
-        /* Color to move is in checkmate or stalemate. Do a check test quick. */
-        if (p->states[p->ply].check) {
-            /* Checkmate! */
-            return NC_EVAL_MIN;
-        } else {
-            /* Stalemate! */
-            return NC_SEARCH_CONTEMPT;
-        }
-    }
-
-    for (int i = 0; i < next_moves.len; ++i) {
-        nc_move cur = next_moves.moves[i];
+    for (int i = 0; i < moves.len; ++i) {
+        nc_move cur = moves.moves[i];
 
         nc_position_make_move(p, cur);
         nc_eval score = -_nc_search_q(p, -beta, -alpha, max_time);
@@ -107,19 +97,10 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     }
 
     nc_movelist next_moves;
-    nc_movelist_clear(&next_moves);
-    nc_position_legal_moves(p, &next_moves);
+    nc_eval static_score = nc_position_score(p, &next_moves);
 
-    if (!next_moves.len) {
-        /* Color to move is in checkmate or stalemate. Do a check test quick. */
-        if (p->states[p->ply].check) {
-            /* Checkmate! */
-            return NC_EVAL_MIN;
-        } else {
-            /* Stalemate! */
-            return NC_SEARCH_CONTEMPT;
-        }
-    }
+    if (static_score == NC_EVAL_MIN) return NC_EVAL_MIN;
+    if (!next_moves.len) return static_score;
 
     /* Perform move ordering */
 
@@ -129,7 +110,9 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         if (next_moves.moves[i] == pv_move) move_scores[i] = NC_EVAL_MAX;
 
         nc_position_make_move(p, next_moves.moves[i]);
-        move_scores[i] = -nc_position_get_score(p);
+
+        nc_movelist submoves;
+        move_scores[i] = -nc_position_score(p, &submoves);
         nc_position_unmake_move(p, next_moves.moves[i]);
     }
 
