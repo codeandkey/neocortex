@@ -23,10 +23,10 @@ nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_out, nc_timepoin
 nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint max_time) {
     ++_nc_search_nodes;
 
+    if (nc_position_is_quiet(p)) return nc_position_score_thin(p);
+
     nc_movelist moves;
     nc_eval static_score = nc_position_score(p, &moves);
-
-    if (nc_position_is_quiet(p)) return static_score;
 
     if (static_score == NC_EVAL_MIN) return NC_EVAL_MIN;
     if (static_score >= beta) return beta;
@@ -110,9 +110,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         if (next_moves.moves[i] == pv_move) move_scores[i] = NC_EVAL_MAX;
 
         nc_position_make_move(p, next_moves.moves[i]);
-
-        nc_movelist submoves;
-        move_scores[i] = -nc_position_score(p, &submoves);
+        move_scores[i] = -nc_position_score_thin(p);
         nc_position_unmake_move(p, next_moves.moves[i]);
     }
 

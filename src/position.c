@@ -540,12 +540,16 @@ nc_eval nc_position_score(nc_position* dst, nc_movelist* out) {
         return NC_EVAL_CONTEMPT;
     }
 
+    nc_eval thin_score = nc_position_score_thin(dst);
+    nc_eval mobility_bonus = NC_EVAL_MOBILITY * out->len;
+
+    return thin_score + mobility_bonus;
+}
+
+nc_eval nc_position_score_thin(nc_position* dst) {
     float phase = nc_position_phase(dst);
 
-    nc_eval mobility_bonus = NC_EVAL_MOBILITY * out->len;
-    nc_eval pst_score = nc_pst_get_score(&dst->pst, dst->color_to_move, phase);
-
-    return pst_score + mobility_bonus;
+    return nc_pst_get_score(&dst->pst, dst->color_to_move, phase);
 }
 
 float nc_position_phase(nc_position* dst) {

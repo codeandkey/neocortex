@@ -80,6 +80,7 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves);
 
 /* Scoring */
 nc_eval nc_position_score(nc_position* dst, nc_movelist* out);
+nc_eval nc_position_score_thin(nc_position* dst);
 float nc_position_phase(nc_position* dst);
 
 /* Move generation */
