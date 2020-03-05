@@ -69,6 +69,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_ttentry* tt = nc_tt_lookup(p->key);
     nc_move pv_move = NC_MOVE_NULL;
 
+#ifndef NC_NO_TT
     if (tt->key == p->key && tt->depth >= depth) {
         if (tt->type == NC_TT_EXACT) {
             /* Walk to the end of the pv. */
@@ -87,6 +88,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
             if (tt->score < beta) beta = tt->score;
         }
     }
+#endif
 
     /* Grab PV move from TT entry */
     if (tt->key == p->key && tt->type == NC_TT_EXACT) {
