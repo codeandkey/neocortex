@@ -8,6 +8,7 @@ static int _nc_search_nodes;
 static int _nc_search_leaves;
 static nc_timepoint _nc_search_start;
 static nc_timepoint _nc_search_end;
+static int _nc_search_only_move;
 
 nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_out, nc_timepoint max_time) {
     _nc_search_nodes = 0;
@@ -63,7 +64,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         return NC_SEARCH_CONTEMPT;
     }
 
-    if (depth <= 0 || (max_time && nc_timer_current() >= max_time)) {
+    if (depth <= 0) {
         return _nc_search_q(p, alpha, beta, max_time);
     }
 
@@ -167,6 +168,9 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
             alpha = score;
         }
 
+        /* Perform time control here so an aborted search will still have a PV. */
+        if (max_time && nc_timer_current() >= max_time) break;
+
         if (alpha >= beta) break;
     }
 
@@ -188,6 +192,9 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_movelist_push(pv_out, best_move);
     nc_movelist_concat(pv_out, &best_pv);
 
+    /* Set only move flag */
+    _nc_search_only_move = (next_moves.len == 1);
+
     return nc_eval_parent(alpha);
 }
 
@@ -202,4 +209,8 @@ int nc_search_get_nps() {
 
 int nc_search_get_time() {
     return (_nc_search_end - _nc_search_start) / (CLOCKS_PER_SEC / 1000);
+}
+
+int nc_search_was_only_move() {
+    return _nc_search_only_move;
 }

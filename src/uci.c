@@ -121,11 +121,11 @@ int nc_uci_start(FILE* in, FILE* out) {
 
             for (char* arg = strtok_r(NULL, " ", &saveptr); arg; arg = strtok_r(NULL, " ", &saveptr)) {
                 if (!strcmp(arg, "wtime")) {
-                    movetime[NC_WHITE] = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10) / NC_UCI_TIME_FACTOR;
+                    movetime[NC_WHITE] = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10) / NC_UCI_MOVETIME_DIV;
                 }
 
                 if (!strcmp(arg, "btime")) {
-                    movetime[NC_BLACK] = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10) / NC_UCI_TIME_FACTOR;
+                    movetime[NC_BLACK] = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10) / NC_UCI_MOVETIME_DIV;
                 }
 
                 if (!strcmp(arg, "forcedepth")) {
@@ -136,7 +136,8 @@ int nc_uci_start(FILE* in, FILE* out) {
             int ourtime = movetime[game_pos.color_to_move];
             if (ourtime > NC_UCI_MAX_MOVETIME) ourtime = NC_UCI_MAX_MOVETIME; /* don't wait too long */
 
-            int maxtime = (ourtime && !forcedepth) ? nc_timer_futurems(ourtime) : 0;
+            nc_timepoint maxtime = (ourtime && !forcedepth) ? nc_timer_futurems(ourtime) : 0;
+            nc_timepoint starttime = nc_timer_current();
 
             nc_movelist best_pv = {0};
             nc_movelist_clear(&best_pv);
@@ -144,19 +145,36 @@ int nc_uci_start(FILE* in, FILE* out) {
             for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
                 if (forcedepth && d > forcedepth) break;
 
+                if (!forcedepth && d > 1) {
+                    /* Check for time control abort. */
+                    int elapsed = nc_timer_elapsed_ms(starttime);
+
+                    if (elapsed >= ourtime || (elapsed * 100) / ourtime >= NC_UCI_TIME_FACTOR) {
+                        break;
+                    }
+                }
+
                 nc_movelist current_pv;
                 nc_eval score = nc_search(&game_pos, d, &current_pv, maxtime);
 
-                if (!forcedepth && (nc_timer_current() >= maxtime && d > 1)) break; /* don't use incomplete searches */
+                if (nc_search_was_only_move()) break;
 
-                fprintf(out, "info depth %d nodes %d nps %d time %d score %s pv", d, nc_search_get_nodes(), nc_search_get_nps(), nc_search_get_time(), nc_eval_tostr(score));
+                int incomplete = 0;
+                if (!forcedepth && (nc_timer_current() >= maxtime && d > 1)) incomplete = 1;
+
+                fprintf(out, "info depth %d%s nodes %d nps %d time %d score %s pv", d, incomplete ? "-" : "", nc_search_get_nodes(), nc_search_get_nps(), nc_search_get_time(), nc_eval_tostr(score));
 
                 for (int i = 0; i < current_pv.len; ++i) {
                     fprintf(out, " %s", nc_move_tostr(current_pv.moves[i]));
                 }
 
                 fprintf(out, "\n");
-                best_pv = current_pv;
+
+                if (incomplete) {
+                    break;
+                } else {
+                    best_pv = current_pv;
+                }
             }
 
             fprintf(out, "bestmove %s\n", nc_move_tostr(best_pv.moves[0]));

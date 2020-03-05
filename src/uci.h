@@ -11,7 +11,9 @@
 #define NC_UCI_AUTHOR "codeandkey"
 
 #define NC_UCI_MAXDEPTH 10
-#define NC_UCI_MAX_MOVETIME 25000
-#define NC_UCI_TIME_FACTOR 12
+#define NC_UCI_MAX_MOVETIME 30000
+
+#define NC_UCI_MOVETIME_DIV 8
+#define NC_UCI_TIME_FACTOR 40 /* don't start the next iteration if we've exceed N percent of allocated time */
 
 int nc_uci_start(FILE* in, FILE* out);
