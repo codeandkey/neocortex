@@ -9,7 +9,7 @@
  * Position searcher
  */
 
-#define NC_SEARCH_CONTEMPT -100
+#define NC_SEARCH_CONTEMPT 0
 
 nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_line, nc_timepoint max_time);
 
