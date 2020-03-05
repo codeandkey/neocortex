@@ -4,7 +4,7 @@
 #include "eval.h"
 #include "move.h"
 
-#define NC_TT_WIDTH 16384
+#define NC_TT_WIDTH 131072
 
 #define NC_TT_EXACT      0
 #define NC_TT_LOWERBOUND 1
