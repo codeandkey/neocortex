@@ -144,6 +144,8 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
 
         if (nc_position_is_repetition(p)) {
             score = NC_SEARCH_CONTEMPT;
+            nc_movelist_clear(&current_pv);
+            nc_movelist_push(&current_pv, cur);
         } else {
             if (!i) {
                 score = -_nc_search_pv(p, next_depth, -beta, -alpha, &current_pv, max_time);
