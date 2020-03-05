@@ -159,12 +159,18 @@ static nc_eval _nc_pst_eg[2][6][64] = {
 };
 
 void nc_pst_init() {
+    /* The psts are defined in reverse rank order. */
+    /* Copy over to black first and then reverse back. */
+
     for (int t = 0; t < 6; ++t) {
         for (int r = 0; r < 8; ++r) {
             for (int f = 0; f < 8; ++f) {
+                _nc_pst_mg[NC_BLACK][t][nc_square_at(r, f)] = _nc_pst_mg[NC_WHITE][t][nc_square_at(r, f)];
+                _nc_pst_eg[NC_BLACK][t][nc_square_at(r, f)] = _nc_pst_eg[NC_WHITE][t][nc_square_at(r, f)];
+
                 int br = 7 - r;
-                _nc_pst_mg[NC_BLACK][t][nc_square_at(br, f)] = _nc_pst_mg[NC_WHITE][t][nc_square_at(r, f)];
-                _nc_pst_eg[NC_BLACK][t][nc_square_at(br, f)] = _nc_pst_eg[NC_WHITE][t][nc_square_at(r, f)];
+                _nc_pst_mg[NC_WHITE][t][nc_square_at(br, f)] = _nc_pst_mg[NC_BLACK][t][nc_square_at(r, f)];
+                _nc_pst_eg[NC_WHITE][t][nc_square_at(br, f)] = _nc_pst_eg[NC_BLACK][t][nc_square_at(r, f)];
             }
         }
     }
