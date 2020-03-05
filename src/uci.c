@@ -176,7 +176,7 @@ int nc_uci_start(FILE* in, FILE* out) {
                     best_pv = current_pv;
                     complete_score = score;
 
-                    if (score < lastscore && lastscore - score >= NC_UCI_BLUNDER) {
+                    if (!forcedepth && score < lastscore && lastscore - score >= NC_UCI_BLUNDER) {
                         int nextitertime = ((ourtime - elapsed) * NC_UCI_BLUNDER_REQTIME) / 100;
                         if (nc_search_get_time() * NC_UCI_EBF <= nextitertime) {
                             /* Move would be a blunder.. try a higher depth if we think we have time */
@@ -188,12 +188,14 @@ int nc_uci_start(FILE* in, FILE* out) {
                     }
                 }
 
-                if (elapsed + nc_search_get_time() * NC_UCI_EBF >= (ourtime * NC_UCI_TIME_FACTOR) / 100) {
-                    break;
-                }
+                if (!forcedepth) {
+                    if (elapsed + nc_search_get_time() * NC_UCI_EBF >= (ourtime * NC_UCI_TIME_FACTOR) / 100) {
+                        break;
+                    }
 
-                if (score >= early_score && d >= NC_UCI_ACCEPTABLE_SCORE_FRACTION_MIN_DEPTH) break;
-                if (nc_search_was_only_move()) break;
+                    if (score >= early_score && d >= NC_UCI_ACCEPTABLE_SCORE_FRACTION_MIN_DEPTH) break;
+                    if (nc_search_was_only_move()) break;
+                }
             }
 
             fprintf(out, "bestmove %s\n", nc_move_tostr(best_pv.moves[0]));
