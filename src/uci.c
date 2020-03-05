@@ -151,7 +151,7 @@ int nc_uci_start(FILE* in, FILE* out) {
 
                 if (!forcedepth && d > 1) {
                     /* Check for time control abort. */
-                    if (elapsed >= ourtime || (elapsed * 100) / ourtime >= NC_UCI_TIME_FACTOR) {
+                    if (elapsed >= ourtime || (elapsed * ourtime) / 100 >= NC_UCI_TIME_FACTOR) {
                         break;
                     }
                 }
@@ -176,9 +176,10 @@ int nc_uci_start(FILE* in, FILE* out) {
                     best_pv = current_pv;
 
                     if (score < lastscore && lastscore - score >= NC_UCI_BLUNDER) {
-                        if (elapsed + nc_search_get_time() * NC_UCI_EBF <= ourtime * 100 / NC_UCI_BLUNDER_REQTIME) {
+                        int newmaxtime = (ourtime * NC_UCI_BLUNDER_REQTIME) / 100;
+                        if (elapsed + nc_search_get_time() * NC_UCI_EBF <= newmaxtime) {
                             /* Move would be a blunder.. try a higher depth if we think we have time */
-                            ourtime -= elapsed;
+                            ourtime = newmaxtime;
                             maxtime = nc_timer_futurems(ourtime);
                             starttime = nc_timer_current();
                             continue;
@@ -186,7 +187,7 @@ int nc_uci_start(FILE* in, FILE* out) {
                     }
                 }
 
-                if (elapsed + nc_search_get_time() * NC_UCI_EBF >= ourtime * 100 / NC_UCI_TIME_FACTOR) {
+                if (elapsed + nc_search_get_time() * NC_UCI_EBF >= (ourtime * NC_UCI_TIME_FACTOR) / 100) {
                     break;
                 }
 
