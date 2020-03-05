@@ -151,7 +151,7 @@ int nc_uci_start(FILE* in, FILE* out) {
 
                 if (!forcedepth && d > 1) {
                     /* Check for time control abort. */
-                    if (elapsed >= ourtime || (elapsed * ourtime) / 100 >= NC_UCI_TIME_FACTOR) {
+                    if (elapsed >= ourtime || elapsed >= (ourtime * NC_UCI_TIME_FACTOR) / 100) {
                         break;
                     }
                 }
