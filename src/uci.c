@@ -177,11 +177,11 @@ int nc_uci_start(FILE* in, FILE* out) {
                     complete_score = score;
 
                     if (score < lastscore && lastscore - score >= NC_UCI_BLUNDER) {
-                        int newmaxtime = (ourtime * NC_UCI_BLUNDER_REQTIME) / 100;
-                        if (elapsed + nc_search_get_time() * NC_UCI_EBF <= newmaxtime) {
+                        int nextitertime = ((ourtime - elapsed) * NC_UCI_BLUNDER_REQTIME) / 100;
+                        if (nc_search_get_time() * NC_UCI_EBF <= nextitertime) {
                             /* Move would be a blunder.. try a higher depth if we think we have time */
-                            ourtime = newmaxtime;
-                            maxtime = nc_timer_futurems(ourtime);
+                            ourtime = nextitertime;
+                            maxtime = nc_timer_futurems(nextitertime);
                             starttime = nc_timer_current();
                             continue;
                         }

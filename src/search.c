@@ -60,10 +60,6 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_movelist_clear(pv_out);
     nc_movelist_clear(&best_pv);
 
-    if (nc_position_is_repetition(p)) {
-        return NC_SEARCH_CONTEMPT;
-    }
-
     if (depth <= 0) {
         return _nc_search_q(p, alpha, beta, max_time);
     }
@@ -146,13 +142,17 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         /* Perform scout search if first node */ 
         nc_eval score;
 
-        if (!i) {
-            score = -_nc_search_pv(p, next_depth, -beta, -alpha, &current_pv, max_time);
+        if (nc_position_is_repetition(p)) {
+            score = NC_SEARCH_CONTEMPT;
         } else {
-            score = -_nc_search_pv(p, next_depth, -alpha - 1, -alpha, &current_pv, max_time);
+            if (!i) {
+                score = -_nc_search_pv(p, next_depth, -beta, -alpha, &current_pv, max_time);
+            } else {
+                score = -_nc_search_pv(p, next_depth, -alpha - 1, -alpha, &current_pv, max_time);
 
-            if (alpha < score && score < beta) {
-                score = -_nc_search_pv(p, next_depth, -beta, -score, &current_pv, max_time);
+                if (alpha < score && score < beta) {
+                    score = -_nc_search_pv(p, next_depth, -beta, -score, &current_pv, max_time);
+                }
             }
         }
 
@@ -195,7 +195,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     /* Set only move flag */
     _nc_search_only_move = (next_moves.len == 1);
 
-    return nc_eval_parent(alpha);
+    return nc_eval_parent(best_score);
 }
 
 int nc_search_get_nodes() {
