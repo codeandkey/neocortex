@@ -20,7 +20,7 @@
  * if the evaluation decreases by this amount and the expected search time is <= BLUNDER_REQTIME percent remaining,
  * continue searching
  */
-#define NC_UCI_BLUNDER 200
+#define NC_UCI_BLUNDER 80
 #define NC_UCI_BLUNDER_REQTIME 80
 
 /* Don't start an iteration if it is expected to consume more than n percent of the remaining time. */
