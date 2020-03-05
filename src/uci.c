@@ -142,6 +142,8 @@ int nc_uci_start(FILE* in, FILE* out) {
             nc_movelist best_pv = {0};
             nc_movelist_clear(&best_pv);
 
+            nc_eval lastscore = NC_EVAL_MIN;
+
             for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
                 if (forcedepth && d > forcedepth) break;
                 int elapsed = nc_timer_elapsed_ms(starttime);
@@ -172,6 +174,16 @@ int nc_uci_start(FILE* in, FILE* out) {
                     break;
                 } else {
                     best_pv = current_pv;
+
+                    if (score < lastscore && lastscore - score >= NC_UCI_BLUNDER) {
+                        if (elapsed + nc_search_get_time() * NC_UCI_EBF <= ourtime * 100 / NC_UCI_BLUNDER_REQTIME) {
+                            /* Move would be a blunder.. try a higher depth if we think we have time */
+                            ourtime -= elapsed;
+                            maxtime = nc_timer_futurems(ourtime);
+                            starttime = nc_timer_current();
+                            continue;
+                        }
+                    }
                 }
 
                 if (elapsed + nc_search_get_time() * NC_UCI_EBF >= ourtime * 100 / NC_UCI_TIME_FACTOR) {
