@@ -157,8 +157,6 @@ int nc_uci_start(FILE* in, FILE* out) {
                 nc_movelist current_pv;
                 nc_eval score = nc_search(&game_pos, d, &current_pv, maxtime);
 
-                if (nc_search_was_only_move()) break;
-
                 int incomplete = 0;
                 if (!forcedepth && (nc_timer_current() >= maxtime && d > 1)) incomplete = 1;
 
@@ -181,6 +179,7 @@ int nc_uci_start(FILE* in, FILE* out) {
                 }
 
                 if (score >= early_score) break;
+                if (nc_search_was_only_move()) break;
             }
 
             fprintf(out, "bestmove %s\n", nc_move_tostr(best_pv.moves[0]));
