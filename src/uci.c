@@ -192,7 +192,7 @@ int nc_uci_start(FILE* in, FILE* out) {
                     break;
                 }
 
-                if (score >= early_score) break;
+                if (score >= early_score && d >= NC_UCI_ACCEPTABLE_SCORE_FRACTION_MIN_DEPTH) break;
                 if (nc_search_was_only_move()) break;
             }
 
