@@ -549,11 +549,32 @@ nc_eval nc_position_score(nc_position* dst, nc_movelist* out) {
 nc_eval nc_position_score_thin(nc_position* dst) {
     float phase = nc_position_phase(dst);
 
-    return nc_pst_get_score(&dst->pst, dst->color_to_move, phase);
+    nc_eval pawn_structure_bonus = NC_EVAL_PAWN_STRUCTURE * (nc_position_pawn_structure(dst, dst->color_to_move) - nc_position_pawn_structure(dst, nc_colorflip(dst->color_to_move)));
+
+    return nc_pst_get_score(&dst->pst, dst->color_to_move, phase) + pawn_structure_bonus;
 }
 
 float nc_position_phase(nc_position* dst) {
     return nc_pst_get_phase(&dst->pst);
+}
+
+int nc_position_pawn_structure(nc_position* dst, nc_color col) {
+    nc_bb pawns = dst->piece[NC_PAWN] & dst->color[col];
+
+    nc_bb pawns_withright = pawns & ~NC_BB_FILEH;
+    nc_bb pawns_withleft = pawns & ~NC_BB_FILEA;
+
+    nc_bb attacked_mask = 0;
+
+    if (col == NC_WHITE) {
+        attacked_mask |= nc_bb_shift(pawns_withright, NC_SQ_NORTHEAST);
+        attacked_mask |= nc_bb_shift(pawns_withleft, NC_SQ_NORTHWEST);
+    } else {
+        attacked_mask |= nc_bb_shift(pawns_withright, NC_SQ_SOUTHEAST);
+        attacked_mask |= nc_bb_shift(pawns_withleft, NC_SQ_SOUTHWEST);
+    }
+
+    return __builtin_popcountll(attacked_mask & pawns);
 }
 
 void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {

@@ -82,6 +82,7 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves);
 nc_eval nc_position_score(nc_position* dst, nc_movelist* out);
 nc_eval nc_position_score_thin(nc_position* dst);
 float nc_position_phase(nc_position* dst);
+int nc_position_pawn_structure(nc_position* dst, nc_color col);
 
 /* Move generation */
 void nc_position_legal_moves(nc_position* dst, nc_movelist* out);
