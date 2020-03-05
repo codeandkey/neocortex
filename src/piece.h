@@ -26,7 +26,7 @@ static inline int nc_ptype_is_valid(nc_ptype pt) {
 
 static inline char nc_ptype_tochar(nc_ptype pt) {
     nc_assert(nc_ptype_is_valid(pt));
-    return "prkbqk"[pt]; /* sneaky */
+    return "prnbqk"[pt]; /* sneaky */
 }
 
 static inline nc_ptype nc_ptype_fromchar(char c) {

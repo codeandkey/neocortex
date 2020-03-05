@@ -1,6 +1,7 @@
 #include "position.h"
 #include "magic.h"
 #include "basic.h"
+#include "eval_consts.h"
 
 #include <string.h>
 
@@ -14,8 +15,7 @@ void nc_position_init(nc_position* dst) {
     memset(dst, 0, sizeof *dst);
 
     /* Start at neutral eval. */
-    dst->score.mg[NC_WHITE] = 0;
-    dst->score.mg[NC_BLACK] = 0;
+    nc_pst_zero(&dst->pst);
 
     /* Start at 0 ply */
     dst->ply = 0;
@@ -381,7 +381,7 @@ void nc_position_place_piece(nc_position* dst, nc_piece p, nc_square at) {
     nc_passertf(dst, dst->board[at] == NC_PIECE_NULL, "Destination piece not null! (%c)", nc_piece_touci(dst->board[at]));
 
     nc_position_flip_piece(dst, p, at);
-    nc_pst_add(&dst->score, p, at);
+    nc_pst_add(&dst->pst, p, at);
 
     dst->board[at] = p;
 }
@@ -389,8 +389,8 @@ void nc_position_place_piece(nc_position* dst, nc_piece p, nc_square at) {
 void nc_position_replace_piece(nc_position* dst, nc_piece p, nc_square at) {
     nc_passertf(dst, dst->board[at] != NC_PIECE_NULL, "Destination piece null! (%c)", nc_piece_touci(dst->board[at]));
 
-    nc_pst_remove(&dst->score, dst->board[at], at);
-    nc_pst_add(&dst->score, p, at);
+    nc_pst_remove(&dst->pst, dst->board[at], at);
+    nc_pst_add(&dst->pst, p, at);
 
     nc_position_flip_piece(dst, dst->board[at], at);
     nc_position_flip_piece(dst, p, at);
@@ -415,8 +415,8 @@ void nc_position_move_piece(nc_position* dst, nc_square from, nc_square to) {
     nc_position_flip_piece(dst, dst->board[from], from);
     nc_position_flip_piece(dst, dst->board[from], to);
 
-    nc_pst_remove(&dst->score, dst->board[from], from);
-    nc_pst_add(&dst->score, dst->board[from], to);
+    nc_pst_remove(&dst->pst, dst->board[from], from);
+    nc_pst_add(&dst->pst, dst->board[from], to);
 
     dst->board[to] = dst->board[from];
     dst->board[from] = NC_PIECE_NULL;
@@ -426,7 +426,7 @@ nc_piece nc_position_remove_piece(nc_position* dst, nc_square at) {
     nc_assert(dst->board[at] != NC_PIECE_NULL);
 
     nc_position_flip_piece(dst, dst->board[at], at);
-    nc_pst_remove(&dst->score, dst->board[at], at);
+    nc_pst_remove(&dst->pst, dst->board[at], at);
 
     nc_piece ret = dst->board[at];
     dst->board[at] = NC_PIECE_NULL;
@@ -446,9 +446,9 @@ nc_piece nc_position_capture_piece(nc_position* dst, nc_square from, nc_square t
     nc_position_flip_piece(dst, pdst, to);
     nc_position_flip_piece(dst, psrc, to);
 
-    nc_pst_remove(&dst->score, pdst, to);
-    nc_pst_remove(&dst->score, psrc, from);
-    nc_pst_add(&dst->score, psrc, to);
+    nc_pst_remove(&dst->pst, pdst, to);
+    nc_pst_remove(&dst->pst, psrc, from);
+    nc_pst_add(&dst->pst, psrc, to);
 
     dst->board[to] = psrc;
     dst->board[from] = NC_PIECE_NULL;
@@ -528,6 +528,32 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves) {
     }
 
     fprintf(out, "^ opposite_attacks:\n%s", nc_bb_tostr(nc_position_gen_attack_mask_for(p, nc_colorflip(p->color_to_move), 0)));
+}
+
+nc_eval nc_position_score(nc_position* dst, nc_movelist* out) {
+    nc_movelist_clear(out);
+    nc_position_legal_moves(dst, out);
+
+    /* Check for terminal nodes here. */
+    if (!out->len) {
+        if (dst->states[dst->ply].check) return NC_EVAL_MIN;
+        return NC_EVAL_CONTEMPT;
+    }
+
+    nc_eval thin_score = nc_position_score_thin(dst);
+    nc_eval mobility_bonus = NC_EVAL_MOBILITY * out->len;
+
+    return thin_score + mobility_bonus;
+}
+
+nc_eval nc_position_score_thin(nc_position* dst) {
+    float phase = nc_position_phase(dst);
+
+    return nc_pst_get_score(&dst->pst, dst->color_to_move, phase);
+}
+
+float nc_position_phase(nc_position* dst) {
+    return nc_pst_get_phase(&dst->pst);
 }
 
 void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
@@ -883,57 +909,6 @@ nc_bb nc_position_gen_attack_mask_for(nc_position* dst, nc_color by, nc_bb mask)
 
     /* Try pieces with the greatest attack span first to try and fail early. */
 
-    /* Test queen attacks */
-    nc_bb queens = dst->piece[NC_QUEEN] & dst->color[by];
-
-    while (queens) {
-        nc_square src = nc_bb_poplsb(&queens);
-        attacked_mask |= nc_magic_query_rook_attacks(src, dst->global);
-        attacked_mask |= nc_magic_query_bishop_attacks(src, dst->global);
-    }
-
-    if (attacked_mask & mask) return attacked_mask;
-
-    /* Test rook attacks */
-    nc_bb rooks = dst->piece[NC_ROOK] & dst->color[by];
-
-    while (rooks) {
-        nc_square src = nc_bb_poplsb(&rooks);
-        attacked_mask |= nc_magic_query_rook_attacks(src, dst->global);
-    }
-
-    if (attacked_mask & mask) return attacked_mask;
-
-    /* Test bishop attacks */
-    nc_bb bishops = dst->piece[NC_BISHOP] & dst->color[by];
-
-    while (bishops) {
-        nc_square src = nc_bb_poplsb(&bishops);
-        attacked_mask |= nc_magic_query_bishop_attacks(src, dst->global);
-    }
-
-    if (attacked_mask & mask) return attacked_mask;
-
-    /* Test knight attacks */
-    nc_bb knights = dst->piece[NC_KNIGHT] & dst->color[by];
-
-    while (knights) {
-        nc_square src = nc_bb_poplsb(&knights);
-        attacked_mask |= nc_basic_knight_attacks(src);
-    }
-
-    if (attacked_mask & mask) return attacked_mask;
-
-    /* Test king attacks */
-    nc_bb kings = dst->piece[NC_KING] & dst->color[by];
-
-    while (kings) {
-        nc_square src = nc_bb_poplsb(&kings);
-        attacked_mask |= nc_basic_king_attacks(src);
-    }
-
-    if (attacked_mask & mask) return attacked_mask;
-
     /* Test pawn attacks conditionally */
     nc_bb pawns = dst->piece[NC_PAWN] & dst->color[by];
     nc_bb pawns_withright = pawns & ~NC_BB_FILEH;
@@ -945,6 +920,54 @@ nc_bb nc_position_gen_attack_mask_for(nc_position* dst, nc_color by, nc_bb mask)
     } else {
         attacked_mask |= nc_bb_shift(pawns_withright, NC_SQ_SOUTHEAST);
         attacked_mask |= nc_bb_shift(pawns_withleft, NC_SQ_SOUTHWEST);
+    }
+
+    if (attacked_mask & mask) return attacked_mask;
+
+    /* Test queen attacks */
+    nc_bb queens = dst->piece[NC_QUEEN] & dst->color[by];
+
+    while (queens) {
+        nc_square src = nc_bb_poplsb(&queens);
+        attacked_mask |= nc_magic_query_rook_attacks(src, dst->global);
+        attacked_mask |= nc_magic_query_bishop_attacks(src, dst->global);
+        if (attacked_mask & mask) return attacked_mask;
+    }
+
+    /* Test rook attacks */
+    nc_bb rooks = dst->piece[NC_ROOK] & dst->color[by];
+
+    while (rooks) {
+        nc_square src = nc_bb_poplsb(&rooks);
+        attacked_mask |= nc_magic_query_rook_attacks(src, dst->global);
+        if (attacked_mask & mask) return attacked_mask;
+    }
+
+    /* Test bishop attacks */
+    nc_bb bishops = dst->piece[NC_BISHOP] & dst->color[by];
+
+    while (bishops) {
+        nc_square src = nc_bb_poplsb(&bishops);
+        attacked_mask |= nc_magic_query_bishop_attacks(src, dst->global);
+        if (attacked_mask & mask) return attacked_mask;
+    }
+
+    /* Test knight attacks */
+    nc_bb knights = dst->piece[NC_KNIGHT] & dst->color[by];
+
+    while (knights) {
+        nc_square src = nc_bb_poplsb(&knights);
+        attacked_mask |= nc_basic_knight_attacks(src);
+        if (attacked_mask & mask) return attacked_mask;
+    }
+
+    /* Test king attacks */
+    nc_bb kings = dst->piece[NC_KING] & dst->color[by];
+
+    while (kings) {
+        nc_square src = nc_bb_poplsb(&kings);
+        attacked_mask |= nc_basic_king_attacks(src);
+        if (attacked_mask & mask) return attacked_mask;
     }
 
     return attacked_mask;
