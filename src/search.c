@@ -151,7 +151,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
             score = -_nc_search_pv(p, next_depth, -alpha - 1, -alpha, &current_pv, max_time);
 
             if (alpha < score && score < beta) {
-                score = -_nc_search_pv(p, next_depth, -beta, -alpha, &current_pv, max_time);
+                score = -_nc_search_pv(p, next_depth, -beta, -score, &current_pv, max_time);
             }
         }
 
