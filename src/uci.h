@@ -28,6 +28,6 @@
 #define NC_UCI_TIME_FACTOR 70
 
 #define NC_UCI_MOVETIME_DIV 10
-#define NC_UCI_EBF 40
+#define NC_UCI_EBF 30
 
 int nc_uci_start(FILE* in, FILE* out);
