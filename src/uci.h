@@ -13,7 +13,10 @@
 #define NC_UCI_MAXDEPTH 10
 #define NC_UCI_MAX_MOVETIME 30000
 
-#define NC_UCI_MOVETIME_DIV 8
+/* Interesting time control: accept an early iteration if it scores better than (remaining_ms / score_fraction) */
+#define NC_UCI_ACCEPTABLE_SCORE_FRACTION 10
+
+#define NC_UCI_MOVETIME_DIV 12
 #define NC_UCI_TIME_FACTOR 40 /* don't start the next iteration if we've exceed N percent of allocated time */
 
 int nc_uci_start(FILE* in, FILE* out);

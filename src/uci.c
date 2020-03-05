@@ -144,11 +144,11 @@ int nc_uci_start(FILE* in, FILE* out) {
 
             for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
                 if (forcedepth && d > forcedepth) break;
+                int elapsed = nc_timer_elapsed_ms(starttime);
+                nc_eval early_score = (ourtime - elapsed) / NC_UCI_ACCEPTABLE_SCORE_FRACTION;
 
                 if (!forcedepth && d > 1) {
                     /* Check for time control abort. */
-                    int elapsed = nc_timer_elapsed_ms(starttime);
-
                     if (elapsed >= ourtime || (elapsed * 100) / ourtime >= NC_UCI_TIME_FACTOR) {
                         break;
                     }
@@ -175,6 +175,8 @@ int nc_uci_start(FILE* in, FILE* out) {
                 } else {
                     best_pv = current_pv;
                 }
+
+                if (score >= early_score) break;
             }
 
             fprintf(out, "bestmove %s\n", nc_move_tostr(best_pv.moves[0]));
