@@ -176,6 +176,10 @@ int nc_uci_start(FILE* in, FILE* out) {
                     best_pv = current_pv;
                 }
 
+                if (elapsed + nc_search_get_time() * NC_UCI_EBF >= ourtime * 100 / NC_UCI_TIME_FACTOR) {
+                    break;
+                }
+
                 if (score >= early_score) break;
             }
 

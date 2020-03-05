@@ -16,7 +16,10 @@
 /* Interesting time control: accept an early iteration if it scores better than (remaining_ms / score_fraction) */
 #define NC_UCI_ACCEPTABLE_SCORE_FRACTION 10
 
-#define NC_UCI_MOVETIME_DIV 12
-#define NC_UCI_TIME_FACTOR 40 /* don't start the next iteration if we've exceed N percent of allocated time */
+/* Don't start an iteration if it is expected to consume more than n percent of the remaining time. */
+#define NC_UCI_TIME_FACTOR 70
+
+#define NC_UCI_MOVETIME_DIV 10
+#define NC_UCI_EBF 40
 
 int nc_uci_start(FILE* in, FILE* out);
