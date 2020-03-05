@@ -14,7 +14,7 @@
 #define NC_UCI_MAX_MOVETIME 30000
 
 /* Interesting time control: accept an early iteration if it scores better than (remaining_ms / score_fraction) */
-#define NC_UCI_ACCEPTABLE_SCORE_FRACTION 10
+#define NC_UCI_ACCEPTABLE_SCORE_FRACTION 4
 
 /* 
  * if the evaluation decreases by this amount and the expected search time is <= BLUNDER_REQTIME percent remaining,
