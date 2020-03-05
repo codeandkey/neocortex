@@ -87,8 +87,8 @@ static nc_eval _nc_pst_mg[2][6][64] = {
             -30, -40, -40, -50, -50, -40, -40, -30,
             -20, -30, -30, -40, -40, -30, -20, -20,
             -10, -20, -20, -20, -20, -20, -20, -10,
-            20, 20, 0, 0, 0, 0, 20, 20,
-            20, 30, 10, 0, 0, 10, 30, 20,
+            20, 20, -20, -20, -20, -20, 20, 20,
+            20, 40, 30, 0, 0, 10, 40, 20,
         },
     }, {{0}},
 };
@@ -219,5 +219,8 @@ nc_eval nc_pst_get_score(nc_pst_eval* pst, nc_color color_to_move, float phase) 
 float nc_pst_get_phase(nc_pst_eval* pst) {
     nc_eval mg_total = pst->mg_material[NC_WHITE] + pst->mg_material[NC_BLACK];
 
-    return (float) (mg_total) / _nc_pst_total_mg_mat;
+    float out = (float) (mg_total) / (_nc_pst_total_mg_mat / 2.0f);
+
+    if (out > 1.0f) out = 1.0f;
+    return out;
 }

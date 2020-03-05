@@ -513,6 +513,25 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves) {
 
     fprintf(out, "\n");
 
+    /* Print out eval bits */
+    float phase = nc_position_phase(p);
+    nc_eval ps_bonus = NC_EVAL_PAWN_STRUCTURE * nc_position_pawn_structure(p, p->color_to_move);
+    nc_eval ops_bonus = NC_EVAL_PAWN_STRUCTURE * nc_position_pawn_structure(p, nc_colorflip(p->color_to_move));
+    nc_eval pst_score = nc_pst_get_score(&p->pst, p->color_to_move, phase);
+
+    fprintf(out, "^ phase: %.2f\n", phase);
+    fprintf(out, "^ pawn structure bonus: %d\n", ps_bonus);
+    fprintf(out, "^ opposing pawn structure bonus: %d\n", ops_bonus);
+    fprintf(out, "^ white middlegame pst: %d\n", p->pst.mg[NC_WHITE]);
+    fprintf(out, "^ black middlegame pst: %d\n", p->pst.mg[NC_BLACK]);
+    fprintf(out, "^ white middlegame material: %d\n", p->pst.mg_material[NC_WHITE]);
+    fprintf(out, "^ black middlegame material: %d\n", p->pst.mg_material[NC_BLACK]);
+    fprintf(out, "^ white endgame pst: %d\n", p->pst.eg[NC_WHITE]);
+    fprintf(out, "^ black endgame pst: %d\n", p->pst.eg[NC_BLACK]);
+    fprintf(out, "^ white endgame material: %d\n", p->pst.eg_material[NC_WHITE]);
+    fprintf(out, "^ black endgame material: %d\n", p->pst.eg_material[NC_BLACK]);
+    fprintf(out, "^ final pst imbalance: %d\n", pst_score);
+
     if (include_moves) {
         nc_movelist moves;
         nc_movelist_clear(&moves);
