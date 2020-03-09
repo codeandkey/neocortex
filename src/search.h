@@ -10,6 +10,7 @@
  */
 
 #define NC_SEARCH_CONTEMPT 0
+#define NC_SEARCH_QDEPTH 12
 
 nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_line, nc_timepoint max_time);
 

@@ -1,7 +1,7 @@
 #include "search.h"
 #include "tt.h"
 
-static nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint max_time);
+static nc_eval _nc_search_q(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_timepoint max_time);
 static nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_movelist* pv_out, nc_timepoint max_time);
 
 static int _nc_search_nodes;
@@ -21,10 +21,10 @@ nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_out, nc_timepoin
     return ret;
 }
 
-nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint max_time) {
+nc_eval _nc_search_q(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_timepoint max_time) {
     ++_nc_search_nodes;
 
-    if (nc_position_is_quiet(p)) return nc_position_score_thin(p);
+    if (nc_position_is_quiet(p) || !depth) return nc_position_score_thin(p);
 
     nc_movelist moves;
     nc_eval static_score = nc_position_score(p, &moves);
@@ -39,7 +39,7 @@ nc_eval _nc_search_q(nc_position* p, nc_eval alpha, nc_eval beta, nc_timepoint m
         nc_move cur = moves.moves[i];
 
         nc_position_make_move(p, cur);
-        nc_eval score = -_nc_search_q(p, -beta, -alpha, max_time);
+        nc_eval score = -_nc_search_q(p, depth - 1, -beta, -alpha, max_time);
         nc_position_unmake_move(p, cur);
 
         if (score > best_score) best_score = score;
@@ -61,7 +61,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_movelist_clear(&best_pv);
 
     if (depth <= 0) {
-        return _nc_search_q(p, alpha, beta, max_time);
+        return _nc_search_q(p, NC_SEARCH_QDEPTH, alpha, beta, max_time);
     }
 
     nc_eval alpha_orig = alpha;
