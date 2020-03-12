@@ -179,6 +179,9 @@ int nc_movegen_square_is_attacked(nc_position* pos, nc_square sq, nc_color opp) 
     int right_dir = (opp == NC_BLACK) ? NC_SQ_NORTHEAST : NC_SQ_SOUTHEAST;
     if (nc_bb_shift(sqmask & ~NC_BB_FILEH, right_dir) & opp_pawns) return 1;
 
+    /* Test for king attacks */
+    if (nc_basic_king_attacks(sq) & (oppmask & pos->piece[NC_KING])) return 1;
+
     return 0;
 }
 
@@ -212,6 +215,12 @@ int nc_movegen_mask_is_attacked(nc_position* pos, nc_bb mask, nc_color opp) {
 
     int right_dir = (opp == NC_BLACK) ? NC_SQ_NORTHEAST : NC_SQ_SOUTHEAST;
     if (nc_bb_shift(mask & ~NC_BB_FILEH, right_dir) & opp_pawns) return 1;
+
+    /* Test for king attacks */
+    tmp = mask;
+    while (tmp) {
+        if (nc_basic_king_attacks(nc_bb_poplsb(&tmp)) & (oppmask & pos->piece[NC_KING])) return 1;
+    }
 
     return 0;
 }
