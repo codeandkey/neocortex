@@ -424,7 +424,7 @@ void _nc_movegen_gen_captures(nc_position* pos, int victim, int attacker, nc_mov
                 }
 
                 /* Add right promoting attacks */
-                right_attacks = nc_bb_shift(npawns & ~NC_BB_FILEH, right_dir) & vmask;
+                right_attacks = nc_bb_shift(ppawns & ~NC_BB_FILEH, right_dir) & vmask;
 
                 while (right_attacks) {
                     nc_square dst = nc_bb_poplsb(&right_attacks);
