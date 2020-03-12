@@ -46,11 +46,10 @@ nc_eval _nc_search_q(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_
 
         ++move_count;
 
-        if (score > best_score) best_score = score;
+        if (score >= best_score) best_score = score;
         if (score > alpha) alpha = score;
         if (alpha >= beta) break;
     }
-    
 
     if (!move_count) {
         if (p->states[p->ply].check) return NC_EVAL_MIN;
@@ -140,7 +139,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
 
         nc_position_unmake_move(p, next_move);
 
-        if (score > best_score) {
+        if (score >= best_score) {
             best_move = next_move;
             best_score = score;
             memcpy(&best_pv, &current_pv, sizeof current_pv);
