@@ -205,8 +205,12 @@ int nc_position_make_move(nc_position* p, nc_move move) {
     /* Test if move is castle */
     int is_castle = 0;
 
-    if (nc_piece_type(p->board[src]) == NC_KING && !((nc_square_file(dst) - nc_square_file(src))&1)) {
-        is_castle = 1;
+    if (nc_piece_type(p->board[src]) == NC_KING) {
+        int fdiff = nc_square_file(dst) - nc_square_file(src);
+
+        if (fdiff == 2 || fdiff == -2) {
+            is_castle = 1;
+        }
     }
 
     if (is_castle) {
@@ -340,8 +344,12 @@ void nc_position_unmake_move(nc_position* p, nc_move move) {
     /* Test if move is castle */
     int is_castle = 0;
 
-    if (nc_piece_type(p->board[src]) == NC_KING && !((nc_square_file(dst) - nc_square_file(src))&1)) {
-        is_castle = 1;
+    if (nc_piece_type(p->board[dst]) == NC_KING) {
+        int fdiff = nc_square_file(dst) - nc_square_file(src);
+
+        if (fdiff == 2 || fdiff == -2) {
+            is_castle = 1;
+        }
     }
 
     if (is_castle) {
