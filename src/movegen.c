@@ -238,7 +238,7 @@ void _nc_movegen_gen_castles(nc_position* pos, nc_movelist* out) {
         nc_bb occmask = NC_BB_QS_OCCFILES & rankmask;
 
         if (!(pos->global & occmask) && !nc_movegen_mask_is_attacked(pos, badmask, opp)) {
-            int dst = (pos->color_to_move == NC_WHITE) ? NC_SQ_A1 : NC_SQ_A8;
+            int dst = (pos->color_to_move == NC_WHITE) ? NC_SQ_C1 : NC_SQ_C8;
 
             nc_movelist_push(out, nc_move_make(src, dst) | NC_CASTLE);
         }
@@ -250,7 +250,7 @@ void _nc_movegen_gen_castles(nc_position* pos, nc_movelist* out) {
         nc_bb occmask = NC_BB_KS_OCCFILES & rankmask;
 
         if (!(pos->global & occmask) && !nc_movegen_mask_is_attacked(pos, badmask, opp)) {
-            int dst = (pos->color_to_move == NC_WHITE) ? NC_SQ_H1 : NC_SQ_H8;
+            int dst = (pos->color_to_move == NC_WHITE) ? NC_SQ_G1 : NC_SQ_G8;
 
             nc_movelist_push(out, nc_move_make(src, dst) | NC_CASTLE);
         }
