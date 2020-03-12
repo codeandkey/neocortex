@@ -202,7 +202,14 @@ int nc_position_make_move(nc_position* p, nc_move move) {
         is_capture = 1;
     }
 
-    if (move & NC_CASTLE) {
+    /* Test if move is castle */
+    int is_castle = 0;
+
+    if (nc_piece_type(p->board[src]) == NC_KING && !((nc_square_file(dst) - nc_square_file(src))&1)) {
+        is_castle = 1;
+    }
+
+    if (is_castle) {
         /* Castle move */
         /* New castle rights mask */
         int newmask = (p->color_to_move == NC_WHITE) ? (NC_BLACK_KINGSIDE | NC_BLACK_QUEENSIDE) : (NC_WHITE_KINGSIDE | NC_WHITE_QUEENSIDE);
@@ -330,7 +337,14 @@ void nc_position_unmake_move(nc_position* p, nc_move move) {
     nc_square src = nc_move_get_src(move);
     nc_square dst = nc_move_get_dst(move);
 
-    if (move & NC_CASTLE) {
+    /* Test if move is castle */
+    int is_castle = 0;
+
+    if (nc_piece_type(p->board[src]) == NC_KING && !((nc_square_file(dst) - nc_square_file(src))&1)) {
+        is_castle = 1;
+    }
+
+    if (is_castle) {
         /* Unmake castle move */
 
         if (dst == NC_SQ_C1) {
