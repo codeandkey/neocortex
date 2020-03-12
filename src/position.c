@@ -2,6 +2,7 @@
 #include "magic.h"
 #include "basic.h"
 #include "eval_consts.h"
+#include "movegen.h"
 
 #include <string.h>
 
@@ -172,13 +173,12 @@ void nc_position_init_fen(nc_position* dst, const char* fen) {
     /* Ignore the full move number for now */
 
     /* Update check state */
-    nc_bb kingmask = dst->piece[NC_KING] & dst->color[dst->color_to_move];
-    dst->states[dst->ply].check = (nc_position_gen_attack_mask_for(dst, nc_colorflip(dst->color_to_move), kingmask) & kingmask) != 0ULL;
+    dst->states[dst->ply].check = nc_movegen_get_king_in_check(dst, dst->color_to_move);
 
     free(fen_copy);
 }
 
-void nc_position_make_move(nc_position* p, nc_move move) {
+int nc_position_make_move(nc_position* p, nc_move move) {
     /* Put key in history */
     p->states[p->ply].key = p->key;
 
@@ -192,11 +192,15 @@ void nc_position_make_move(nc_position* p, nc_move move) {
     /* Set lastmove */
     next->lastmove = move;
 
-    /* Set check */
-    next->check = move & NC_CHECK;
-
     nc_square src = nc_move_get_src(move);
     nc_square dst = nc_move_get_dst(move);
+
+    /* Test if move is capture */
+    int is_capture = 0;
+
+    if (p->board[dst] != NC_PIECE_NULL || (dst == p->states[p->ply].ep_target && nc_piece_type(p->board[src]) == NC_PAWN)) {
+        is_capture = 1;
+    }
 
     if (move & NC_CASTLE) {
         /* Castle move */
@@ -229,7 +233,7 @@ void nc_position_make_move(nc_position* p, nc_move move) {
         nc_position_update_castling(p, last->castling, last->castling & newmask);
     } else {
         /* Captures, quiets, promotions */
-        if (move & NC_CAPTURE) {
+        if (is_capture) {
             if (dst == last->ep_target) {
                 /* En passant capture, hint where to place the piece in unmake */
                 next->captured_at = last->ep_target + ((p->color_to_move == NC_WHITE) ? NC_SQ_SOUTH : NC_SQ_NORTH);
@@ -292,6 +296,21 @@ void nc_position_make_move(nc_position* p, nc_move move) {
     }
 
     p->color_to_move = nc_colorflip(p->color_to_move);
+
+    /* Move is now made. The only thing left to update are the attack bitboards and check state. */
+
+    /* If the color that just moved is still in check, the move is illegal. */
+    if (nc_movegen_get_king_in_check(p, nc_colorflip(p->color_to_move))) {
+        /* Break early out of the move making. After an illegal move is made the attack bitboards and check flag are
+         * UNDEFINED. It is assumed that any illegal moves made will be IMMEDIATELY unmade before using the
+         * position for anything. */
+        return 0;
+    }
+
+    /* Move is legal! Finally test if it delivers check. */
+    next->check = nc_movegen_get_king_in_check(p, p->color_to_move);
+
+    return 1;
 }
 
 void nc_position_unmake_move(nc_position* p, nc_move move) {
@@ -340,7 +359,7 @@ void nc_position_unmake_move(nc_position* p, nc_move move) {
             nc_position_place_piece(p, (p->color_to_move == NC_WHITE) ? NC_WHITE_PAWN : NC_BLACK_PAWN, dst);
         }
 
-        if (move & NC_CAPTURE) {
+        if (cur->captured != NC_PIECE_NULL) {
             /* Unmake capture, we have all the information needed */
             nc_position_move_piece(p, dst, src);
             nc_position_place_piece(p, cur->captured, cur->captured_at);
@@ -533,36 +552,19 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves) {
     fprintf(out, "^ final pst imbalance: %d\n", pst_score);
 
     if (include_moves) {
-        nc_movelist moves;
-        nc_movelist_clear(&moves);
-        nc_position_legal_moves(p, &moves);
+        nc_movegen state;
+        nc_move nextmove;
 
-        fprintf(out, "^ legal moves (%d): ", moves.len);
+        fprintf(out, "^ legal moves: ");
 
-        for (int i = 0; i < moves.len; ++i) {
-            fprintf(out, "%s ", nc_move_tostr(moves.moves[i]));
+        nc_movegen_start_gen(p, &state);
+
+        while (nc_movegen_next_move(p, &state, &nextmove)) {
+            fprintf(out, "%s ", nc_move_tostr(nextmove));
         }
 
         fprintf(out, "\n");
     }
-
-    fprintf(out, "^ opposite_attacks:\n%s", nc_bb_tostr(nc_position_gen_attack_mask_for(p, nc_colorflip(p->color_to_move), 0)));
-}
-
-nc_eval nc_position_score(nc_position* dst, nc_movelist* out) {
-    nc_movelist_clear(out);
-    nc_position_legal_moves(dst, out);
-
-    /* Check for terminal nodes here. */
-    if (!out->len) {
-        if (dst->states[dst->ply].check) return NC_EVAL_MIN;
-        return NC_EVAL_CONTEMPT;
-    }
-
-    nc_eval thin_score = nc_position_score_thin(dst);
-    nc_eval mobility_bonus = NC_EVAL_MOBILITY * out->len;
-
-    return thin_score + mobility_bonus;
 }
 
 nc_eval nc_position_score_thin(nc_position* dst) {
@@ -596,79 +598,6 @@ int nc_position_pawn_structure(nc_position* dst, nc_color col) {
     return __builtin_popcountll(attacked_mask & pawns);
 }
 
-void nc_position_legal_moves(nc_position* dst, nc_movelist* out) {
-    nc_movelist pseudolegal;
-    nc_movelist_clear(&pseudolegal);
-
-    if (!dst->states[dst->ply].check) nc_position_gen_castle_moves(dst, &pseudolegal);
-
-    nc_position_gen_pawn_moves(dst, &pseudolegal, 1);
-    nc_position_gen_queen_moves(dst, &pseudolegal, 1);
-    nc_position_gen_rook_moves(dst, &pseudolegal, 1);
-    nc_position_gen_knight_moves(dst, &pseudolegal, 1);
-    nc_position_gen_bishop_moves(dst, &pseudolegal, 1);
-    nc_position_gen_king_moves(dst, &pseudolegal, 1);
-
-    nc_position_gen_pawn_moves(dst, &pseudolegal, 0);
-    nc_position_gen_queen_moves(dst, &pseudolegal, 0);
-    nc_position_gen_rook_moves(dst, &pseudolegal, 0);
-    nc_position_gen_knight_moves(dst, &pseudolegal, 0);
-    nc_position_gen_bishop_moves(dst, &pseudolegal, 0);
-    nc_position_gen_king_moves(dst, &pseudolegal, 0);
-
-    /* To test if a move is legal, we have to apply it and then test for illegal check. */
-    for (int i = 0; i < pseudolegal.len; ++i) {
-        nc_move cur = pseudolegal.moves[i];
-
-        /* Here we also have to perform castle check testing. */
-        nc_bb badmask = 0;
-
-        nc_position_make_move(dst, cur);
-
-        if (cur & NC_CASTLE) {
-            nc_square mvdst = nc_move_get_dst(cur);
-
-            switch (mvdst) {
-            case NC_SQ_C1:
-                badmask = nc_bb_mask(NC_SQ_E1) | nc_bb_mask(NC_SQ_D1) | nc_bb_mask(NC_SQ_C1);
-                break;
-            case NC_SQ_G1:
-                badmask = nc_bb_mask(NC_SQ_E1) | nc_bb_mask(NC_SQ_F1) | nc_bb_mask(NC_SQ_G1);
-                break;
-            case NC_SQ_C8:
-                badmask = nc_bb_mask(NC_SQ_E8) | nc_bb_mask(NC_SQ_D8) | nc_bb_mask(NC_SQ_C8);
-                break;
-            case NC_SQ_G8:
-                badmask = nc_bb_mask(NC_SQ_E8) | nc_bb_mask(NC_SQ_F8) | nc_bb_mask(NC_SQ_G8);
-                break;
-            }
-        } else {
-            badmask = dst->piece[NC_KING] & dst->color[nc_colorflip(dst->color_to_move)];
-        }
-
-        /* Check if the move is legal here, and also check if the move delivers check. */
-        /* If the move is illegal, it is tossed. */
-        /* If the move delivers check, the NC_CHECK flag is added to the move. */
-
-        nc_bb other_att = nc_position_gen_attack_mask_for(dst, dst->color_to_move, badmask);
-
-        if (!(other_att & badmask)) {
-            /* Move is legal. Test if it delivers check. */
-
-            nc_bb other_king = dst->piece[NC_KING] & dst->color[dst->color_to_move];
-            nc_bb att = nc_position_gen_attack_mask_for(dst, nc_colorflip(dst->color_to_move), other_king);
-
-            if (att & other_king) {
-                nc_movelist_push(out, cur | NC_CHECK);
-            } else {
-                nc_movelist_push(out, cur);
-            }
-        }
-
-        nc_position_unmake_move(dst, cur);
-    }
-}
-
 int nc_position_is_repetition(nc_position* p) {
     /* walk through the ply and see if we've seen the key before */
     for (int i = p->ply - 1; i >= 0; --i) {
@@ -676,339 +605,4 @@ int nc_position_is_repetition(nc_position* p) {
     }
 
     return 0;
-}
-
-void nc_position_gen_pawn_moves(nc_position* p, nc_movelist* out, int captures) {
-    nc_bb all_pawns = p->piece[NC_PAWN] & p->color[p->color_to_move];
-    nc_bb promotion_mask = (p->color_to_move == NC_WHITE) ? NC_BB_RANK7 : NC_BB_RANK2;
-
-    nc_bb promoting_pawns = all_pawns & promotion_mask;
-    nc_bb pawns = all_pawns & ~promotion_mask;
-
-    if (captures) {
-        /* Add pawn captures */
-
-        nc_bb capture_mask = p->color[nc_colorflip(p->color_to_move)];
-
-        /* Add ep target to potential captures */
-        if (p->states[p->ply].ep_target) {
-            capture_mask |= nc_bb_mask(p->states[p->ply].ep_target);
-        }
-
-        int dir_right = (p->color_to_move == NC_WHITE) ? NC_SQ_NORTHEAST : NC_SQ_SOUTHEAST;
-        int dir_left = (p->color_to_move == NC_WHITE) ? NC_SQ_NORTHWEST : NC_SQ_SOUTHWEST;
-
-        /* Add nonpromoting captures */
-        if (pawns) {
-            nc_bb right_attacks = nc_bb_shift(pawns & ~NC_BB_FILEH, dir_right) & capture_mask;
-
-            while (right_attacks) {
-                nc_square dst = nc_bb_poplsb(&right_attacks);
-                nc_movelist_push(out, nc_move_make(dst - dir_right, dst) | NC_CAPTURE);
-            }
-
-            nc_bb left_attacks = nc_bb_shift(pawns & ~NC_BB_FILEA, dir_left) & capture_mask;
-
-            while (left_attacks) {
-                nc_square dst = nc_bb_poplsb(&left_attacks);
-                nc_movelist_push(out, nc_move_make(dst - dir_left, dst) | NC_CAPTURE);
-            }
-        }
-
-        /* Add promoting captures */
-        if (promoting_pawns) {
-            nc_bb right_attacks = nc_bb_shift(promoting_pawns & ~NC_BB_FILEH, dir_right) & capture_mask;
-
-            while (right_attacks) {
-                nc_square dst = nc_bb_poplsb(&right_attacks);
-                nc_move template = nc_move_make(dst - dir_right, dst) | NC_CAPTURE;
-                nc_movelist_push(out, nc_move_promotion(template, NC_QUEEN));
-                nc_movelist_push(out, nc_move_promotion(template, NC_KNIGHT));
-                nc_movelist_push(out, nc_move_promotion(template, NC_ROOK));
-                nc_movelist_push(out, nc_move_promotion(template, NC_BISHOP));
-            }
-
-            nc_bb left_attacks = nc_bb_shift(promoting_pawns & ~NC_BB_FILEA, dir_left) & capture_mask;
-
-            while (left_attacks) {
-                nc_square dst = nc_bb_poplsb(&left_attacks);
-                nc_move template = nc_move_make(dst - dir_left, dst) | NC_CAPTURE;
-                nc_movelist_push(out, nc_move_promotion(template, NC_QUEEN));
-                nc_movelist_push(out, nc_move_promotion(template, NC_KNIGHT));
-                nc_movelist_push(out, nc_move_promotion(template, NC_ROOK));
-                nc_movelist_push(out, nc_move_promotion(template, NC_BISHOP));
-            }
-        }
-    } else {
-        /* Add pawn advance moves */
-        nc_bb starting_rank = (p->color_to_move == NC_WHITE) ? NC_BB_RANK2 : NC_BB_RANK7;
-        int adv_dir = (p->color_to_move == NC_WHITE) ? NC_SQ_NORTH : NC_SQ_SOUTH;
-        nc_bb starting_pawns = pawns & starting_rank;
-
-        /* Add promoting pawn advances */
-        if (promoting_pawns) {
-            nc_bb singles = nc_bb_shift(promoting_pawns, adv_dir) & ~p->global;
-
-            while (singles) {
-                nc_square dst = nc_bb_poplsb(&singles);
-                nc_move template = nc_move_make(dst - adv_dir, dst);
-                nc_movelist_push(out, nc_move_promotion(template, NC_QUEEN));
-                nc_movelist_push(out, nc_move_promotion(template, NC_KNIGHT));
-                nc_movelist_push(out, nc_move_promotion(template, NC_ROOK));
-                nc_movelist_push(out, nc_move_promotion(template, NC_BISHOP));
-            }
-        }
-
-        /* Add pawn jump moves */
-        if (starting_pawns) {
-            nc_bb singles = nc_bb_shift(starting_pawns, adv_dir) & ~p->global;
-            nc_bb doubles = nc_bb_shift(singles, adv_dir) & ~p->global;
-
-            while (doubles) {
-                nc_square dst = nc_bb_poplsb(&doubles);
-                nc_movelist_push(out, nc_move_make(dst - 2 * adv_dir, dst) | NC_PAWNJUMP);
-            }
-        }
-
-        /* Add nonpromoting pawn single advances */
-        if (pawns) {
-            nc_bb singles = nc_bb_shift(pawns, adv_dir) & ~p->global;
-
-            while (singles) {
-                nc_square dst = nc_bb_poplsb(&singles);
-                nc_movelist_push(out, nc_move_make(dst - adv_dir, dst));
-            }
-        }
-    }
-}
-
-void nc_position_gen_rook_moves(nc_position* p, nc_movelist* out, int captures) {
-    nc_bb rooks = p->piece[NC_ROOK] & p->color[p->color_to_move];
-
-    if (captures) {
-        while (rooks) {
-            nc_square src = nc_bb_poplsb(&rooks);
-            nc_bb captures = nc_magic_query_rook_attacks(src, p->global) & p->color[nc_colorflip(p->color_to_move)];
-
-            while (captures) {
-                nc_square dst = nc_bb_poplsb(&captures);
-                nc_movelist_push(out, nc_move_make(src, dst) | NC_CAPTURE);
-            }
-        }
-    } else {
-        while (rooks) {
-            nc_square src = nc_bb_poplsb(&rooks);
-            nc_bb moves = nc_magic_query_rook_attacks(src, p->global) & ~p->global;
-
-            while (moves) {
-                nc_square dst = nc_bb_poplsb(&moves);
-                nc_movelist_push(out, nc_move_make(src, dst));
-            }
-        }
-    }
-}
-
-void nc_position_gen_knight_moves(nc_position* p, nc_movelist* out, int captures) {
-    nc_bb knights = p->piece[NC_KNIGHT] & p->color[p->color_to_move];
-
-    if (captures) {
-        while (knights) {
-            nc_square src = nc_bb_poplsb(&knights);
-            nc_bb captures = nc_basic_knight_attacks(src) & p->color[nc_colorflip(p->color_to_move)];
-
-            while (captures) {
-                nc_square dst = nc_bb_poplsb(&captures);
-                nc_movelist_push(out, nc_move_make(src, dst) | NC_CAPTURE);
-            }
-        }
-    } else {
-        while (knights) {
-            nc_square src = nc_bb_poplsb(&knights);
-            nc_bb moves = nc_basic_knight_attacks(src) & ~p->global;
-
-            while (moves) {
-                nc_square dst = nc_bb_poplsb(&moves);
-                nc_movelist_push(out, nc_move_make(src, dst));
-            }
-        }
-    }
-}
-
-void nc_position_gen_bishop_moves(nc_position* p, nc_movelist* out, int captures) {
-    nc_bb bishops = p->piece[NC_BISHOP] & p->color[p->color_to_move];
-
-    if (captures) {
-        while (bishops) {
-            nc_square src = nc_bb_poplsb(&bishops);
-            nc_bb captures = nc_magic_query_bishop_attacks(src, p->global) & p->color[nc_colorflip(p->color_to_move)];
-
-            while (captures) {
-                nc_square dst = nc_bb_poplsb(&captures);
-                nc_movelist_push(out, nc_move_make(src, dst) | NC_CAPTURE);
-            }
-        }
-    } else {
-        while (bishops) {
-            nc_square src = nc_bb_poplsb(&bishops);
-            nc_bb moves = nc_magic_query_bishop_attacks(src, p->global) & ~p->global;
-
-            while (moves) {
-                nc_square dst = nc_bb_poplsb(&moves);
-                nc_movelist_push(out, nc_move_make(src, dst));
-            }
-        }
-    }
-}
-
-void nc_position_gen_queen_moves(nc_position* p, nc_movelist* out, int captures) {
-    nc_bb queens = p->piece[NC_QUEEN] & p->color[p->color_to_move];
-
-    if (captures) {
-        while (queens) {
-            nc_square src = nc_bb_poplsb(&queens);
-            nc_bb mask = nc_magic_query_rook_attacks(src, p->global) | nc_magic_query_bishop_attacks(src, p->global);
-            nc_bb captures = mask & p->color[nc_colorflip(p->color_to_move)];
-
-            while (captures) {
-                nc_square dst = nc_bb_poplsb(&captures);
-                nc_movelist_push(out, nc_move_make(src, dst) | NC_CAPTURE);
-            }
-        }
-    } else {
-        while (queens) {
-            nc_square src = nc_bb_poplsb(&queens);
-            nc_bb mask = nc_magic_query_rook_attacks(src, p->global) | nc_magic_query_bishop_attacks(src, p->global);
-            nc_bb moves = mask & ~p->global;
-
-            while (moves) {
-                nc_square dst = nc_bb_poplsb(&moves);
-                nc_movelist_push(out, nc_move_make(src, dst));
-            }
-        }
-    }
-}
-
-void nc_position_gen_king_moves(nc_position* p, nc_movelist* out, int captures) {
-    nc_bb kings = p->piece[NC_KING] & p->color[p->color_to_move];
-
-    if (captures) {
-        while (kings) {
-            nc_square src = nc_bb_poplsb(&kings);
-            nc_bb captures = nc_basic_king_attacks(src) & p->color[nc_colorflip(p->color_to_move)];
-
-            while (captures) {
-                nc_square dst = nc_bb_poplsb(&captures);
-                nc_movelist_push(out, nc_move_make(src, dst) | NC_CAPTURE);
-            }
-        }
-    } else {
-        while (kings) {
-            nc_square src = nc_bb_poplsb(&kings);
-            nc_bb moves = nc_basic_king_attacks(src) & ~p->global;
-
-            while (moves) {
-                nc_square dst = nc_bb_poplsb(&moves);
-                nc_movelist_push(out, nc_move_make(src, dst));
-            }
-        }
-    }
-}
-
-void nc_position_gen_castle_moves(nc_position* dst, nc_movelist* out) {
-    if (dst->color_to_move == NC_WHITE) {
-        /* check white castles */
-        if (dst->states[dst->ply].castling & NC_WHITE_QUEENSIDE) {
-            if (!(dst->global & (nc_bb_mask(NC_SQ_B1) | nc_bb_mask(NC_SQ_C1) | nc_bb_mask(NC_SQ_D1)))) {
-                nc_movelist_push(out, nc_move_make(NC_SQ_E1, NC_SQ_C1) | NC_CASTLE);
-            }
-        }
-
-        if (dst->states[dst->ply].castling & NC_WHITE_KINGSIDE) {
-            if (!(dst->global & (nc_bb_mask(NC_SQ_F1) | nc_bb_mask(NC_SQ_G1)))) {
-                nc_movelist_push(out, nc_move_make(NC_SQ_E1, NC_SQ_G1) | NC_CASTLE);
-            }
-        }
-    } else {
-        /* check black castles */
-        if (dst->states[dst->ply].castling & NC_BLACK_QUEENSIDE) {
-            if (!(dst->global & (nc_bb_mask(NC_SQ_B8) | nc_bb_mask(NC_SQ_C8) | nc_bb_mask(NC_SQ_D8)))) {
-                nc_movelist_push(out, nc_move_make(NC_SQ_E8, NC_SQ_C8) | NC_CASTLE);
-            }
-        }
-
-        if (dst->states[dst->ply].castling & NC_BLACK_KINGSIDE) {
-            if (!(dst->global & (nc_bb_mask(NC_SQ_F8) | nc_bb_mask(NC_SQ_G8)))) {
-                nc_movelist_push(out, nc_move_make(NC_SQ_E8, NC_SQ_G8) | NC_CASTLE);
-            }
-        }
-    }
-}
-
-nc_bb nc_position_gen_attack_mask_for(nc_position* dst, nc_color by, nc_bb mask) {
-    nc_bb attacked_mask = 0;
-
-    /* Try pieces with the greatest attack span first to try and fail early. */
-
-    /* Test pawn attacks conditionally */
-    nc_bb pawns = dst->piece[NC_PAWN] & dst->color[by];
-    nc_bb pawns_withright = pawns & ~NC_BB_FILEH;
-    nc_bb pawns_withleft = pawns & ~NC_BB_FILEA;
-
-    if (by == NC_WHITE) {
-        attacked_mask |= nc_bb_shift(pawns_withright, NC_SQ_NORTHEAST);
-        attacked_mask |= nc_bb_shift(pawns_withleft, NC_SQ_NORTHWEST);
-    } else {
-        attacked_mask |= nc_bb_shift(pawns_withright, NC_SQ_SOUTHEAST);
-        attacked_mask |= nc_bb_shift(pawns_withleft, NC_SQ_SOUTHWEST);
-    }
-
-    if (attacked_mask & mask) return attacked_mask;
-
-    /* Test queen attacks */
-    nc_bb queens = dst->piece[NC_QUEEN] & dst->color[by];
-
-    while (queens) {
-        nc_square src = nc_bb_poplsb(&queens);
-        attacked_mask |= nc_magic_query_rook_attacks(src, dst->global);
-        attacked_mask |= nc_magic_query_bishop_attacks(src, dst->global);
-        if (attacked_mask & mask) return attacked_mask;
-    }
-
-    /* Test rook attacks */
-    nc_bb rooks = dst->piece[NC_ROOK] & dst->color[by];
-
-    while (rooks) {
-        nc_square src = nc_bb_poplsb(&rooks);
-        attacked_mask |= nc_magic_query_rook_attacks(src, dst->global);
-        if (attacked_mask & mask) return attacked_mask;
-    }
-
-    /* Test bishop attacks */
-    nc_bb bishops = dst->piece[NC_BISHOP] & dst->color[by];
-
-    while (bishops) {
-        nc_square src = nc_bb_poplsb(&bishops);
-        attacked_mask |= nc_magic_query_bishop_attacks(src, dst->global);
-        if (attacked_mask & mask) return attacked_mask;
-    }
-
-    /* Test knight attacks */
-    nc_bb knights = dst->piece[NC_KNIGHT] & dst->color[by];
-
-    while (knights) {
-        nc_square src = nc_bb_poplsb(&knights);
-        attacked_mask |= nc_basic_knight_attacks(src);
-        if (attacked_mask & mask) return attacked_mask;
-    }
-
-    /* Test king attacks */
-    nc_bb kings = dst->piece[NC_KING] & dst->color[by];
-
-    while (kings) {
-        nc_square src = nc_bb_poplsb(&kings);
-        attacked_mask |= nc_basic_king_attacks(src);
-        if (attacked_mask & mask) return attacked_mask;
-    }
-
-    return attacked_mask;
 }

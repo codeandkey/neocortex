@@ -32,6 +32,7 @@ typedef struct {
     nc_square captured_at;
     nc_move lastmove;
     nc_zkey key; /* history key, stored for detecting repetition */
+    nc_bb attacks[2]; /* attack bitboards */
 } nc_pstate;
 
 typedef struct {
@@ -58,7 +59,7 @@ void nc_position_init(nc_position* dst);
 void nc_position_init_fen(nc_position* dst, const char* fen);
 
 /* Position move interface */
-void nc_position_make_move(nc_position* dst, nc_move move);
+int nc_position_make_move(nc_position* dst, nc_move move);
 void nc_position_unmake_move(nc_position* dst, nc_move move);
 
 /* State transition helpers */
@@ -84,23 +85,8 @@ nc_eval nc_position_score_thin(nc_position* dst);
 float nc_position_phase(nc_position* dst);
 int nc_position_pawn_structure(nc_position* dst, nc_color col);
 
-/* Move generation */
-void nc_position_legal_moves(nc_position* dst, nc_movelist* out);
-
 /* Repetition detection */
 int nc_position_is_repetition(nc_position* dst);
-
-/* Specific pseudolegal move generation. Used to influence move ordering */
-void nc_position_gen_pawn_moves(nc_position* dst, nc_movelist* out, int captures);
-void nc_position_gen_rook_moves(nc_position* dst, nc_movelist* out, int captures);
-void nc_position_gen_knight_moves(nc_position* dst, nc_movelist* out, int captures);
-void nc_position_gen_bishop_moves(nc_position* dst, nc_movelist* out, int captures);
-void nc_position_gen_queen_moves(nc_position* dst, nc_movelist* out, int captures);
-void nc_position_gen_king_moves(nc_position* dst, nc_movelist* out, int captures);
-void nc_position_gen_castle_moves(nc_position* dst, nc_movelist* out);
-
-/* Attack mask reloading */
-nc_bb nc_position_gen_attack_mask_for(nc_position* dst, nc_color by, nc_bb illegal_mask);
 
 /* Position examining */
 static inline int nc_position_is_quiet(nc_position* p) {

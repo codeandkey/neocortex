@@ -95,23 +95,15 @@ int nc_uci_start(FILE* in, FILE* out) {
                 }
 
                 for (char* movestr = strtok_r(NULL, " \n", &saveptr); movestr; movestr = strtok_r(NULL, " \n", &saveptr)) {
-                    nc_movelist next_moves;
-                    nc_movelist_clear(&next_moves);
-                    nc_position_legal_moves(&game_pos, &next_moves);
-
                     nc_move inpmove = nc_move_fromstr(movestr);
 
                     if (inpmove == NC_MOVE_NULL) {
                         nc_abort("Couldn't parse input move '%s'!", movestr);
                     }
 
-                    nc_move matched = nc_movelist_match(&next_moves, inpmove);
-
-                    if (matched == NC_MOVE_NULL) {
-                        nc_abort("Couldn't match input move '%s'!", nc_move_tostr(inpmove));
+                    if (!nc_position_make_move(&game_pos, inpmove)) {
+                        nc_abort("Position reported illegal move '%s'!", nc_move_tostr(inpmove));
                     }
-
-                    nc_position_make_move(&game_pos, matched);
                 }
             }
         }

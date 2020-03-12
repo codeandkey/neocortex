@@ -1,5 +1,6 @@
 #include "search.h"
 #include "tt.h"
+#include "movegen.h"
 
 static nc_eval _nc_search_q(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_timepoint max_time);
 static nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_movelist* pv_out, nc_timepoint max_time);
@@ -26,25 +27,34 @@ nc_eval _nc_search_q(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_
 
     if (nc_position_is_quiet(p) || !depth) return nc_position_score_thin(p);
 
-    nc_movelist moves;
-    nc_eval static_score = nc_position_score(p, &moves);
+    nc_movegen gen_state;
+    nc_move next_move;
 
-    if (static_score == NC_EVAL_MIN) return NC_EVAL_MIN;
-    if (static_score >= beta) return beta;
-    if (alpha < static_score) alpha = static_score;
+    nc_movegen_start_gen(p, &gen_state);
 
     nc_eval best_score = NC_EVAL_MIN;
+    int move_count = 0;
 
-    for (int i = 0; i < moves.len; ++i) {
-        nc_move cur = moves.moves[i];
+    while (nc_movegen_next_move(p, &gen_state, &next_move)) {
+        if (!nc_position_make_move(p, next_move)) {
+            nc_position_unmake_move(p, next_move);
+            continue;
+        }
 
-        nc_position_make_move(p, cur);
         nc_eval score = -_nc_search_q(p, depth - 1, -beta, -alpha, max_time);
-        nc_position_unmake_move(p, cur);
+        nc_position_unmake_move(p, next_move);
+
+        ++move_count;
 
         if (score > best_score) best_score = score;
         if (score > alpha) alpha = score;
         if (alpha >= beta) break;
+    }
+    
+
+    if (!move_count) {
+        if (p->states[p->ply].check) return NC_EVAL_MIN;
+        return NC_SEARCH_CONTEMPT;
     }
 
     return nc_eval_parent(best_score);
@@ -67,7 +77,6 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_eval alpha_orig = alpha;
 
     nc_ttentry* tt = nc_tt_lookup(p->key);
-    nc_move pv_move = NC_MOVE_NULL;
 
 #ifndef NC_NO_TT
     if (tt->key == p->key && tt->depth >= depth) {
@@ -90,56 +99,25 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     }
 #endif
 
-    /* Grab PV move from TT entry */
-    if (tt->key == p->key && tt->type == NC_TT_EXACT) {
-        pv_move = tt->bestmove;
-    }
+    nc_move next_move;
+    nc_movegen gen_state;
+    nc_movegen_start_gen(p, &gen_state);
 
-    nc_movelist next_moves;
-    nc_eval static_score = nc_position_score(p, &next_moves);
+    int move_count = 0;
 
-    if (static_score == NC_EVAL_MIN) return NC_EVAL_MIN;
-    if (!next_moves.len) return static_score;
-
-    /* Perform move ordering */
-
-    /* First, score each move for ordering. */
-    nc_eval move_scores[NC_MOVELIST_LEN];
-    for (int i = 0; i < next_moves.len; ++i) {
-        if (next_moves.moves[i] == pv_move) move_scores[i] = NC_EVAL_MAX;
-
-        nc_position_make_move(p, next_moves.moves[i]);
-        move_scores[i] = -nc_position_score_thin(p);
-        nc_position_unmake_move(p, next_moves.moves[i]);
-    }
-
-    /* Perform a decreasing selection sort  */
-    for (int i = 0; i < next_moves.len - 1; ++i) {
-        nc_eval best = move_scores[i];
-        int swap_with = i;
-
-        for (int j = i + 1; j < next_moves.len; ++j) {
-            if (move_scores[i] > best) {
-                best = move_scores[i];
-                swap_with = j;
-            }
+    while (nc_movegen_next_move(p, &gen_state, &next_move)) {
+        if (!nc_position_make_move(p, next_move)) {
+            nc_position_unmake_move(p, next_move);
+            continue;
         }
 
-        if (i != swap_with) {
-            nc_move tmp = next_moves.moves[i];
-            next_moves.moves[i] = next_moves.moves[swap_with];
-            next_moves.moves[swap_with] = tmp;
-        }
-    }
+        /* Increment legal move counter */
+        ++move_count;
 
-    /* Walk through the ordered moves */
-    for (int i = 0; i < next_moves.len; ++i) {
-        nc_move cur = next_moves.moves[i];
+        int extension = depth - 1;
 
-        /* Check search extension */
-        int next_depth = (cur & NC_CHECK) ? depth : depth - 1;
-
-        nc_position_make_move(p, cur);
+        /* Check extension */
+        if (p->states[p->ply].check) ++extension;
 
         /* Perform scout search if first node */ 
         nc_eval score;
@@ -147,23 +125,23 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         if (nc_position_is_repetition(p)) {
             score = NC_SEARCH_CONTEMPT;
             nc_movelist_clear(&current_pv);
-            nc_movelist_push(&current_pv, cur);
+            nc_movelist_push(&current_pv, next_move);
         } else {
-            if (!i) {
-                score = -_nc_search_pv(p, next_depth, -beta, -alpha, &current_pv, max_time);
+            if (move_count == 1) {
+                score = -_nc_search_pv(p, extension, -beta, -alpha, &current_pv, max_time);
             } else {
-                score = -_nc_search_pv(p, next_depth, -alpha - 1, -alpha, &current_pv, max_time);
+                score = -_nc_search_pv(p, extension, -alpha - 1, -alpha, &current_pv, max_time);
 
                 if (alpha < score && score < beta) {
-                    score = -_nc_search_pv(p, next_depth, -beta, -score, &current_pv, max_time);
+                    score = -_nc_search_pv(p, extension, -beta, -score, &current_pv, max_time);
                 }
             }
         }
 
-        nc_position_unmake_move(p, cur);
+        nc_position_unmake_move(p, next_move);
 
         if (score > best_score) {
-            best_move = cur;
+            best_move = next_move;
             best_score = score;
             memcpy(&best_pv, &current_pv, sizeof current_pv);
         }
@@ -176,6 +154,12 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
         if (max_time && nc_timer_current() >= max_time) break;
 
         if (alpha >= beta) break;
+    }
+
+    /* If there were no legal moves, return a terminal score. */
+    if (!move_count) {
+        if (p->states[p->ply].check) return NC_EVAL_MIN;
+        return NC_SEARCH_CONTEMPT;
     }
 
     /* Store search result back into ttable */
@@ -197,7 +181,7 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
     nc_movelist_concat(pv_out, &best_pv);
 
     /* Set only move flag */
-    _nc_search_only_move = (next_moves.len == 1);
+    _nc_search_only_move = (move_count == 1);
 
     return nc_eval_parent(best_score);
 }

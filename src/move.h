@@ -25,7 +25,6 @@ typedef int nc_move;
 #define NC_CAPTURE   0x2000
 #define NC_PAWNJUMP  0x4000
 #define NC_CASTLE    0x8000
-#define NC_CHECK     0x10000
 
 /* Movelist compile time config. */
 #define NC_MOVELIST_LEN 256

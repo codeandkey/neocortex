@@ -33,6 +33,11 @@ typedef uint64_t nc_bb;
 #define NC_BB_FILEG NC_BB_FILE(6)
 #define NC_BB_FILEH NC_BB_FILE(7)
 
+#define NC_BB_QS_BADFILES (NC_BB_FILEC | NC_BB_FILED | NC_BB_FILEE)
+#define NC_BB_KS_BADFILES (NC_BB_FILEE | NC_BB_FILEF | NC_BB_FILEG)
+#define NC_BB_QS_OCCFILES (NC_BB_FILEB | NC_BB_FILEC | NC_BB_FILED)
+#define NC_BB_KS_OCCFILES (NC_BB_FILEF | NC_BB_FILEG)
+
 /* String conversion */
 const char* nc_bb_tostr(nc_bb bb);
 

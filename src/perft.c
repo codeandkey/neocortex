@@ -1,6 +1,7 @@
 #include "perft.h"
 #include "position.h"
 #include "timer.h"
+#include "movegen.h"
 
 static int _nc_perft_nodes;
 static int _nc_perft_leaves;
@@ -34,16 +35,17 @@ void _nc_perft_pos(nc_position* p, int depth) {
         return;
     }
 
-    nc_movelist next_moves;
-    nc_movelist_clear(&next_moves);
-    nc_position_legal_moves(p, &next_moves);
+    nc_movegen gen;
+    nc_move nextmove;
 
-    for (int i = 0; i < next_moves.len; ++i) {
-        nc_move move = next_moves.moves[i];
+    nc_movegen_start_gen(p, &gen);
+    
+    while (nc_movegen_next_move(p, &gen, &nextmove)) {
+        if (nc_position_make_move(p, nextmove)) {
+            _nc_perft_pos(p, depth - 1);
+            if (depth == 1 && (nextmove & NC_CAPTURE)) ++_nc_perft_captures;
+        }
 
-        if (depth == 1 && (move & NC_CAPTURE)) ++_nc_perft_captures;
-        nc_position_make_move(p, move);
-        _nc_perft_pos(p, depth - 1);
-        nc_position_unmake_move(p, move);
+        nc_position_unmake_move(p, nextmove);
     }
 }
