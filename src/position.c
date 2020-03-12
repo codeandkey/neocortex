@@ -560,7 +560,11 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves) {
         nc_movegen_start_gen(p, &state);
 
         while (nc_movegen_next_move(p, &state, &nextmove)) {
-            fprintf(out, "%s ", nc_move_tostr(nextmove));
+            if (nc_position_make_move(p, nextmove)) {
+                fprintf(out, "%s ", nc_move_tostr(nextmove));
+            }
+
+            nc_position_unmake_move(p, nextmove);
         }
 
         fprintf(out, "\n");
