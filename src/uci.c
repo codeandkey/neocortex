@@ -36,7 +36,6 @@ int nc_uci_start(FILE* in, FILE* out) {
     /* Initialize a game position. */
     nc_position game_pos;
     nc_position_init(&game_pos);
-    nc_eval lastscore = NC_EVAL_MIN;
 
     /* Wait for commands! */
     while (fgets(uci_buf, sizeof uci_buf, in)) {
@@ -134,12 +133,10 @@ int nc_uci_start(FILE* in, FILE* out) {
 
             nc_movelist best_pv = {0};
             nc_movelist_clear(&best_pv);
-            nc_eval complete_score = NC_EVAL_MIN;
 
             for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
                 if (forcedepth && d > forcedepth) break;
                 int elapsed = nc_timer_elapsed_ms(starttime);
-                nc_eval early_score = (ourtime - elapsed) / NC_UCI_ACCEPTABLE_SCORE_FRACTION;
 
                 if (!forcedepth && d > 1) {
                     /* Check for time control abort. */
@@ -162,36 +159,22 @@ int nc_uci_start(FILE* in, FILE* out) {
 
                 fprintf(out, "\n");
 
-                if (incomplete) {
-                    break;
-                } else {
-                    best_pv = current_pv;
-                    complete_score = score;
+                best_pv = current_pv;
 
-                    if (!forcedepth && score < lastscore && lastscore - score >= NC_UCI_BLUNDER) {
-                        int nextitertime = ((ourtime - elapsed) * NC_UCI_BLUNDER_REQTIME) / 100;
-                        if (nc_search_get_time() * NC_UCI_EBF <= nextitertime) {
-                            /* Move would be a blunder.. try a higher depth if we think we have time */
-                            ourtime = nextitertime;
-                            maxtime = nc_timer_futurems(nextitertime);
-                            starttime = nc_timer_current();
-                            continue;
-                        }
-                    }
-                }
+		if (incomplete) {
+                    break;
+		}
 
                 if (!forcedepth) {
                     if (elapsed + nc_search_get_time() * NC_UCI_EBF >= (ourtime * NC_UCI_TIME_FACTOR) / 100) {
                         break;
                     }
 
-                    if (score >= early_score && d >= NC_UCI_ACCEPTABLE_SCORE_FRACTION_MIN_DEPTH) break;
                     if (nc_search_was_only_move()) break;
                 }
             }
 
             fprintf(out, "bestmove %s\n", nc_move_tostr(best_pv.moves[0]));
-            lastscore = complete_score;
         }
 
         if (!strcmp(command, "perft")) {
