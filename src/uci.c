@@ -161,9 +161,9 @@ int nc_uci_start(FILE* in, FILE* out) {
 
                 best_pv = current_pv;
 
-		if (incomplete) {
+                if (incomplete) {
                     break;
-		}
+                }
 
                 if (!forcedepth) {
                     if (elapsed + nc_search_get_time() * NC_UCI_EBF >= (ourtime * NC_UCI_TIME_FACTOR) / 100) {
