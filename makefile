@@ -1,7 +1,7 @@
 CC      = gcc
 CCFLAGS = -std=gnu99 -Wall -Werror -g -DNC_DEBUG
 LDFLAGS  = -pthread -rdynamic
-OUTPUT   = nc3
+OUTPUT   = neocortex
 
 SOURCES = $(wildcard src/*.c)
 OBJECTS = $(SOURCES:.c=.o)
