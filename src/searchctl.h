@@ -8,6 +8,9 @@
 
 #include "position.h"
 
+/* the search will abort after consuming 1/nth of the remaining time */
+#define NC_SEARCHCTL_MAXTIME_DIVISOR 5
+
 typedef struct {
 	int wtime, btime, winc, binc;
 	int movestogo, depth, nodes;
