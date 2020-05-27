@@ -138,8 +138,8 @@ void* nc_searchctl_worker(void* a) {
 			break;
 		}
 
-		/* If a forced win is found, no need to search further. */
-		if (nc_eval_is_win(search_score)) break;
+		/* If a forced mate is found, no need to search further. */
+		if (nc_eval_is_mate(search_score)) break;
 	}
 
 	/* Finally, write the bestmove for uci. */
