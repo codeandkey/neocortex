@@ -87,21 +87,13 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
 #ifndef NC_NO_TT
 	if (tt->key == p->key && tt->depth >= depth) {
 		if (tt->type == NC_TT_EXACT) {
-			/* Walk to the end of the pv. */
-			nc_position_make_move(p, tt->bestmove);
-
-			_nc_search_pv(p, depth - 1, -beta, -alpha, &best_pv, max_time);
 			nc_movelist_push(pv_out, tt->bestmove);
-			nc_movelist_concat(pv_out, &best_pv);
-
-			nc_position_unmake_move(p, tt->bestmove);
-
 			return tt->score;
-		} else if (tt->type == NC_TT_LOWERBOUND) {
+		}/* else if (tt->type == NC_TT_LOWERBOUND) {
 			if (tt->score > alpha) alpha = tt->score;
 		} else if (tt->type == NC_TT_UPPERBOUND) {
 			if (tt->score < beta) beta = tt->score;
-		}
+		}*/
 	}
 #endif
 
