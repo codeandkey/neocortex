@@ -63,32 +63,48 @@ void* nc_searchctl_worker(void* a) {
 
 	nc_move bestmove = NC_MOVE_NULL;
 
+	int last_search_time = 0;
+	int last_nodes = 0;
+	float ebf = 0.0f;
+
+	int time_control = 0;
+
+	/* Compute a maximum time for the search if necessary. */
+	nc_timepoint max_time = 0;
+
+	if (opts->movetime) {
+		max_time = nc_timer_futurems(opts->movetime);
+	} else if (!opts->depth && !opts->infinite) {
+		time_control = 1;
+
+		int ourtime = opts->wtime;
+		int ourinc = opts->winc;
+
+		if (_nc_search_root.color_to_move == NC_BLACK) {
+			ourtime = opts->btime;
+			ourinc = opts->binc;
+		}
+
+		/* !!!! TODO: actual time management !!!! */
+		max_time = nc_timer_futurems((ourtime + (ourinc * ourinc * ourinc)) / NC_SEARCHCTL_MAXTIME_DIVISOR); // what in tarnation
+	}
+
+
 	/* Start iterative deepening search. */
 	for (int cur_depth = 1;; ++cur_depth) {
-		/* Compute a maximum time for the search if necessary. */
-		nc_timepoint max_time = 0;
+		nc_movelist pv_line;
+		nc_movelist_clear(&pv_line);
 
-		if (cur_depth > 1) {
-			if (opts->movetime) {
-				max_time = nc_timer_futurems(opts->movetime);
-			} else if (!opts->depth && !opts->infinite) {
-				int ourtime = opts->wtime;
-				int ourinc = opts->winc;
-
-				if (_nc_search_root.color_to_move == NC_BLACK) {
-					ourtime = opts->btime;
-					ourinc = opts->binc;
-				}
-
-				/* !!!! TODO: actual time management !!!! */
-				max_time = nc_timer_futurems(ourtime + (ourinc * ourinc * ourinc) / 4); // what in tarnation
+		/* Abort iteration early if it will take too long. */
+		if (ebf != 0.0f && time_control) {
+			nc_debug("expected time for next iter: %d ms (ebf %f)", (int) (ebf * last_search_time), ebf);
+			if (nc_timer_futurems(ebf * last_search_time) > max_time) {
+				break;
 			}
 		}
 
-		nc_movelist pv_line;
-
 		/* Try a search at cur_depth. */
-		nc_eval search_score = nc_search(&_nc_search_root, cur_depth, &pv_line, max_time);
+		nc_eval search_score = nc_search(&_nc_search_root, cur_depth, &pv_line, (cur_depth > 1) ? max_time : 0);
 
 		if (nc_search_incomplete()) {
 			break;
@@ -102,6 +118,13 @@ void* nc_searchctl_worker(void* a) {
 			nc_search_get_nps(),
 			nc_eval_tostr(search_score)
 		);
+
+		if (last_nodes) {
+			ebf = (float) nc_search_get_nodes() / (float) last_nodes;
+		}
+
+		last_search_time = nc_search_get_time();
+		last_nodes = nc_search_get_nodes();
 
 		for (int i = 0; i < pv_line.len; ++i) {
 			printf(" %s", nc_move_tostr(pv_line.moves[i]));
