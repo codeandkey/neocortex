@@ -1,7 +1,7 @@
 #include "eval.h"
 #include "piece.h"
 
-static char _nc_eval_strbuf[16];
+static char _nc_eval_strbuf[32];
 
 const char* nc_eval_tostr(nc_eval score) {
 	if (score < NC_EVAL_MIN + NC_EVAL_MATE_THRESHOLD) {
@@ -25,3 +25,16 @@ nc_eval nc_eval_parent(nc_eval score) {
 	}
 }
 
+int nc_eval_is_mate(nc_eval score) {
+	if (score < NC_EVAL_MIN + NC_EVAL_MATE_THRESHOLD) {
+		return 1;
+	} else if (score > NC_EVAL_MAX - NC_EVAL_MATE_THRESHOLD) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+int nc_eval_is_win(nc_eval score) {
+	return nc_eval_is_mate(score) && score > 0;
+}
