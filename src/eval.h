@@ -7,8 +7,8 @@
 #include <limits.h>
 
 #define NC_EVAL_MATE_THRESHOLD 512
-#define NC_EVAL_MIN (INT_MIN + 10)
-#define NC_EVAL_MAX (INT_MAX - 10)
+#define NC_EVAL_MAX 500000
+#define NC_EVAL_MIN (-NC_EVAL_MAX)
 
 typedef int nc_eval;
 
