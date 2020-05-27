@@ -18,3 +18,4 @@ int nc_search_get_nodes();
 int nc_search_get_nps();
 int nc_search_get_time();
 int nc_search_was_only_move();
+int nc_search_incomplete();

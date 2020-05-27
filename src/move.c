@@ -6,55 +6,55 @@
 static char _nc_move_strbuf[6];
 
 const char* nc_move_tostr(nc_move in) {
-    if (in == NC_MOVE_NULL) return "0000";
+	if (in == NC_MOVE_NULL) return "0000";
 
-    const char* fromstr = nc_square_tostr(nc_move_get_src(in));
+	const char* fromstr = nc_square_tostr(nc_move_get_src(in));
 
-    _nc_move_strbuf[0] = fromstr[0];
-    _nc_move_strbuf[1] = fromstr[1];
+	_nc_move_strbuf[0] = fromstr[0];
+	_nc_move_strbuf[1] = fromstr[1];
 
-    const char* tostr = nc_square_tostr(nc_move_get_dst(in));
+	const char* tostr = nc_square_tostr(nc_move_get_dst(in));
 
-    _nc_move_strbuf[2] = tostr[0];
-    _nc_move_strbuf[3] = tostr[1];
+	_nc_move_strbuf[2] = tostr[0];
+	_nc_move_strbuf[3] = tostr[1];
 
-    if (in & NC_PROMOTION) {
-        _nc_move_strbuf[4] = nc_ptype_tochar(nc_move_get_ptype(in));
-    } else {
-        _nc_move_strbuf[4] = '\0';
-    }
+	if (in & NC_PROMOTION) {
+		_nc_move_strbuf[4] = nc_ptype_tochar(nc_move_get_ptype(in));
+	} else {
+		_nc_move_strbuf[4] = '\0';
+	}
 
-    return _nc_move_strbuf;
+	return _nc_move_strbuf;
 }
 
 nc_move nc_move_fromstr(const char* in) {
-    int len = strlen(in);
-    if (len < 4 || len > 6) return NC_MOVE_NULL;
+	int len = strlen(in);
+	if (len < 4 || len > 6) return NC_MOVE_NULL;
 
-    nc_square src = nc_square_fromstr(in);
-    nc_square dst = nc_square_fromstr(in + 2);
+	nc_square src = nc_square_fromstr(in);
+	nc_square dst = nc_square_fromstr(in + 2);
 
-    if (src == NC_SQ_NULL || dst == NC_SQ_NULL) return NC_MOVE_NULL;
+	if (src == NC_SQ_NULL || dst == NC_SQ_NULL) return NC_MOVE_NULL;
 
-    nc_move out = nc_move_make(src, dst);
+	nc_move out = nc_move_make(src, dst);
 
-    if (len == 5) {
-        out = nc_move_promotion(out, nc_ptype_fromchar(in[4]));
-    }
+	if (len == 5) {
+		out = nc_move_promotion(out, nc_ptype_fromchar(in[4]));
+	}
 
-    return out;
+	return out;
 }
 
 nc_move nc_movelist_match(nc_movelist* lst, nc_move in) {
-    for (int i = 0; i < lst->len; ++i) {
-        nc_move cur = lst->moves[i];
+	for (int i = 0; i < lst->len; ++i) {
+		nc_move cur = lst->moves[i];
 
-        if ((cur & 0xFFF) == (in & 0xFFF) && (cur & NC_PROMOTION) == (in & NC_PROMOTION)) {
-            if (nc_move_get_ptype(cur) == nc_move_get_ptype(in)) {
-                return cur;
-            }
-        }
-    }
+		if ((cur & 0xFFF) == (in & 0xFFF) && (cur & NC_PROMOTION) == (in & NC_PROMOTION)) {
+			if (nc_move_get_ptype(cur) == nc_move_get_ptype(in)) {
+				return cur;
+			}
+		}
+	}
 
-    return NC_MOVE_NULL;
+	return NC_MOVE_NULL;
 }

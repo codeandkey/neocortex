@@ -43,21 +43,21 @@ const char* nc_bb_tostr(nc_bb bb);
 
 /* Inline manipulation */
 static inline nc_bb nc_bb_shift(nc_bb bb, int dir) {
-    return (dir > 0) ? (bb << dir) : (bb >> -dir);
+	return (dir > 0) ? (bb << dir) : (bb >> -dir);
 }
 
 static inline nc_bb nc_bb_mask(nc_square sq) {
-    if (!nc_square_is_valid(sq)) return 0;
-    return ((nc_bb) 1) << sq;
+	if (!nc_square_is_valid(sq)) return 0;
+	return ((nc_bb) 1) << sq;
 }
 
 static inline nc_square nc_bb_getlsb(nc_bb bb) {
-    nc_assert(bb);
-    return __builtin_ctzll(bb);
+	nc_assert(bb);
+	return __builtin_ctzll(bb);
 }
 
 static inline nc_square nc_bb_poplsb(nc_bb* bb) {
-    nc_square lsb = nc_bb_getlsb(*bb);
-    *bb ^= nc_bb_mask(lsb);
-    return lsb;
+	nc_square lsb = nc_bb_getlsb(*bb);
+	*bb ^= nc_bb_mask(lsb);
+	return lsb;
 }

@@ -25,31 +25,31 @@
 #define NC_MAX_PLY 512
 
 typedef struct {
-    int castling, check;
-    nc_square ep_target;
-    int halfmove_clock;
-    nc_piece captured;
-    nc_square captured_at;
-    nc_move lastmove;
-    nc_zkey key; /* history key, stored for detecting repetition */
-    nc_bb attacks[2]; /* attack bitboards */
+	int castling, check;
+	nc_square ep_target;
+	int halfmove_clock;
+	nc_piece captured;
+	nc_square captured_at;
+	nc_move lastmove;
+	nc_zkey key; /* history key, stored for detecting repetition */
+	nc_bb attacks[2]; /* attack bitboards */
 } nc_pstate;
 
 typedef struct {
-    nc_pstate states[NC_MAX_PLY];
-    int ply;
+	nc_pstate states[NC_MAX_PLY];
+	int ply;
 
-    nc_zkey key;
-    nc_color color_to_move;
+	nc_zkey key;
+	nc_color color_to_move;
 
-    /* Incremental evaluation (NOT from the perspective of CTM) */
-    nc_pst_eval pst;
+	/* Incremental evaluation (NOT from the perspective of CTM) */
+	nc_pst_eval pst;
 
-    /* Occupancy bitboards */
-    nc_bb color[2], piece[6], global;
+	/* Occupancy bitboards */
+	nc_bb color[2], piece[6], global;
 
-    /* Piece array */
-    nc_piece board[64];
+	/* Piece array */
+	nc_piece board[64];
 } nc_position;
 
 /* Standard position init */
@@ -90,5 +90,5 @@ int nc_position_is_repetition(nc_position* dst);
 
 /* Position examining */
 static inline int nc_position_is_quiet(nc_position* p) {
-    return (p->states[p->ply].captured == NC_PIECE_NULL) && !p->states[p->ply].check;
+	return (p->states[p->ply].captured == NC_PIECE_NULL) && !p->states[p->ply].check;
 }

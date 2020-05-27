@@ -12,16 +12,16 @@
 #include <time.h>
 
 int main(int argc, char** argv) {
-    srand(time(NULL));
+	srand(time(NULL));
 
-    nc_pst_init();
-    nc_magic_init();
-    nc_basic_init();
-    nc_zobrist_init(0x82fd8a72);
+	nc_pst_init();
+	nc_magic_init();
+	nc_basic_init();
+	nc_zobrist_init(0x82fd8a72);
 
-    nc_uci_start(stdin, stdout);
+	nc_uci_start(stdin, stdout);
 
-    nc_magic_free();
+	nc_magic_free();
 
-    return 0;
+	return 0;
 }

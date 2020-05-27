@@ -12,10 +12,10 @@
 #include "square.h"
 
 typedef struct {
-    nc_eval mg[2];
-    nc_eval eg[2];
-    nc_eval mg_material[2];
-    nc_eval eg_material[2];
+	nc_eval mg[2];
+	nc_eval eg[2];
+	nc_eval mg_material[2];
+	nc_eval eg_material[2];
 } nc_pst_eval;
 
 void nc_pst_init();

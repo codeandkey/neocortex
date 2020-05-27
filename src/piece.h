@@ -21,31 +21,31 @@ typedef int nc_ptype;
 
 /* Piece type manipulation */
 static inline int nc_ptype_is_valid(nc_ptype pt) {
-    return (pt >= 0 && pt <= 5);
+	return (pt >= 0 && pt <= 5);
 }
 
 static inline char nc_ptype_tochar(nc_ptype pt) {
-    nc_assert(nc_ptype_is_valid(pt));
-    return "prnbqk"[pt]; /* sneaky */
+	nc_assert(nc_ptype_is_valid(pt));
+	return "prnbqk"[pt]; /* sneaky */
 }
 
 static inline nc_ptype nc_ptype_fromchar(char c) {
-    switch (c) {
-    case 'p':
-        return NC_PAWN;
-    case 'r':
-        return NC_ROOK;
-    case 'n':
-        return NC_KNIGHT;
-    case 'b':
-        return NC_BISHOP;
-    case 'q':
-        return NC_QUEEN;
-    case 'k':
-        return NC_KING;
-    default:
-        return NC_PTYPE_NULL;
-    }
+	switch (c) {
+	case 'p':
+		return NC_PAWN;
+	case 'r':
+		return NC_ROOK;
+	case 'n':
+		return NC_KNIGHT;
+	case 'b':
+		return NC_BISHOP;
+	case 'q':
+		return NC_QUEEN;
+	case 'k':
+		return NC_KING;
+	default:
+		return NC_PTYPE_NULL;
+	}
 }
 
 /* Piece colors */
@@ -56,17 +56,17 @@ typedef int nc_color;
 
 /* Color manipulation */
 static inline int nc_color_is_valid(nc_color in) {
-    return (in >= 0 && in <= 1);
+	return (in >= 0 && in <= 1);
 }
 
 static inline nc_color nc_colorflip(nc_color in) {
-    nc_assert(nc_color_is_valid(in));
-    return !in;
+	nc_assert(nc_color_is_valid(in));
+	return !in;
 }
 
 static inline char nc_colorchar(nc_color in) {
-    nc_assert(nc_color_is_valid(in));
-    return (in == NC_WHITE) ? 'w' : 'b';
+	nc_assert(nc_color_is_valid(in));
+	return (in == NC_WHITE) ? 'w' : 'b';
 }
 
 /* Generic piece type. */
@@ -89,36 +89,36 @@ typedef int nc_piece;
 
 /* Piece manipulation */
 static inline int nc_piece_is_valid(nc_piece p) {
-    return (p >= 0 && p <= 11);
+	return (p >= 0 && p <= 11);
 }
 
 static inline nc_piece nc_piece_make(nc_color col, nc_ptype t) {
-    nc_assert(nc_color_is_valid(col));
-    nc_assert(nc_ptype_is_valid(t));
+	nc_assert(nc_color_is_valid(col));
+	nc_assert(nc_ptype_is_valid(t));
 
-    return (t << 1) | col;
+	return (t << 1) | col;
 }
 
 static inline nc_color nc_piece_color(nc_piece p) {
-    nc_assert(nc_piece_is_valid(p));
-    return p & 1;
+	nc_assert(nc_piece_is_valid(p));
+	return p & 1;
 }
 
 static inline nc_ptype nc_piece_type(nc_piece p) {
-    nc_assertf(nc_piece_is_valid(p), "Invalid piece %d", p);
-    return p >> 1;
+	nc_assertf(nc_piece_is_valid(p), "Invalid piece %d", p);
+	return p >> 1;
 }
 
 static inline char nc_piece_touci(nc_piece p) {
-    if (p == NC_PIECE_NULL) return '-';
-    nc_assert(nc_piece_is_valid(p));
-    return "PpRrNnBbQqKk"[p];
+	if (p == NC_PIECE_NULL) return '-';
+	nc_assert(nc_piece_is_valid(p));
+	return "PpRrNnBbQqKk"[p];
 }
 
 static inline nc_piece nc_piece_fromuci(char in) {
-    char lc = tolower(in);
-    nc_ptype pt = nc_ptype_fromchar(lc);
+	char lc = tolower(in);
+	nc_ptype pt = nc_ptype_fromchar(lc);
 
-    if (!nc_ptype_is_valid(pt)) return NC_PIECE_NULL;
-    return nc_piece_make((lc == in) ? NC_BLACK : NC_WHITE, pt);
+	if (!nc_ptype_is_valid(pt)) return NC_PIECE_NULL;
+	return nc_piece_make((lc == in) ? NC_BLACK : NC_WHITE, pt);
 }

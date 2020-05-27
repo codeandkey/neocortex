@@ -4,10 +4,10 @@
 
 /* Print out a backtrace. */
 void nc_backtrace() {
-    void* ptrs[256];
+	void* ptrs[256];
 
-    int count = backtrace(ptrs, sizeof ptrs / sizeof *ptrs);
+	int count = backtrace(ptrs, sizeof ptrs / sizeof *ptrs);
 
-    fprintf(NC_LOG_FD, "backtrace:\n");
-    backtrace_symbols_fd(ptrs, count, fileno(NC_LOG_FD));
+	fprintf(NC_LOG_FD, "backtrace:\n");
+	backtrace_symbols_fd(ptrs, count, fileno(NC_LOG_FD));
 }

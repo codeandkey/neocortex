@@ -17,9 +17,9 @@
 #define NC_MOVEGEN_STAGE_END 5
 
 typedef struct {
-    int capture_victim, capture_attacker; /* MVV-LVA staging */
-    int stage, ind;
-    nc_movelist moves;
+	int capture_victim, capture_attacker; /* MVV-LVA staging */
+	int stage, ind;
+	nc_movelist moves;
 } nc_movegen;
 
 /**

@@ -4,191 +4,218 @@
 #include "util.h"
 #include "search.h"
 #include "perft.h"
+#include "searchctl.h"
 
 #include <string.h>
 
+static int _nc_uci_try_arg(char** args, int i, int num_args, int def);
+
 int nc_uci_start(FILE* in, FILE* out) {
-    char uci_buf[NC_UCI_BUFLEN];
+	char uci_buf[NC_UCI_BUFLEN];
 
-    /* disable output buffering */
-    setvbuf(out, NULL, _IONBF, 0);
+	/* disable output buffering */
+	setvbuf(out, NULL, _IONBF, 0);
 
-    /* wait for uci */
-    if (!fgets(uci_buf, sizeof uci_buf, in)) {
-        nc_error("UCI input stream error!");
-        return -1;
-    }
+	/* wait for uci */
+	if (!fgets(uci_buf, sizeof uci_buf, in)) {
+		nc_error("UCI input stream error!");
+		return -1;
+	}
 
-    /* strip newline from command buffer */
-    if (uci_buf[strlen(uci_buf) - 1] == '\n') {
-        uci_buf[strlen(uci_buf) - 1] = '\0';
-    }
+	/* strip newline from command buffer */
+	if (uci_buf[strlen(uci_buf) - 1] == '\n') {
+		uci_buf[strlen(uci_buf) - 1] = '\0';
+	}
 
-    if (strcmp(uci_buf, "uci")) {
-        nc_error("Expected 'uci', read '%s'", uci_buf);
-        return -1;
-    }
+	if (strcmp(uci_buf, "uci")) {
+		nc_error("Expected 'uci', read '%s'", uci_buf);
+		return -1;
+	}
 
-    fprintf(out, "id name " NC_UCI_NAME "\n");
-    fprintf(out, "id author " NC_UCI_AUTHOR "\n");
-    fprintf(out, "uciok\n");
+	fprintf(out, "id name " NC_UCI_NAME "\n");
+	fprintf(out, "id author " NC_UCI_AUTHOR "\n");
+	fprintf(out, "uciok\n");
 
-    /* Initialize a game position. */
-    nc_position game_pos;
-    nc_position_init(&game_pos);
+	/* Initialize a game position. */
+	nc_position game_pos;
+	nc_position_init(&game_pos);
+	nc_searchctl_position(game_pos);
 
-    /* Wait for commands! */
-    while (fgets(uci_buf, sizeof uci_buf, in)) {
-        /* strip newline from command buffer */
-        if (uci_buf[strlen(uci_buf) - 1] == '\n') {
-            uci_buf[strlen(uci_buf) - 1] = '\0';
-        }
+	/* Wait for commands! */
+	while (fgets(uci_buf, sizeof uci_buf, in)) {
+		/* strip newline from command buffer */
+		if (uci_buf[strlen(uci_buf) - 1] == '\n') {
+			uci_buf[strlen(uci_buf) - 1] = '\0';
+		}
 
-        char* saveptr = NULL;
-        char* command = strtok_r(uci_buf, " \n", &saveptr);
+		char* saveptr = NULL;
+		char* command = strtok_r(uci_buf, " \n", &saveptr);
 
-        if (!command) continue;
+		if (!command) continue;
 
-        if (!strcmp(command, "dump")) {
-            nc_position_dump(&game_pos, stderr, 1);
-        }
+		if (!strcmp(command, "dump")) {
+			nc_position_dump(&game_pos, stderr, 1);
+		}
 
-        if (!strcmp(command, "quit")) {
-            return 0;
-        }
+		if (!strcmp(command, "quit")) {
+			return 0;
+		}
 
-        if (!strcmp(command, "isready")) {
-            fprintf(out, "readyok\n");
-        }
+		if (!strcmp(command, "stop")) {
+			nc_searchctl_stop();
+		}
 
-        if (!strcmp(command, "position")) {
-            char* next = strtok_r(NULL, " \n", &saveptr);
+		if (!strcmp(command, "isready")) {
+			fprintf(out, "readyok\n");
+		}
 
-            if (!strcmp(next, "startpos")) {
-                nc_position_init(&game_pos);
-            } else {
-                /* Build a FENbuf */
-                char fen[256] = {0};
-                int ind = 0;
+		if (!strcmp(command, "position")) {
+			char* next = strtok_r(NULL, " \n", &saveptr);
 
-                memcpy(fen + ind, next, strlen(next));
-                ind += strlen(next);
-                fen[ind++] = ' ';
+			if (!strcmp(next, "startpos")) {
+				nc_position_init(&game_pos);
+			} else {
+				/* Build a FENbuf */
+				char fen[256] = {0};
+				int ind = 0;
 
-                for (int i = 0; i < 5; ++i) {
-                    next = strtok_r(NULL, " \n", &saveptr);
-                    nc_assert(next);
-                    memcpy(fen + ind, next, strlen(next));
-                    ind += strlen(next);
-                    fen[ind++] = ' ';
-                };
+				memcpy(fen + ind, next, strlen(next));
+				ind += strlen(next);
+				fen[ind++] = ' ';
 
-                nc_position_init_fen(&game_pos, fen);
-            }
+				for (int i = 0; i < 5; ++i) {
+					next = strtok_r(NULL, " \n", &saveptr);
+					nc_assert(next);
+					memcpy(fen + ind, next, strlen(next));
+					ind += strlen(next);
+					fen[ind++] = ' ';
+				};
 
-            char* moves_word = strtok_r(NULL, " \n", &saveptr);
+				nc_position_init_fen(&game_pos, fen);
+			}
 
-            if (moves_word) {
-                if (strcmp(moves_word, "moves")) {
-                    nc_abort("Expected 'moves', read '%s'", moves_word);
-                }
+			char* moves_word = strtok_r(NULL, " \n", &saveptr);
 
-                for (char* movestr = strtok_r(NULL, " \n", &saveptr); movestr; movestr = strtok_r(NULL, " \n", &saveptr)) {
-                    nc_move inpmove = nc_move_fromstr(movestr);
+			if (moves_word) {
+				if (strcmp(moves_word, "moves")) {
+					nc_abort("Expected 'moves', read '%s'", moves_word);
+				}
 
-                    if (inpmove == NC_MOVE_NULL) {
-                        nc_abort("Couldn't parse input move '%s'!", movestr);
-                    }
+				for (char* movestr = strtok_r(NULL, " \n", &saveptr); movestr; movestr = strtok_r(NULL, " \n", &saveptr)) {
+					nc_move inpmove = nc_move_fromstr(movestr);
 
-                    if (!nc_position_make_move(&game_pos, inpmove)) {
-                        nc_abort("Position reported illegal move '%s'!", nc_move_tostr(inpmove));
-                    }
-                }
-            }
-        }
+					if (inpmove == NC_MOVE_NULL) {
+						nc_abort("Couldn't parse input move '%s'!", movestr);
+					}
 
-        if (!strcmp(command, "go")) {
-            int movetime[2] = {0};
-            int forcedepth = 0;
+					if (!nc_position_make_move(&game_pos, inpmove)) {
+						nc_abort("Position reported illegal move '%s'!", nc_move_tostr(inpmove));
+					}
+				}
+			}
 
-            for (char* arg = strtok_r(NULL, " ", &saveptr); arg; arg = strtok_r(NULL, " ", &saveptr)) {
-                if (!strcmp(arg, "wtime")) {
-                    movetime[NC_WHITE] = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10) / NC_UCI_MOVETIME_DIV;
-                }
+			nc_searchctl_position(game_pos);
+		}
 
-                if (!strcmp(arg, "btime")) {
-                    movetime[NC_BLACK] = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10) / NC_UCI_MOVETIME_DIV;
-                }
+		if (!strcmp(command, "go")) {
+			/* Collect opts */
+			nc_searchopts opts = {0};
 
-                if (!strcmp(arg, "forcedepth")) {
-                    forcedepth = strtol(strtok_r(NULL, " ", &saveptr), NULL, 10);
-                }
-            }
+			char* args[32];
+			int num_args = 0;
 
-            int ourtime = movetime[game_pos.color_to_move];
-            if (ourtime > NC_UCI_MAX_MOVETIME) ourtime = NC_UCI_MAX_MOVETIME; /* don't wait too long */
+			while ((args[num_args] = strtok_r(NULL, " ", &saveptr))) {
+				if (++num_args >= 32) {
+					nc_error("Possible argument overflow in go command");
+					break;
+				}
+			}
 
-            nc_timepoint maxtime = (ourtime && !forcedepth) ? nc_timer_futurems(ourtime) : 0;
-            nc_timepoint starttime = nc_timer_current();
+			for (int i = 0; i < num_args; ++i) {
+				if (!strcmp(args[i], "wtime")) {
+					opts.wtime = _nc_uci_try_arg(args, i, num_args, 0);
+					continue;
+				}
 
-            nc_movelist best_pv = {0};
-            nc_movelist_clear(&best_pv);
+				if (!strcmp(args[i], "btime")) {
+					opts.btime = _nc_uci_try_arg(args, i, num_args, 0);
+					continue;
+				}
 
-            for (int d = 1; d <= NC_UCI_MAXDEPTH; ++d) {
-                if (forcedepth && d > forcedepth) break;
-                int elapsed = nc_timer_elapsed_ms(starttime);
+				if (!strcmp(args[i], "winc")) {
+					opts.winc = _nc_uci_try_arg(args, i, num_args, 0);
+					continue;
+				}
 
-                if (!forcedepth && d > 1) {
-                    /* Check for time control abort. */
-                    if (elapsed >= ourtime || elapsed >= (ourtime * NC_UCI_TIME_FACTOR) / 100) {
-                        break;
-                    }
-                }
+				if (!strcmp(args[i], "binc")) {
+					opts.binc = _nc_uci_try_arg(args, i, num_args, 0);
+					continue;
+				}
 
-                nc_movelist current_pv;
-                nc_eval score = nc_search(&game_pos, d, &current_pv, maxtime);
+				if (!strcmp(args[i], "movestogo")) {
+					opts.movestogo = _nc_uci_try_arg(args, i, num_args, 0);
+					continue;
+				}
 
-                int incomplete = 0;
-                if (!forcedepth && (nc_timer_current() >= maxtime && d > 1)) incomplete = 1;
+				if (!strcmp(args[i], "depth")) {
+					opts.depth = _nc_uci_try_arg(args, i, num_args, 0);
+					continue;
+				}
 
-                fprintf(out, "info depth %d%s nodes %d nps %d time %d score %s pv", d, incomplete ? "-" : "", nc_search_get_nodes(), nc_search_get_nps(), nc_search_get_time(), nc_eval_tostr(score));
+				if (!strcmp(args[i], "nodes")) {
+					opts.nodes = _nc_uci_try_arg(args, i, num_args, 0);
+					continue;
+				}
 
-                for (int i = 0; i < current_pv.len; ++i) {
-                    fprintf(out, " %s", nc_move_tostr(current_pv.moves[i]));
-                }
+				if (!strcmp(args[i], "mate")) {
+					opts.mate = _nc_uci_try_arg(args, i, num_args, 0);
+					continue;
+				}
 
-                fprintf(out, "\n");
+				if (!strcmp(args[i], "movetime")) {
+					opts.movetime = _nc_uci_try_arg(args, i, num_args, 0);
+					continue;
+				}
 
-                best_pv = current_pv;
+				if (!strcmp(args[i], "infinite")) {
+					opts.infinite = 1;
+					continue;
+				}
+			}
 
-                if (incomplete) {
-                    break;
-                }
+			nc_searchctl_go(&opts);
+		}
 
-                if (!forcedepth) {
-                    if (elapsed + nc_search_get_time() * NC_UCI_EBF >= (ourtime * NC_UCI_TIME_FACTOR) / 100) {
-                        break;
-                    }
+		if (!strcmp(command, "perft")) {
+			char* depthstr = strtok_r(NULL, " ", &saveptr);
 
-                    if (nc_search_was_only_move()) break;
-                }
-            }
+			if (!depthstr) {
+				continue;
+			}
 
-            fprintf(out, "bestmove %s\n", nc_move_tostr(best_pv.moves[0]));
-        }
+			int depth = strtol(depthstr, NULL, 10);
 
-        if (!strcmp(command, "perft")) {
-            char* depthstr = strtok_r(NULL, " ", &saveptr);
+			nc_perft_run(out, &game_pos, depth);
+		}
+	}
 
-            if (!depthstr) {
-                continue;
-            }
+	return 0;
+}
 
-            int depth = strtol(depthstr, NULL, 10);
+int _nc_uci_try_arg(char** args, int i, int num_args, int def) {
+	if (i + 1 >= num_args) {
+		nc_error("%s: expected argument", args[i]);
+		return def;
+	}
 
-            nc_perft_run(out, &game_pos, depth);
-        }
-    }
+	char* endptr = NULL;
 
-    return 0;
+	int res = (int) strtol(args[i + 1], &endptr, 10);
+
+	if (*endptr != '\0') {
+		nc_error("%s: invalid argument \"%s\"", args[i], args[i + 1]);
+		return def;
+	}
+
+	return res;
 }

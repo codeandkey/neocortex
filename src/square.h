@@ -97,25 +97,25 @@ const char* nc_square_tostr(nc_square in);
 nc_square nc_square_fromstr(const char* inp);
 
 static inline int nc_square_is_valid(nc_square in) {
-    return (in >= 0 && in < 64);
+	return (in >= 0 && in < 64);
 }
 
 static inline nc_square nc_square_at(int r, int f) {
-    nc_assertf(r >= 0 && f >= 0 && r < 8 && f < 8, "Invalid coordinates: r%d, f%d", r, f);
-    return (r * 8 + f);
+	nc_assertf(r >= 0 && f >= 0 && r < 8 && f < 8, "Invalid coordinates: r%d, f%d", r, f);
+	return (r * 8 + f);
 }
 
 static inline nc_square nc_square_shift(nc_square in, int dir) {
-    nc_assert(nc_square_is_valid(in));
-    return in + dir;
+	nc_assert(nc_square_is_valid(in));
+	return in + dir;
 }
 
 static inline nc_square nc_square_rank(nc_square in) {
-    nc_assert(nc_square_is_valid(in));
-    return in >> 3;
+	nc_assert(nc_square_is_valid(in));
+	return in >> 3;
 }
 
 static inline nc_square nc_square_file(nc_square in) {
-    nc_assert(nc_square_is_valid(in));
-    return in & 7;
+	nc_assert(nc_square_is_valid(in));
+	return in & 7;
 }
