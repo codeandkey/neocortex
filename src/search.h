@@ -1,7 +1,7 @@
 #pragma once
 
 #include "position.h"
-#include "eval.h"
+#include "eval_type.h"
 #include "move.h"
 #include "timer.h"
 

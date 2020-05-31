@@ -4,7 +4,7 @@
  * Constants altering behavior of static evaluation.
  */
 
-#include "eval.h"
+#include "eval_type.h"
 
 /* This eval is returned as a static score, not the actual value for a draw. */
 #define NC_EVAL_DRAW NC_EVAL_MAX

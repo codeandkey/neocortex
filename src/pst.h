@@ -7,7 +7,7 @@
  * they must be tracked together to maintain the ability to incrementally update them.
  */
 
-#include "eval.h"
+#include "eval_type.h"
 #include "piece.h"
 #include "square.h"
 

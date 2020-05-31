@@ -1,7 +1,7 @@
 #pragma once
 
 #include "zobrist.h"
-#include "eval.h"
+#include "eval_type.h"
 #include "move.h"
 
 #define NC_TT_WIDTH 131072

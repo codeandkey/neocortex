@@ -1,4 +1,4 @@
-#include "eval.h"
+#include "eval_type.h"
 #include "piece.h"
 
 static char _nc_eval_strbuf[32];

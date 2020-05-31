@@ -8,7 +8,7 @@
 #include "move.h"
 #include "square.h"
 #include "zobrist.h"
-#include "eval.h"
+#include "eval_type.h"
 #include "pst.h"
 
 #include <stdlib.h>
@@ -72,6 +72,9 @@ void nc_position_replace_piece(nc_position* dst, nc_piece p, nc_square at);
 void nc_position_move_piece(nc_position* dst, nc_square from, nc_square to);
 nc_piece nc_position_remove_piece(nc_position* dst, nc_square at);
 nc_piece nc_position_capture_piece(nc_position* dst, nc_square from, nc_square to);
+
+/* Evaluation */
+nc_eval nc_position_evaluation(nc_position* dst);
 
 /* Occupancy manipulation */
 void nc_position_flip_piece(nc_position* dst, nc_piece p, nc_square at);
