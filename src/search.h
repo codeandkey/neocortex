@@ -14,6 +14,7 @@
 
 nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_line, nc_timepoint max_time);
 
+void nc_search_abort();
 int nc_search_get_nodes();
 int nc_search_get_nps();
 int nc_search_get_time();

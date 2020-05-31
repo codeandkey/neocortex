@@ -9,13 +9,9 @@
 static pthread_t _nc_searchthread;
 static nc_position _nc_search_root;
 static int _nc_search_active;
-static int _nc_search_abort;
+static int _nc_searchctl_abort;
 
 void* nc_searchctl_worker(void* opts);
-
-void nc_searchctl_init() {
-	nc_debug("Initialized searchctl.");
-}
 
 void nc_searchctl_position(nc_position p) {
 	if (_nc_search_active) {
@@ -35,6 +31,9 @@ void nc_searchctl_go(nc_searchopts* opts) {
 
 	if (pthread_create(&_nc_searchthread, NULL, nc_searchctl_worker, (void*) opts)) {
 		nc_error("Failed to start search thread: %s", strerror(errno));
+	} else {
+		_nc_search_active = 1;
+		_nc_searchctl_abort = 0;
 	}
 }
 
@@ -44,14 +43,19 @@ void nc_searchctl_stop() {
 		return;
 	}
 
+	if (_nc_searchctl_abort) {
+		nc_error("Already waiting for a search thread to exit..");
+		return;
+	}
+
 	nc_debug("Stopping search thread.");
 
-	_nc_search_abort = 1;
+	nc_search_abort();
+	_nc_searchctl_abort = 1;
 
 	pthread_join(_nc_searchthread, NULL);
 	nc_debug("Joined search thread.");
 
-	_nc_search_abort = 0;
 	_nc_search_active = 0;
 }
 
@@ -88,7 +92,6 @@ void* nc_searchctl_worker(void* a) {
 		/* !!!! TODO: actual time management !!!! */
 		max_time = nc_timer_futurems((ourtime + (ourinc * ourinc * ourinc)) / NC_SEARCHCTL_MAXTIME_DIVISOR); // what in tarnation
 	}
-
 
 	/* Start iterative deepening search. */
 	for (int cur_depth = 1;; ++cur_depth) {
@@ -134,7 +137,7 @@ void* nc_searchctl_worker(void* a) {
 
 		bestmove = pv_line.moves[0];
 
-		if (cur_depth == opts->depth || _nc_search_abort) {
+		if (cur_depth == opts->depth) {
 			break;
 		}
 

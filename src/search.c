@@ -11,11 +11,13 @@ static nc_timepoint _nc_search_start;
 static nc_timepoint _nc_search_end;
 static int _nc_search_only_move;
 static int _nc_search_incomplete;
+static int _nc_search_abort;
 
 nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_out, nc_timepoint max_time) {
 	_nc_search_nodes = 0;
 	_nc_search_leaves = 0;
 	_nc_search_incomplete = 0;
+	_nc_search_abort = 0;
 
 	_nc_search_start = nc_timer_current();
 	nc_eval ret = _nc_search_pv(root, depth, NC_EVAL_MIN, NC_EVAL_MAX, pv_out, max_time);
@@ -26,6 +28,11 @@ nc_eval nc_search(nc_position* root, int depth, nc_movelist* pv_out, nc_timepoin
 
 nc_eval _nc_search_q(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_timepoint max_time) {
 	++_nc_search_nodes;
+
+	if (_nc_search_abort) {
+		_nc_search_incomplete = 1;
+		return 0;
+	}
 
 	if (nc_position_is_quiet(p) || !depth) return nc_position_score_thin(p);
 
@@ -75,6 +82,11 @@ nc_eval _nc_search_pv(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc
 	nc_movelist best_pv, current_pv;
 	nc_movelist_clear(pv_out);
 	nc_movelist_clear(&best_pv);
+
+	if (_nc_search_abort) {
+		_nc_search_incomplete = 1;
+		return 0;
+	}
 
 	if (depth <= 0) {
 		return _nc_search_q(p, NC_SEARCH_QDEPTH, alpha, beta, max_time);
@@ -206,4 +218,8 @@ int nc_search_was_only_move() {
 
 int nc_search_incomplete() {
 	return _nc_search_incomplete;
+}
+
+void nc_search_abort() {
+	_nc_search_abort = 1;
 }
