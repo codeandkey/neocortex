@@ -11,6 +11,9 @@
 /* the search will abort after consuming 1/nth of the remaining time */
 #define NC_SEARCHCTL_MAXTIME_DIVISOR 5
 
+/* the search will not execute the next depth if it is expected to take more than 1/nth of the remaining time */
+#define NC_SEARCHCTL_EARLYSTOP_DIVISOR 2
+
 typedef struct {
 	int wtime, btime, winc, binc;
 	int movestogo, depth, nodes;

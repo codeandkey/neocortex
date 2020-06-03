@@ -101,7 +101,7 @@ void* nc_searchctl_worker(void* a) {
 		/* Abort iteration early if it will take too long. */
 		if (ebf != 0.0f && time_control) {
 			nc_debug("expected time for next iter: %d ms (ebf %f)", (int) (ebf * last_search_time), ebf);
-			if (nc_timer_futurems(ebf * last_search_time) > max_time) {
+			if (nc_timer_futurems(ebf * last_search_time * NC_SEARCHCTL_EARLYSTOP_DIVISOR) > max_time) {
 				break;
 			}
 		}
