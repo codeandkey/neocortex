@@ -3,6 +3,7 @@
 #include "basic.h"
 #include "eval_consts.h"
 #include "movegen.h"
+#include "eval.h"
 
 #include <string.h>
 
@@ -554,24 +555,16 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves) {
 
 	fprintf(out, "\n");
 
-	/* Print out eval bits */
-	float phase = nc_position_phase(p);
-	nc_eval ps_bonus = NC_EVAL_PAWN_STRUCTURE * nc_position_pawn_structure(p, p->color_to_move);
-	nc_eval ops_bonus = NC_EVAL_PAWN_STRUCTURE * nc_position_pawn_structure(p, nc_colorflip(p->color_to_move));
-	nc_eval pst_score = nc_pst_get_score(&p->pst, p->color_to_move, phase);
+    nc_position_eval eval_res;
+    nc_eval_position(p, &eval_res);
 
-	fprintf(out, "^ phase: %.2f\n", phase);
-	fprintf(out, "^ pawn structure bonus: %d\n", ps_bonus);
-	fprintf(out, "^ opposing pawn structure bonus: %d\n", ops_bonus);
-	fprintf(out, "^ white middlegame pst: %d\n", p->pst.mg[NC_WHITE]);
-	fprintf(out, "^ black middlegame pst: %d\n", p->pst.mg[NC_BLACK]);
-	fprintf(out, "^ white middlegame material: %d\n", p->pst.mg_material[NC_WHITE]);
-	fprintf(out, "^ black middlegame material: %d\n", p->pst.mg_material[NC_BLACK]);
-	fprintf(out, "^ white endgame pst: %d\n", p->pst.eg[NC_WHITE]);
-	fprintf(out, "^ black endgame pst: %d\n", p->pst.eg[NC_BLACK]);
-	fprintf(out, "^ white endgame material: %d\n", p->pst.eg_material[NC_WHITE]);
-	fprintf(out, "^ black endgame material: %d\n", p->pst.eg_material[NC_BLACK]);
-	fprintf(out, "^ final pst imbalance: %d\n", pst_score);
+    /* Eval bits */
+    fprintf(out, "^ material_pawn_mg: %d %d\n", eval_res.material_pawn_mg[NC_WHITE], eval_res.material_pawn_mg[NC_BLACK]);
+    fprintf(out, "^ material_nonpawn_mg: %d %d\n", eval_res.material_nonpawn_mg[NC_WHITE], eval_res.material_nonpawn_mg[NC_BLACK]);
+    fprintf(out, "^ material_pawn_eg: %d %d\n", eval_res.material_pawn_eg[NC_WHITE], eval_res.material_pawn_eg[NC_BLACK]);
+    fprintf(out, "^ material_nonpawn_eg: %d %d\n", eval_res.material_nonpawn_eg[NC_WHITE], eval_res.material_nonpawn_eg[NC_BLACK]);
+    fprintf(out, "^ phase: %d\n", eval_res.phase);
+    fprintf(out, "^ score: %d\n", eval_res.score);
 
 	if (include_moves) {
 		nc_movegen state;
@@ -593,35 +586,11 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves) {
 	}
 }
 
-nc_eval nc_position_score_thin(nc_position* dst) {
-	float phase = nc_position_phase(dst);
+nc_eval nc_position_get_eval(nc_position* p) {
+    nc_position_eval res;
+    nc_eval_position(p, &res);
 
-	nc_eval pawn_structure_bonus = NC_EVAL_PAWN_STRUCTURE * (nc_position_pawn_structure(dst, dst->color_to_move) - nc_position_pawn_structure(dst, nc_colorflip(dst->color_to_move)));
-
-	return nc_pst_get_score(&dst->pst, dst->color_to_move, phase) + pawn_structure_bonus;
-}
-
-float nc_position_phase(nc_position* dst) {
-	return nc_pst_get_phase(&dst->pst);
-}
-
-int nc_position_pawn_structure(nc_position* dst, nc_color col) {
-	nc_bb pawns = dst->piece[NC_PAWN] & dst->color[col];
-
-	nc_bb pawns_withright = pawns & ~NC_BB_FILEH;
-	nc_bb pawns_withleft = pawns & ~NC_BB_FILEA;
-
-	nc_bb attacked_mask = 0;
-
-	if (col == NC_WHITE) {
-		attacked_mask |= nc_bb_shift(pawns_withright, NC_SQ_NORTHEAST);
-		attacked_mask |= nc_bb_shift(pawns_withleft, NC_SQ_NORTHWEST);
-	} else {
-		attacked_mask |= nc_bb_shift(pawns_withright, NC_SQ_SOUTHEAST);
-		attacked_mask |= nc_bb_shift(pawns_withleft, NC_SQ_SOUTHWEST);
-	}
-
-	return __builtin_popcountll(attacked_mask & pawns);
+    return res.score;
 }
 
 int nc_position_is_repetition(nc_position* p) {

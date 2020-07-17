@@ -83,10 +83,7 @@ void nc_position_flip_piece(nc_position* dst, nc_piece p, nc_square at);
 void nc_position_dump(nc_position* p, FILE* out, int include_moves);
 
 /* Scoring */
-nc_eval nc_position_score(nc_position* dst, nc_movelist* out);
-nc_eval nc_position_score_thin(nc_position* dst);
-float nc_position_phase(nc_position* dst);
-int nc_position_pawn_structure(nc_position* dst, nc_color col);
+nc_eval nc_position_get_eval(nc_position* p); // does NOT apply mobility bonus
 
 /* Repetition detection */
 int nc_position_is_repetition(nc_position* dst);

@@ -34,7 +34,7 @@ nc_eval _nc_search_q(nc_position* p, int depth, nc_eval alpha, nc_eval beta, nc_
 		return 0;
 	}
 
-	if (nc_position_is_quiet(p) || !depth) return nc_position_score_thin(p);
+	if (nc_position_is_quiet(p) || !depth) return nc_position_get_eval(p);
 
 	if (max_time && nc_timer_current() >= max_time) {
 		_nc_search_incomplete = 1;
