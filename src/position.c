@@ -322,6 +322,10 @@ int nc_position_make_move(nc_position* p, nc_move move) {
 	/* Move is legal! Finally test if it delivers check. */
 	next->check = nc_movegen_get_king_in_check(p, p->color_to_move);
 
+    /* Update new attack bitboards */
+    next->attacks[NC_WHITE] = nc_movegen_attacked_squares(p, NC_WHITE);
+    next->attacks[NC_BLACK] = nc_movegen_attacked_squares(p, NC_BLACK);
+
 	return 1;
 }
 
@@ -563,6 +567,8 @@ void nc_position_dump(nc_position* p, FILE* out, int include_moves) {
     fprintf(out, "^ material_nonpawn_mg: %d %d\n", eval_res.material_nonpawn_mg[NC_WHITE], eval_res.material_nonpawn_mg[NC_BLACK]);
     fprintf(out, "^ material_pawn_eg: %d %d\n", eval_res.material_pawn_eg[NC_WHITE], eval_res.material_pawn_eg[NC_BLACK]);
     fprintf(out, "^ material_nonpawn_eg: %d %d\n", eval_res.material_nonpawn_eg[NC_WHITE], eval_res.material_nonpawn_eg[NC_BLACK]);
+    fprintf(out, "^ center_control: %d %d\n", eval_res.center_control[NC_WHITE], eval_res.center_control[NC_BLACK]);
+    fprintf(out, "^ development: %d %d\n", eval_res.development[NC_WHITE], eval_res.development[NC_BLACK]);
     fprintf(out, "^ phase: %d\n", eval_res.phase);
     fprintf(out, "^ score: %d\n", eval_res.score);
 
