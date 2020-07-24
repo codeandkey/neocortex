@@ -148,7 +148,7 @@ void search::Search::worker(std::ostream& out) {
 			allocated_time = ourtime / search::ALLOC_FRACTION; /* TODO: actual time management */
 
             if (ourinc > 0) {
-                allocated_time += ourinc * 1000;
+                allocated_time += ourinc;
             }
 		}
 	}
@@ -198,7 +198,7 @@ void search::Search::worker(std::ostream& out) {
 		ebf_times[next_depth] = (elapsed_iter());
 
 		if (next_depth >= 2) {
-			ebf = sqrtf((float) ebf_nodes[next_depth] / (float) ebf_nodes[next_depth - 2]);
+			ebf = sqrtf((float) ebf_nodes[next_depth] / (float) ebf_nodes[next_depth - 1]);
 		}
 
 		best_move = next_pv.moves[0];

@@ -15,7 +15,7 @@ namespace pine {
 	namespace search {
 		constexpr int QDEPTH = 4;
 		constexpr int PV_MAX = 128;
-		constexpr int ALLOC_FRACTION = 12; /* use at most 1/nth of the remaining time */
+		constexpr int ALLOC_FRACTION = 10; /* use at most 1/nth of the remaining time */
 
 		class Search {
 		public:
