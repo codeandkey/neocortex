@@ -2,7 +2,7 @@
 
 #include "position.h"
 
-#include <limits>
+#include <climits>
 #include <string>
 
 namespace pine {

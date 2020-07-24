@@ -10,7 +10,7 @@
 
 using namespace pine;
 
-int main(int argc, char* argv) {
+int main(int argc, char** argv) {
 #ifdef PINE_DEBUG
 	log::set_level(log::DEBUG);
 #endif

@@ -49,7 +49,7 @@ namespace pine {
 			bool color_supported = true;
 
 #if defined PINE_LINUX || defined PINE_OSX
-			color_supported &= isatty(stderr);
+			color_supported &= isatty(fileno(stderr));
 #endif
 
 			/* Write color reset */

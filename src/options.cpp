@@ -15,7 +15,7 @@ options::Value::Value(std::string strval) : type(STRING), int_val(0), bool_val(f
 
 options::Value::operator std::string() {
 	if (type != STRING) {
-		throw std::exception("Stored option is not a string");
+		throw util::fmterr("Stored option is not a string");
 	}
 
 	return str_val;
@@ -23,7 +23,7 @@ options::Value::operator std::string() {
 
 options::Value::operator int() {
 	if (type != INTEGER) {
-		throw std::exception("Stored option is not an integer");
+		throw util::fmterr("Stored option is not an integer");
 	}
 
 	return int_val;
@@ -31,7 +31,7 @@ options::Value::operator int() {
 
 options::Value::operator bool() {
 	if (type != BOOLEAN) {
-		throw std::exception("Stored option is not a boolean");
+		throw util::fmterr("Stored option is not a boolean");
 	}
 
 	return bool_val;

@@ -1,9 +1,15 @@
 #include "util.h"
+#include "platform.h"
 
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
 #include <ctime>
+
+#if defined PINE_LINUX || defined PINE_APPLE
+#include <errno.h>
+#include <cstring>
+#endif
 
 using namespace pine;
 
@@ -11,9 +17,15 @@ std::string util::timestring() {
 	std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	std::tm tm;
 	
+#ifdef PINE_WIN32
 	if (localtime_s(&tm, &t)) {
 		throw std::runtime_error("localtime() failed.");
 	}
+#else
+	if (!localtime_r(&t, &tm)) {
+		throw std::runtime_error("localtime() failed.");
+	}
+#endif
 
 	std::stringstream ss;
 	ss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
@@ -39,7 +51,7 @@ std::vector<std::string> util::split(std::string input, char delim) {
 
 	std::vector<std::string> result;
 
-	for (int c = 0; c < input.size(); ++c) {
+	for (size_t c = 0; c < input.size(); ++c) {
 		if (input[c] == delim) {
 			if (token_ind > 0) {
 				buf[token_ind] = '\0';
@@ -63,8 +75,8 @@ std::vector<std::string> util::split(std::string input, char delim) {
 }
 
 std::string util::trim(std::string input) {
-	input.erase(input.begin(), std::find_if_not(input.begin(), input.end(), std::isspace));
-	input.erase(std::find_if_not(input.rbegin(), input.rend(), std::isspace).base(), input.end());
+	input.erase(input.begin(), std::find_if_not(input.begin(), input.end(), [](char c) { return std::isspace(c); }));
+	input.erase(std::find_if_not(input.rbegin(), input.rend(), [](char c) { return std::isspace(c); }).base(), input.end());
 
 	return input;
 }
@@ -72,7 +84,7 @@ std::string util::trim(std::string input) {
 std::string util::join(std::vector<std::string> parts, std::string delim) {
 	std::string output;
 
-	for (int i = 0; i < parts.size(); ++i) {
+	for (size_t i = 0; i < parts.size(); ++i) {
 		if (i) output += delim;
 		output += parts[i];
 	}

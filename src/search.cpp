@@ -5,7 +5,9 @@
 #include "eval_consts.h"
 
 #include <algorithm>
+#include <cstring>
 #include <cassert>
+#include <cmath>
 
 using namespace pine;
 
@@ -144,6 +146,10 @@ void search::Search::worker(std::ostream& out) {
 	} else {
 		if (ourtime > 0) {
 			allocated_time = ourtime / search::ALLOC_FRACTION; /* TODO: actual time management */
+
+            if (ourinc > 0) {
+                allocated_time += ourinc * 1000;
+            }
 		}
 	}
 	
@@ -254,10 +260,10 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 
 				return value;
 			case tt::entry::LOWERBOUND:
-				alpha = max(alpha, entry->value);
+                if (entry->value > alpha) alpha = entry->value;
 				break;
 			case tt::entry::UPPERBOUND:
-				beta = min(beta, entry->value);
+                if (entry->value < beta) beta = entry->value;
 				break;
 			}
 		}

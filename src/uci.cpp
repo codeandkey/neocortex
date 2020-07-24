@@ -12,8 +12,6 @@
 
 using namespace pine;
 
-static int parse_goarg(std::vector<std::string> parts);
-
 static std::string read_command(std::istream& in) {
 	std::string output;
 	std::getline(in, output);
@@ -138,13 +136,13 @@ void uci::begin(std::istream & in, std::ostream & out) {
 				expected_moves = 6;
 			}
 
-			if (expected_moves < parts.size()) {
+			if (expected_moves < (int) parts.size()) {
 				if (parts[expected_moves] != "moves") {
 					pine_warn("Invalid UCI: expected 'moves', read '%s'\n", parts[expected_moves].c_str());
 					continue;
 				}
 
-				for (int i = expected_moves + 1; i < parts.size(); ++i) {
+				for (size_t i = expected_moves + 1; i < parts.size(); ++i) {
 					movegen::Generator g(pos);
 					Move matched_move;
 

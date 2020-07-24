@@ -17,7 +17,7 @@ static const int quiet_type_order[] = {
 		piece::KING,
 };
 
-Generator::Generator(Position& p, Move pv_move, int mode) : position(p), stage(0), mode(mode), board(p.get_board()), pv_move(pv_move) {
+Generator::Generator(Position& p, Move pv_move, int mode) : stage(0), mode(mode), pv_move(pv_move), position(p), board(p.get_board()) {
 	current_attacker = piece::PAWN;
 	current_victim = piece::QUEEN;
 	current_quiet_index = 0;
@@ -245,7 +245,6 @@ std::list<Move> Generator::captures(int attacker, int victim) {
 	switch (attacker) {
 		case piece::PAWN:
 		{
-			int pawn_dir = white_to_move ? NORTH : SOUTH;
 			int left_capture_dir = white_to_move ? NORTHWEST : SOUTHWEST;
 			int right_capture_dir = white_to_move ? NORTHEAST : SOUTHEAST;
 			bitboard promote_pawn_rank = white_to_move ? RANK_7 : RANK_2;

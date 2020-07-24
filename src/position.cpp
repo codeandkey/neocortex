@@ -401,7 +401,6 @@ void Position::get_attackers_defenders(int sq, int& white, int& black) {
 	bitboard knight_attacks = attacks::knight(sq);
 
 	bitboard mask = bb::mask(sq);
-	bitboard p_attacks[2];
 	
 	bitboard wp_attacks = bb::shift(mask & ~RANK_1 & ~RANK_2 & ~FILE_H, SOUTHEAST) | bb::shift(mask & ~RANK_1 & ~RANK_2 & ~FILE_A, SOUTHWEST);
 	bitboard bp_attacks = bb::shift(mask & ~RANK_7 & ~RANK_8 & ~FILE_H, NORTHEAST) | bb::shift(mask & ~RANK_7 & ~RANK_8 & ~FILE_A, NORTHWEST);
@@ -418,6 +417,8 @@ void Position::get_attackers_defenders(int sq, int& white, int& black) {
 	black += bb::popcount(queen_attacks & board.get_piece_occ(piece::QUEEN) & board.get_color_occ(piece::BLACK));
 	white += bb::popcount(wp_attacks & board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::WHITE));
 	black += bb::popcount(bp_attacks & board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::BLACK));
+	white += bb::popcount(king_attacks & board.get_piece_occ(piece::KING) & board.get_color_occ(piece::WHITE));
+	black += bb::popcount(king_attacks & board.get_piece_occ(piece::KING) & board.get_color_occ(piece::BLACK));
 }
 
 bitboard Position::get_current_attacks(int color) {
@@ -443,7 +444,7 @@ int Position::castle_rights() {
 int Position::num_repetitions() {
 	int res = 0;
 
-	for (int i = 0; i < ply.size(); ++i) {
+	for (size_t i = 0; i < ply.size(); ++i) {
 		if (ply[i].key == ply.back().key) {
 			++res;
 		}

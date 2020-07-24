@@ -134,8 +134,6 @@ std::string Board::to_uci() {
 std::string Board::to_pretty() {
 	std::string output;
 
-	int null_count = 0;
-
 	for (int r = 7; r >= 0; --r) {
 		for (int f = 0; f < 8; ++f) {
 			int sq = square::at(r, f);

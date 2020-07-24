@@ -36,3 +36,4 @@ const int eval::MATERIAL_EG_MAX = \
 	4 * eval::MATERIAL_EG[3] + \
 	2 * eval::MATERIAL_EG[4] + \
 	2 * eval::MATERIAL_EG[5];
+
