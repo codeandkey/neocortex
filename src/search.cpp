@@ -31,14 +31,14 @@ void search::Search::set_btime(int btime)
 	this->btime = btime;
 }
 
-void search::Search::set_winc(int wtime)
+void search::Search::set_winc(int winc)
 {
-	this->wtime = wtime;
+	this->winc = winc;
 }
 
-void search::Search::set_binc(int btime)
+void search::Search::set_binc(int binc)
 {
-	this->btime = btime;
+	this->binc = binc;
 }
 
 void search::Search::set_depth(int depth)
@@ -126,13 +126,13 @@ void search::Search::worker(std::ostream& out) {
 
 	value = search_sync(1, score::CHECKMATED, score::CHECKMATE, &first_pv);
 
-	out << "info depth 1 ";
+	out << "info depth 1";
 	
 	if (first_pv.len > 1) {
-		out << "seldepth " << (first_pv.len - 1);
+		out << " seldepth " << (first_pv.len - 1);
 	}
 	
-	out << "nodes " << ctr_nodes << " score " << score::to_uci(value) <<  " pv " << first_pv.to_string() << "\n";
+	out << " nodes " << ctr_nodes << " score " << score::to_uci(value) <<  " pv " << first_pv.to_string() << "\n";
 	out.flush();
 
 	ebf_nodes[1] = ctr_nodes;
@@ -164,7 +164,7 @@ void search::Search::worker(std::ostream& out) {
 		/* If we have an EBF and can predict the time of the next iter, try and do an early exit */
 		if (ebf > 0.0f) {
 			if (allocated_time > 0) {
-				if (util::elapsed(search_starttime) + (int)(ebf * ebf_times[next_depth - 1]) >= allocated_time) {
+				if (util::elapsed_ms(search_starttime) + (int)(ebf * ebf_times[next_depth - 1]) >= allocated_time) {
 					break;
 				}
 			}
