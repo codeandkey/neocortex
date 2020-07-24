@@ -7,5 +7,21 @@ namespace pine {
 
 		extern const int MATERIAL_MG_MAX;
 		extern const int MATERIAL_EG_MAX;
+
+		constexpr int CONTEMPT = 0;
+		constexpr int MOBILITY = 2;
+		constexpr int ATTACK_BONUS = 2;
+
+		constexpr int MOBILITY_QUEEN = 4;
+		constexpr int MOBILITY_KNIGHT = 4;
+		constexpr int MOBILITY_BISHOP = 4;
+		constexpr int MOBILITY_ROOK_MG = 1;
+		constexpr int MOBILITY_ROOK_EG = 4;
+
+		constexpr int TEMPO_BONUS = 10;
+		constexpr int CENTER_CONTROL = 25;
+		constexpr int KING_SAFETY = 10;
+		constexpr int BLOCKING_PAWNS = -50;
+		constexpr int PASSED_PAWNS = 30;
 	}
 }

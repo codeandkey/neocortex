@@ -2,8 +2,7 @@
 
 using namespace pine::log;
 
-
-static std::recursive_mutex log_mutex;
+std::recursive_mutex pine::log::log_mutex;
 
 static int current_level = DEFAULT_LEVEL;
 static ColorMode current_colormode = DEFAULT_COLORMODE;
@@ -26,8 +25,4 @@ int pine::log::get_level() {
 ColorMode pine::log::get_color() {
 	std::lock_guard<std::recursive_mutex> lock(log_mutex);
 	return current_colormode;
-}
-
-std::recursive_mutex& pine::log::get_mutex() {
-	return log_mutex;
 }

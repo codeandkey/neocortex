@@ -36,8 +36,15 @@ namespace pine {
 		std::string timestring();
 		time_point now();
 		double elapsed(time_point reference);
+		int elapsed_ms(time_point reference);
 
 		/* String splitting */
 		std::vector<std::string> split(std::string input, char delim);
+
+		/* String trimming */
+		std::string trim(std::string input);
+
+		/* String joining */
+		std::string join(std::vector<std::string> parts, std::string delim);
 	}
 }

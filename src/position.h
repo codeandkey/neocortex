@@ -26,6 +26,7 @@ namespace pine {
 			int halfmove_clock;
 			int fullmove_number;
 			bitboard attacks[2];
+			zobrist::key key;
 		};
 
 		Position();
@@ -46,6 +47,7 @@ namespace pine {
 		bitboard attacked_squares(); /* squares attacked by not color to move */
 		bitboard squares_attacked_by(int color); /* squares attacked by color */
 		bool square_is_attacked(int sq, int color); /* early-exit test for square attacked by color*/
+		void get_attackers_defenders(int sq, int& white, int& black);
 
 		/* get cached attack boards */
 		bitboard get_current_attacks(int color);
@@ -53,11 +55,13 @@ namespace pine {
 		zobrist::key get_tt_key();
 
 		bool check();
+		bool quiet();
 		int castle_rights();
+		int num_repetitions();
+		std::string game_string();
 	private:
 		Board board;
 		std::vector<State> ply;
 		int color_to_move;
-		zobrist::key key;
 	};
 }

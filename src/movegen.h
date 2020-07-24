@@ -26,14 +26,22 @@ namespace pine {
 		constexpr int STAGE_QUIETS = 5;
 		constexpr int STAGE_END = 6;
 
+		constexpr int QSTAGE_CAPTURES = 33;
+		constexpr int QSTAGE_QUIETS = 34;
+		constexpr int QSTAGE_CASTLES = 35;
+		constexpr int QSTAGE_PROMOTIONS = 36;
+		constexpr int QSTAGE_END = 37;
+
+		constexpr int NORMAL = 0;
+		constexpr int QUIESCENCE = 1;
+
 		class Generator {
 		public:
-			Generator(Position& position);
+			Generator(Position& position, Move pv_move = Move::null, int mode = NORMAL);
 
 			std::list<Move> next_batch();
-			std::list<Move> generate_stage(int stage); /* generate moves in a specific stage */
-			std::list<Move> generate(); /* empty => no more moves */
-			Move next_move(); /* returns null move if no more in batch, then generate() must be called again */
+			std::list<Move> generate();
+			Move next();
 
 			std::list<Move> pawn_jumps(); /* pawn doublejumps */
 			std::list<Move> pawn_advances(); /* pawn doublejumps */
@@ -44,9 +52,11 @@ namespace pine {
 
 			std::list<std::list<Move>> generate_perft(); /* generate all pseudolegal moves for perft */
 		private:
-			int stage;
+			int stage, mode;
+			Move pv_move;
 
 			Position& position;
+			std::list<Move> batch;
 
 			/* convienience position info */
 			bitboard ctm, opp;

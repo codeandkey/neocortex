@@ -18,6 +18,7 @@ namespace pine {
 		std::string to_uci();
 		std::string to_pgn(Board& context);
 		bool is_valid();
+		bool match_uci(std::string uci);
 
 		int src();
 		int dst();
@@ -28,6 +29,7 @@ namespace pine {
 
 		operator std::string();
 		bool operator==(const Move& rhs);
+		bool operator!=(const Move& rhs);
 
 		static constexpr int null = -1;
 		static constexpr int PAWN_JUMP = 1 << 15;
@@ -38,5 +40,15 @@ namespace pine {
 	private:
 
 		int value;
+	};
+
+	struct PV {
+		PV();
+		std::string to_string();
+
+		static constexpr int MAXSIZE = 128;
+
+		int len;
+		Move moves[PV::MAXSIZE];
 	};
 }

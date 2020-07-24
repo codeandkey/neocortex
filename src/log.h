@@ -35,11 +35,11 @@ namespace pine {
 		ColorMode get_color();
 
 		/* Log mutex access */
-		std::recursive_mutex& get_mutex();
+		extern std::recursive_mutex log_mutex;
 
 		template <int level = DEFAULT_LEVEL, typename ... Args>
 		void write(std::string message, Args ... args) {
-			std::lock_guard<std::recursive_mutex> lock(get_mutex());
+			std::lock_guard<std::recursive_mutex> lock(log_mutex);
 
 			if (get_level() < level) {
 				return;

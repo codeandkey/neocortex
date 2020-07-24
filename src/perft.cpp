@@ -34,7 +34,7 @@ perft::results perft::run(Position& p, int depth) {
 	perft_movegen(p, depth);
 
 	current_results.totaltime = util::elapsed(now);
-	current_results.nps = current_results.nodes / current_results.totaltime;
+	current_results.nps = (unsigned long) (current_results.nodes / current_results.totaltime);
 
 	return current_results;
 }

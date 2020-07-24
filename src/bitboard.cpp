@@ -63,9 +63,9 @@ bitboard bb::mask(int sq) {
 
 int bb::popcount(bitboard b) {
 #ifdef PINE_WIN32
-	return __popcnt64(b);
+	return (int) __popcnt64(b);
 #elif defined PINE_LINUX || defined PINE_OSX
-	return (int)__builtin_popcountll(b);
+	return (int) __builtin_popcountll(b);
 #endif
 }
 

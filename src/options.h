@@ -17,7 +17,7 @@ namespace pine {
 
 			static constexpr int STRING = 0;
 			static constexpr int INTEGER = 1;
-			static constexpr int BOOLEAN = 1;
+			static constexpr int BOOLEAN = 2;
 		private:
 			int type;
 			int int_val;

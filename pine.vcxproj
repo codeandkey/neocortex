@@ -76,6 +76,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,13 +136,15 @@
     <ClInclude Include="src\magic_consts.h" />
     <ClInclude Include="src\move.h" />
     <ClInclude Include="src\movegen.h" />
+    <ClInclude Include="src\options.h" />
     <ClInclude Include="src\perft.h" />
     <ClInclude Include="src\piece.h" />
-    <ClInclude Include="src\pine.h" />
     <ClInclude Include="src\platform.h" />
     <ClInclude Include="src\position.h" />
+    <ClInclude Include="src\search.h" />
     <ClInclude Include="src\square.h" />
     <ClInclude Include="src\tt.h" />
+    <ClInclude Include="src\uci.h" />
     <ClInclude Include="src\util.h" />
     <ClInclude Include="src\zobrist.h" />
   </ItemGroup>
@@ -154,12 +157,15 @@
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\move.cpp" />
     <ClCompile Include="src\movegen.cpp" />
+    <ClCompile Include="src\options.cpp" />
     <ClCompile Include="src\perft.cpp" />
     <ClCompile Include="src\piece.cpp" />
     <ClCompile Include="src\pine.cpp" />
     <ClCompile Include="src\position.cpp" />
+    <ClCompile Include="src\search.cpp" />
     <ClCompile Include="src\square.cpp" />
     <ClCompile Include="src\tt.cpp" />
+    <ClCompile Include="src\uci.cpp" />
     <ClCompile Include="src\util.cpp" />
     <ClCompile Include="src\zobrist.cpp" />
   </ItemGroup>

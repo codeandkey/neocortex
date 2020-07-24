@@ -9,9 +9,17 @@
 
 using namespace pine;
 
-Board::Board() : color_occ{ 0 }, piece_occ{ 0 } {
+Board::Board() {
 	for (int i = 0; i < 64; ++i) {
 		state[i] = -1;
+	}
+
+	for (int c = 0; c < 2; ++c) {
+		color_occ[c] = 0;
+	}
+
+	for (int p = 0; p < 6; ++p) {
+		piece_occ[p] = 0;
 	}
 
 	key = 0;

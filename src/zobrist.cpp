@@ -1,3 +1,4 @@
+#include "log.h"
 #include "piece.h"
 #include "square.h"
 #include "zobrist.h"
@@ -8,7 +9,7 @@
 using namespace pine;
 
 static bool zobrist_initialized = false;
-static zobrist::key piece_keys[64][12], castle_keys[4], en_passant_keys[8], black_to_move_key;
+static zobrist::key piece_keys[64][12], castle_keys[16], en_passant_keys[8], black_to_move_key;
 
 void zobrist::init() {
 	assert(!zobrist_initialized);
@@ -18,12 +19,12 @@ void zobrist::init() {
 	std::uniform_int_distribution<zobrist::key> dist;
 
 	for (int sq = 0; sq < 64; ++sq) {
-		for (int p = 0; p < 6; ++p) {
+		for (int p = 0; p < 12; ++p) {
 			piece_keys[sq][p] = dist(twister);
 		}
 	}
 
-	for (int castle = 0; castle < 4; ++castle) {
+	for (int castle = 0; castle < 16; ++castle) {
 		castle_keys[castle] = dist(twister);
 	}
 
@@ -36,19 +37,23 @@ void zobrist::init() {
 }
 
 zobrist::key zobrist::piece(int sq, int p) {
+	assert(zobrist_initialized);
 	if (p == piece::null) return 0;
 	return piece_keys[sq][p];
 }
 
 zobrist::key zobrist::castle(int rights) {
+	assert(zobrist_initialized);
 	return castle_keys[rights];
 }
 
 zobrist::key zobrist::en_passant(int sq) {
+	assert(zobrist_initialized);
 	if (sq == square::null) return 0;
 	return en_passant_keys[square::file(sq)];
 }
 
 zobrist::key zobrist::black_to_move() {
+	assert(zobrist_initialized);
 	return black_to_move_key;
 }

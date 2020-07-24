@@ -1,5 +1,7 @@
 #include "movegen.h"
+#include "move.h"
 #include "attacks.h"
+#include "tt.h"
 
 #include <cassert>
 
@@ -15,7 +17,7 @@ static const int quiet_type_order[] = {
 		piece::KING,
 };
 
-Generator::Generator(Position& p) : position(p), stage(0), board(p.get_board()) {
+Generator::Generator(Position& p, Move pv_move, int mode) : position(p), stage(0), mode(mode), board(p.get_board()), pv_move(pv_move) {
 	current_attacker = piece::PAWN;
 	current_victim = piece::QUEEN;
 	current_quiet_index = 0;
@@ -23,21 +25,35 @@ Generator::Generator(Position& p) : position(p), stage(0), board(p.get_board()) 
 	ctm = board.get_color_occ(position.get_color_to_move());
 	opp = board.get_color_occ(!position.get_color_to_move());
 	white_to_move = (position.get_color_to_move() == piece::WHITE);
+
+	if (mode == NORMAL) {
+		stage = STAGE_PV;
+	}
+	else if (mode == QUIESCENCE) {
+		stage = QSTAGE_CAPTURES;
+	}
 }
 
 std::list<Move> Generator::next_batch() {
 	switch (stage) {
 	case STAGE_PV:
 		++stage;
-		return next_batch();
+		if (pv_move != Move::null) {
+			return std::list<Move>(1, pv_move);
+		}
+		else {
+			return next_batch();
+		}
+	case QSTAGE_PROMOTIONS:
 	case STAGE_PROMOTIONS:
 		++stage;
 		return pawn_promotions();
 	case STAGE_KILLERS:
 		++stage;
 		return next_batch();
+	case QSTAGE_CAPTURES:
 	case STAGE_CAPTURES:
-		if (current_attacker > piece::QUEEN) {
+		if (current_attacker > piece::KING) {
 			current_attacker = 0;
 			
 			if (--current_victim < piece::PAWN) {
@@ -47,10 +63,42 @@ std::list<Move> Generator::next_batch() {
 		}
 
 		return captures(current_attacker++, current_victim);
+	case QSTAGE_CASTLES:
 	case STAGE_CASTLES:
 		++stage;
 		return castles();
+	case QSTAGE_QUIETS:
 	case STAGE_QUIETS:
+		if (current_quiet_index < 6) {
+			if (current_quiet_index == 5) ++stage;
+			return quiets(quiet_type_order[current_quiet_index++]);
+		}
+		break;
+	}
+
+	return std::list<Move>();
+}
+
+// TODO: specialized qsearch
+
+/*template <>
+std::list<Move> Generator::next_batch<QUIESCENCE>() {
+	switch (stage) {
+	case QSTAGE_PROMOTIONS:
+		++stage;
+		return pawn_promotions();
+	case QSTAGE_CAPTURES:
+		if (current_attacker > piece::QUEEN) {
+			current_attacker = 0;
+
+			if (--current_victim < piece::PAWN) {
+				++stage;
+				return next_batch<NORMAL>();
+			}
+		}
+
+		return captures(current_attacker++, current_victim);
+	case QSTAGE_CHECKS:
 		if (current_quiet_index < 6) {
 			if (current_quiet_index == 5) ++stage;
 			return quiets(quiet_type_order[current_quiet_index++]);
@@ -59,13 +107,14 @@ std::list<Move> Generator::next_batch() {
 	default:
 		return std::list<Move>();
 	}
-}
+}*/
 
 std::list<Move> Generator::generate() {
 	std::list<Move> batch;
-
+	int end = (mode == NORMAL) ? STAGE_END : QSTAGE_END;
+	
 	do {
-		if (stage == STAGE_END) {
+		if (stage == end) {
 			return batch;
 		}
 
@@ -73,6 +122,21 @@ std::list<Move> Generator::generate() {
 	} while (!batch.size());
 
 	return batch;
+}
+
+Move Generator::next() {
+	if (!batch.size()) {
+		batch = generate();
+		
+		if (!batch.size()) {
+			return Move::null;
+		}
+	}
+
+	Move ret = batch.front();
+	batch.pop_front();
+
+	return ret;
 }
 
 std::list<Move> Generator::pawn_advances() {

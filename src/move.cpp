@@ -130,6 +130,20 @@ bool Move::is_valid() {
 	return true;
 }
 
+bool Move::match_uci(std::string uci) {
+	Move ucimove(uci);
+
+	if (ucimove.src() != src()) return false;
+	if (ucimove.dst() != dst()) return false;
+	if (ucimove.get(PROMOTION) != get(PROMOTION)) return false;
+
+	if (get(PROMOTION)) {
+		if (ucimove.ptype() != ptype()) return false;
+	}
+
+	return true;
+}
+
 int Move::src() {
 	assert(is_valid());
 
@@ -163,4 +177,27 @@ Move::operator std::string() {
 
 bool Move::operator==(const Move& rhs) {
 	return value == rhs.value;
+}
+
+bool Move::operator!=(const Move& rhs) {
+	return value != rhs.value;
+}
+
+PV::PV() {
+	len = 0;
+
+	for (int i = 0; i < MAXSIZE; ++i) {
+		moves[i] = Move::null;
+	}
+}
+
+std::string PV::to_string() {
+	std::string output;
+
+	for (int i = 0; i < len; ++i) {
+		if (i) output += ' ';
+		output += moves[i].to_uci();
+	}
+
+	return output;
 }

@@ -22,6 +22,9 @@ Position::Position() {
 	first_state.last_move = Move::null;
 	first_state.attacks[piece::WHITE] = squares_attacked_by(piece::WHITE);
 	first_state.attacks[piece::BLACK] = squares_attacked_by(piece::BLACK);
+	first_state.key = 0;
+	first_state.key ^= board.get_tt_key();
+	first_state.key ^= zobrist::castle(first_state.castle_rights);
 
 	ply.push_back(first_state);
 	color_to_move = piece::WHITE;
@@ -67,6 +70,15 @@ Position::Position(std::string fen) {
 	first_state.last_move = Move::null;
 	first_state.attacks[piece::WHITE] = squares_attacked_by(piece::WHITE);
 	first_state.attacks[piece::BLACK] = squares_attacked_by(piece::BLACK);
+
+	first_state.key = 0;
+	first_state.key ^= board.get_tt_key();
+	first_state.key ^= zobrist::en_passant(first_state.en_passant_square);
+	first_state.key ^= zobrist::castle(first_state.castle_rights);
+
+	if (color_to_move == piece::BLACK) {
+		ply.back().key ^= zobrist::black_to_move();
+	}
 
 	ply.push_back(first_state);
 }
@@ -175,10 +187,6 @@ bool Position::make_move(Move move) {
 	/* Perform captures */
 	if (move.get(Move::CAPTURE)) {
 		if (dst_piece == piece::null) {
-			if (piece::type(src_piece) != piece::PAWN) {
-				pine_debug("Trying to perform bad capture %s on boardstate:\n%s", move.to_uci().c_str(), board.to_pretty().c_str());
-			}
-
 			/* En-passant capture */
 			assert(piece::type(src_piece) == piece::PAWN);
 			assert(move.dst() == last_state.en_passant_square);
@@ -233,6 +241,16 @@ bool Position::make_move(Move move) {
 
 	/* TODO: check for illegal castles here */
 	ply.back().attacks[!color_to_move] = squares_attacked_by(!color_to_move);
+
+	/* update zobrist key */
+	ply.back().key = 0;
+	ply.back().key ^= board.get_tt_key();
+	ply.back().key ^= zobrist::en_passant(ply.back().en_passant_square);
+	ply.back().key ^= zobrist::castle(castle_rights());
+
+	if (color_to_move == piece::BLACK) {
+		ply.back().key ^= zobrist::black_to_move();
+	}
 
 	return true;
 }
@@ -375,31 +393,71 @@ bool Position::square_is_attacked(int sq, int color) {
 	return false;
 }
 
+void Position::get_attackers_defenders(int sq, int& white, int& black) {
+	bitboard rook_attacks = attacks::rook(sq, get_board().get_global_occ());
+	bitboard bishop_attacks = attacks::bishop(sq, get_board().get_global_occ());
+	bitboard queen_attacks = rook_attacks | bishop_attacks;
+	bitboard king_attacks = attacks::king(sq);
+	bitboard knight_attacks = attacks::knight(sq);
+
+	bitboard mask = bb::mask(sq);
+	bitboard p_attacks[2];
+	
+	bitboard wp_attacks = bb::shift(mask & ~RANK_1 & ~RANK_2 & ~FILE_H, SOUTHEAST) | bb::shift(mask & ~RANK_1 & ~RANK_2 & ~FILE_A, SOUTHWEST);
+	bitboard bp_attacks = bb::shift(mask & ~RANK_7 & ~RANK_8 & ~FILE_H, NORTHEAST) | bb::shift(mask & ~RANK_7 & ~RANK_8 & ~FILE_A, NORTHWEST);
+	
+	white = black = 0;
+
+	white += bb::popcount(rook_attacks & board.get_piece_occ(piece::ROOK) & board.get_color_occ(piece::WHITE));
+	black += bb::popcount(rook_attacks & board.get_piece_occ(piece::ROOK) & board.get_color_occ(piece::BLACK));
+	white += bb::popcount(bishop_attacks & board.get_piece_occ(piece::BISHOP) & board.get_color_occ(piece::WHITE));
+	black += bb::popcount(bishop_attacks & board.get_piece_occ(piece::BISHOP) & board.get_color_occ(piece::BLACK));
+	white += bb::popcount(knight_attacks & board.get_piece_occ(piece::KNIGHT) & board.get_color_occ(piece::WHITE));
+	black += bb::popcount(knight_attacks & board.get_piece_occ(piece::KNIGHT) & board.get_color_occ(piece::BLACK));
+	white += bb::popcount(queen_attacks & board.get_piece_occ(piece::QUEEN) & board.get_color_occ(piece::WHITE));
+	black += bb::popcount(queen_attacks & board.get_piece_occ(piece::QUEEN) & board.get_color_occ(piece::BLACK));
+	white += bb::popcount(wp_attacks & board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::WHITE));
+	black += bb::popcount(bp_attacks & board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::BLACK));
+}
+
 bitboard Position::get_current_attacks(int color) {
 	return ply.back().attacks[color];
 }
 
 zobrist::key Position::get_tt_key() {
-	zobrist::key ret;
-
-	/* Incremental update will be ever so slightly faster but this helps keep the code readable. */
-
-	ret = key;
-	ret ^= board.get_tt_key();
-	ret ^= zobrist::en_passant(ply.back().en_passant_square);
-	ret ^= zobrist::castle(castle_rights());
-
-	if (color_to_move == piece::BLACK) {
-		ret ^= zobrist::black_to_move();
-	}
-
-	return ret;
+	return ply.back().key;
 }
 
 bool Position::check() {
 	return (ply.back().attacks[!color_to_move] & board.get_color_occ(color_to_move) & board.get_piece_occ(piece::KING)) != 0;
 }
 
+bool Position::quiet() {
+	return !(check() || ply.back().last_move.get(Move::CAPTURE | Move::PROMOTION));
+}
+
 int Position::castle_rights() {
 	return ply.back().castle_rights;
+}
+
+int Position::num_repetitions() {
+	int res = 0;
+
+	for (int i = 0; i < ply.size(); ++i) {
+		if (ply[i].key == ply.back().key) {
+			++res;
+		}
+	}
+
+	return res;
+}
+
+std::string Position::game_string() {
+	std::string output;
+
+	for (int i = (int) ply.size() - 1; i > 0; --i) {
+		output = ply[i].last_move.to_uci() + " " + output;
+	}
+
+	return output;
 }

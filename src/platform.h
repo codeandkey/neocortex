@@ -2,6 +2,7 @@
 
 #define PINE_NAME "pine"
 #define PINE_VERSION "0.1"
+#define PINE_BUILDTIME __DATE__
 
 #ifdef _WIN32
 #define PINE_WIN32

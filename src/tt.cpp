@@ -7,17 +7,15 @@
 using namespace pine;
 
 static std::vector<tt::entry> tt_vector;
-static zobrist::key tt_mask;
 
-void tt::init(int bits) {
-	assert(bits > 0 && bits <= 24);
+void tt::init(size_t mib) {
+	assert(mib >= 16);
 
-	tt_vector.resize(1ULL << bits, { 0, Move::null });
-	pine_debug("Using %d bit transposition table with %d entries\n", bits, 1 << bits);
-
-	tt_mask = (1ULL << (bits + 1)) - 1;
+	tt_vector.clear();
+	tt_vector.resize(((size_t) mib * 1024 * 1024) / sizeof(tt::entry));
+	pine_debug("Initialized %d MiB hash with %d entries\n", mib, tt_vector.size());
 }
 
 tt::entry* tt::lookup(zobrist::key key) {
-	return &tt_vector[key & tt_mask];
+	return &tt_vector[key % tt_vector.size()];
 }
