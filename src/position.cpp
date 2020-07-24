@@ -77,7 +77,7 @@ Position::Position(std::string fen) {
 	first_state.key ^= zobrist::castle(first_state.castle_rights);
 
 	if (color_to_move == piece::BLACK) {
-		ply.back().key ^= zobrist::black_to_move();
+		first_state.key ^= zobrist::black_to_move();
 	}
 
 	ply.push_back(first_state);
