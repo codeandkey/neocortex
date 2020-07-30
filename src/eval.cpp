@@ -172,16 +172,43 @@ Eval::Eval(Position& pos) : pos(pos) {
 	/* Compute blocking pawn penalties, passed pawn bonus */
 	blocking_pawns[piece::WHITE] = blocking_pawns[piece::BLACK] = 0;
 	passed_pawns[piece::WHITE] = passed_pawns[piece::BLACK] = 0;
+	adv_pawn_mg[piece::WHITE] = adv_pawn_mg[piece::BLACK] = 0;
+	adv_pawn_eg[piece::WHITE] = adv_pawn_eg[piece::BLACK] = 0;
+	adv_passedpawn_mg[piece::WHITE] = adv_passedpawn_mg[piece::BLACK] = 0;
+	adv_passedpawn_eg[piece::WHITE] = adv_passedpawn_eg[piece::BLACK] = 0;
+	passed_pawns[piece::WHITE] = passed_pawns[piece::BLACK] = 0;
 
 	for (int c = 0; c < 2; ++c) {
 		for (int f = 0; f < 8; ++f) {
-			int count = bb::popcount(bb::file(f) & pos.get_board().get_color_occ(c) & pos.get_board().get_piece_occ(piece::PAWN));
+			bitboard pawns = bb::file(f) & pos.get_board().get_color_occ(c) & pos.get_board().get_piece_occ(piece::PAWN);
+			int count = bb::popcount(pawns);
 
-			if (count > 1) {
-				blocking_pawns[c] += eval::BLOCKING_PAWNS;
+			if (count) {
+				if (count > 1) {
+					blocking_pawns[c] += eval::BLOCKING_PAWNS;
+				}
 
-				if (!bb::popcount(bb::file(f) & pos.get_board().get_color_occ(!c) & pos.get_board().get_piece_occ(piece::PAWN))) {
-					passed_pawns[c] += eval::PASSED_PAWNS;
+				bool passed = !bb::popcount(bb::file(f) & pos.get_board().get_color_occ(!c) & pos.get_board().get_piece_occ(piece::PAWN));
+
+				if (passed) {
+					passed_pawns[c] += eval::PASSED_PAWNS * count;
+				}
+
+				/* Grab pawn ranks and apply bonuses */
+				while (pawns) {
+					int adv = square::rank(bb::poplsb(pawns));
+
+					if (c == piece::BLACK) {
+						adv = 7 - adv;
+					}
+
+					adv_pawn_mg[c] += eval::ADV_PAWN_MG * adv;
+					adv_pawn_eg[c] += eval::ADV_PAWN_EG * adv;
+
+					if (passed) {
+						adv_passedpawn_mg[c] += eval::ADV_PASSEDPAWN_MG * adv;
+						adv_passedpawn_eg[c] += eval::ADV_PASSEDPAWN_EG * adv;
+					}
 				}
 			}
 		}
@@ -190,26 +217,38 @@ Eval::Eval(Position& pos) : pos(pos) {
 
 int Eval::to_score() {
 	int score = 0;
+	int ctm = pos.get_color_to_move();
+	int opp = !ctm;
 
-	int material_score_mg = material_mg[pos.get_color_to_move()] - material_mg[!pos.get_color_to_move()];
-	int material_score_eg = material_eg[pos.get_color_to_move()] - material_eg[!pos.get_color_to_move()];
+	int material_score_mg = material_mg[ctm] - material_mg[opp];
+	int material_score_eg = material_eg[ctm] - material_eg[opp];
 
 	score += (material_score_mg * phase) / 256;
 	score += (material_score_eg * (256 - phase)) / 256;
 
-	score += attackbonus[pos.get_color_to_move()] - attackbonus[!pos.get_color_to_move()];
+	score += attackbonus[ctm] - attackbonus[opp];
 
-	int mobility_score_mg = mobility_mg[pos.get_color_to_move()] - mobility_mg[!pos.get_color_to_move()];
-	int mobility_score_eg = mobility_eg[pos.get_color_to_move()] - mobility_eg[!pos.get_color_to_move()];
+	int mobility_score_mg = mobility_mg[ctm] - mobility_mg[opp];
+	int mobility_score_eg = mobility_eg[ctm] - mobility_eg[opp];
 
 	score += (mobility_score_mg * phase) / 256;
 	score += (mobility_score_eg * (256 - phase)) / 256;
 
-	score +=  (phase * (center_control[pos.get_color_to_move()] - center_control[!pos.get_color_to_move()])) / 256;
+	score +=  (phase * (center_control[ctm] - center_control[opp])) / 256;
 
-	score += (king_safety[pos.get_color_to_move()] - king_safety[pos.get_color_to_move()]);
+	score += king_safety[ctm] - king_safety[opp];
 
-	score += (blocking_pawns[pos.get_color_to_move()] - blocking_pawns[pos.get_color_to_move()]);
+	score += blocking_pawns[ctm] - blocking_pawns[opp];
+
+	int adv_pawn_score_mg = adv_pawn_mg[ctm] - adv_pawn_mg[opp];
+	int adv_pawn_score_eg = adv_pawn_eg[ctm] - adv_pawn_eg[opp];
+	int adv_passedpawn_score_mg = adv_passedpawn_mg[ctm] - adv_passedpawn_mg[opp];
+	int adv_passedpawn_score_eg = adv_passedpawn_eg[ctm] - adv_passedpawn_eg[opp];
+
+	score += (phase * adv_pawn_score_mg) / 256;
+	score += ((256 - phase) * adv_pawn_score_eg) / 256;
+	score += (phase * adv_passedpawn_score_mg) / 256;
+	score += ((256 - phase) * adv_passedpawn_score_eg) / 256;
 	
 	return score + eval::TEMPO_BONUS;
 }
@@ -228,6 +267,10 @@ std::string Eval::to_table() {
 	output += util::format("king_safety | %5d | %5d |\n", king_safety[piece::WHITE], king_safety[piece::BLACK]);
 	output += util::format("blocked_pns | %5d | %5d |\n", blocking_pawns[piece::WHITE], blocking_pawns[piece::BLACK]);
 	output += util::format("passed_pns  | %5d | %5d |\n", passed_pawns[piece::WHITE], passed_pawns[piece::BLACK]);
+	output += util::format("adv_pawn_mg | %5d | %5d |\n", adv_pawn_mg[piece::WHITE], adv_pawn_mg[piece::BLACK]);
+	output += util::format("adv_pawn_eg | %5d | %5d |\n", adv_pawn_eg[piece::WHITE], adv_pawn_eg[piece::BLACK]);
+	output += util::format("adv_psd_mg  | %5d | %5d |\n", adv_passedpawn_mg[piece::WHITE], adv_passedpawn_mg[piece::BLACK]);
+	output += util::format("adv_psd_eg  | %5d | %5d |\n", adv_passedpawn_eg[piece::WHITE], adv_passedpawn_eg[piece::BLACK]);
 	output += util::format("phase       | %13d |\n", phase);
 
 	return output;
