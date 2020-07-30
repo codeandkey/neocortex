@@ -1,3 +1,10 @@
+/* vim: set ts=4 sw=4 noet: */
+
+/*
+ * This file is subject to the terms and conditions defined in
+ * LICENSE.txt, included in this source code distribution.
+ */
+
 #pragma once
 
 #include "position.h"
@@ -40,5 +47,7 @@ namespace pine {
 		int king_safety[2];
 		int blocking_pawns[2];
 		int passed_pawns[2];
+int pawn_adv[2];
+int passed_pawn_adv[2];
 	};
 }
