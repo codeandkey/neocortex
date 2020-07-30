@@ -238,8 +238,8 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 		return score::INCOMPLETE;
 	}
 
-	/* Check for threefold repetition */
-	if (root.num_repetitions() >= 3) {
+	/* Check for threefold repetition or 50-move rule */
+	if (root.num_repetitions() >= 3 || root.halfmove_clock() >= 50) {
 		return eval::CONTEMPT;
 	}
 
@@ -352,8 +352,8 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 		return score::INCOMPLETE;
 	}
 
-	/* Check for threefold repetition */
-	if (root.num_repetitions() >= 3) {
+	/* Check for threefold repetition or 50-move-rule */
+	if (root.num_repetitions() >= 3 || root.halfmove_clock() >= 50) {
 		return eval::CONTEMPT;
 	}
 

@@ -65,6 +65,7 @@ namespace pine {
 		bool quiet();
 		int castle_rights();
 		int num_repetitions();
+		int halfmove_clock();
 		std::string game_string();
 	private:
 		Board board;

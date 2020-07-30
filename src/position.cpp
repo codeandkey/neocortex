@@ -460,6 +460,10 @@ int Position::num_repetitions() {
 	return res;
 }
 
+int Position::halfmove_clock() {
+	return ply.back().halfmove_clock;
+}
+
 std::string Position::game_string() {
 	std::string output;
 
