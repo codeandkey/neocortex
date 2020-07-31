@@ -34,5 +34,7 @@ namespace pine {
 		constexpr int ADV_PASSEDPAWN_MG = 8;
 		constexpr int ADV_PAWN_EG = 8;
 		constexpr int ADV_PASSEDPAWN_EG = 16;
+		constexpr int KING_ADV_MG = -35;
+		constexpr int KING_ADV_EG = 10;
 	}
 }

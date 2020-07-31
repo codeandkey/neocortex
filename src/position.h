@@ -72,4 +72,16 @@ namespace pine {
 		std::vector<State> ply;
 		int color_to_move;
 	};
+
+	inline int Position::get_color_to_move() {
+		return color_to_move;
+	}
+
+	inline bitboard Position::attacking_squares() {
+		return ply.back().attacks[color_to_move];
+	}
+
+	inline bitboard Position::attacked_squares() {
+		return ply.back().attacks[!color_to_move];
+	}
 }

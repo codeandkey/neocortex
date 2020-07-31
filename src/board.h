@@ -38,4 +38,24 @@ namespace pine {
 		int state[64];
 		zobrist::key key;
 	};
+
+	inline int Board::get_piece(int sq) {
+		return state[sq];
+	}
+
+	inline bitboard Board::get_global_occ() {
+		return global_occ;
+	}
+
+	inline bitboard Board::get_color_occ(int col) {
+		return color_occ[col];
+	}
+
+	inline bitboard Board::get_piece_occ(int t) {
+		return piece_occ[t];
+	}
+
+	inline zobrist::key Board::get_tt_key() {
+		return key;
+	}
 }

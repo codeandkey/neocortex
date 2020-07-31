@@ -157,29 +157,3 @@ std::string Board::to_pretty() {
 
 	return output;
 }
-
-bitboard Board::get_global_occ() {
-	return global_occ;
-}
-
-bitboard Board::get_color_occ(int col) {
-	assert(col == piece::WHITE || col == piece::BLACK);
-
-	return color_occ[col];
-}
-
-bitboard Board::get_piece_occ(int ptype) {
-	assert(ptype >= 0 && ptype < 6);
-	
-	return piece_occ[ptype];
-}
-
-int Board::get_piece(int sq) {
-	assert(square::is_valid(sq));
-
-	return state[sq];
-}
-
-zobrist::key Board::get_tt_key() {
-	return key;
-}

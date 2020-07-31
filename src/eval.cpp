@@ -143,6 +143,8 @@ Eval::Eval(Position& pos) : pos(pos) {
 
 	/* Compute king safety */
 	king_safety[piece::WHITE] = king_safety[piece::BLACK] = 0;
+	king_adv_mg[piece::WHITE] = king_adv_mg[piece::BLACK] = 0;
+	king_adv_eg[piece::WHITE] = king_adv_eg[piece::BLACK] = 0;
 
 	for (int c = 0; c < 2; ++c) {
 		int ksq = bb::getlsb(pos.get_board().get_color_occ(c) & pos.get_board().get_piece_occ(piece::KING));
@@ -167,6 +169,15 @@ Eval::Eval(Position& pos) : pos(pos) {
 			/* this could be better, but could also incentivise severely overprotecting the king */
 			king_safety[c] += (attack_colors[c] - attack_colors[!c]) * eval::KING_SAFETY;
 		}
+	
+		int adv = square::rank(ksq);
+
+		if (c == piece::BLACK) {
+			adv = 7 - adv;
+		}
+
+		king_adv_mg[c] += adv * eval::KING_ADV_MG;
+		king_adv_eg[c] += adv * eval::KING_ADV_EG;
 	}
 
 	/* Compute blocking pawn penalties, passed pawn bonus */
@@ -245,10 +256,16 @@ int Eval::to_score() {
 	int adv_passedpawn_score_mg = adv_passedpawn_mg[ctm] - adv_passedpawn_mg[opp];
 	int adv_passedpawn_score_eg = adv_passedpawn_eg[ctm] - adv_passedpawn_eg[opp];
 
+	int adv_king_score_mg = king_adv_mg[ctm] - king_adv_mg[opp];
+	int adv_king_score_eg = king_adv_eg[ctm] - king_adv_eg[opp];
+
 	score += (phase * adv_pawn_score_mg) / 256;
 	score += ((256 - phase) * adv_pawn_score_eg) / 256;
 	score += (phase * adv_passedpawn_score_mg) / 256;
 	score += ((256 - phase) * adv_passedpawn_score_eg) / 256;
+
+	score += (phase * adv_king_score_mg) / 256;
+	score += ((256 - phase) * adv_king_score_eg) / 256;
 	
 	return score + eval::TEMPO_BONUS;
 }
@@ -271,6 +288,8 @@ std::string Eval::to_table() {
 	output += util::format("adv_pawn_eg | %5d | %5d |\n", adv_pawn_eg[piece::WHITE], adv_pawn_eg[piece::BLACK]);
 	output += util::format("adv_psd_mg  | %5d | %5d |\n", adv_passedpawn_mg[piece::WHITE], adv_passedpawn_mg[piece::BLACK]);
 	output += util::format("adv_psd_eg  | %5d | %5d |\n", adv_passedpawn_eg[piece::WHITE], adv_passedpawn_eg[piece::BLACK]);
+	output += util::format("adv_king_mg | %5d | %5d |\n", king_adv_mg[piece::WHITE], king_adv_mg[piece::BLACK]);
+	output += util::format("adv_king_eg | %5d | %5d |\n", king_adv_eg[piece::WHITE], king_adv_eg[piece::BLACK]);
 	output += util::format("phase       | %13d |\n", phase);
 
 	return output;

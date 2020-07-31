@@ -121,10 +121,6 @@ Board& Position::get_board() {
 	return board;
 }
 
-int Position::get_color_to_move() {
-	return color_to_move;
-}
-
 bool Position::make_move(Move move) {
 	assert(move.is_valid());
 
@@ -300,14 +296,6 @@ void Position::unmake_move(Move move) {
 bitboard Position::en_passant_mask() {
 	int sq = ply.back().en_passant_square;
 	return (sq == square::null) ? 0ULL : bb::mask(sq);
-}
-
-bitboard Position::attacking_squares() {
-	return squares_attacked_by(get_color_to_move());
-}
-
-bitboard Position::attacked_squares() {
-	return squares_attacked_by(!get_color_to_move());
 }
 
 bitboard Position::squares_attacked_by(int color) {

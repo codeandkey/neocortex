@@ -7,6 +7,14 @@
 
 #pragma once
 
+#include "square.h"
+#include "platform.h"
+
+#ifdef PINE_WIN32
+#include <intrin.h>
+#endif
+
+#include <cassert>
 #include <cstdint>
 #include <string>
 
@@ -44,12 +52,52 @@ namespace pine {
 
 	namespace bb {
 		std::string to_string(bitboard b);
-		int getlsb(bitboard b);
-		int poplsb(bitboard& b);
-		bitboard shift(bitboard b, int dir);
-		bitboard mask(int sq);
-		int popcount(bitboard b);
-		bitboard rank(int r);
-		bitboard file(int f);
+
+		inline int getlsb(bitboard b) {
+			assert(b);
+
+#ifdef PINE_WIN32
+			unsigned long pos;
+			_BitScanForward64(&pos, b);
+
+			return (int) pos;
+#elif defined PINE_LINUX || defined PINE_OSX
+			return (int) __builtin_ctzll(b);
+#endif
+		}
+
+		inline int poplsb(bitboard& b) {
+			int lsb = getlsb(b);
+			b ^= 1ULL << lsb;
+			return lsb;
+		}
+
+		inline bitboard shift(bitboard b, int dir) {
+			return (dir > 0) ? (b << dir) : (b >> -dir);
+		}
+
+		inline bitboard mask(int sq) {
+			assert(square::is_valid(sq));
+
+			return ((bitboard) 1) << sq;
+		}
+
+		inline int popcount(bitboard b) {
+#ifdef PINE_WIN32
+			return (int) __popcnt64(b);
+#elif defined PINE_LINUX || defined PINE_OSX
+			return (int) __builtin_popcountll(b);
+#endif
+		}
+
+		inline bitboard rank(int r) {
+			assert(r >= 0 && r < 8);
+			return RANK_1 << (8 * r);
+		}
+
+		inline bitboard file(int f) {
+			assert(f >= 0 && f < 8);
+			return FILE_A << f;
+		}
 	}
 }
