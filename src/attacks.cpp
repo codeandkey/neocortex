@@ -6,23 +6,17 @@
  */
 
 #include "attacks.h"
-#include "magic_consts.h"
 #include "util.h"
 #include "square.h"
 
-#include "log.h"
-
-#include <cassert>
-
 using namespace pine;
 
-static bitboard king_attacks[64] = { 0 };
-static bitboard knight_attacks[64] = { 0 };
-static bitboard* rook_attacks[64] = { nullptr };
-static bitboard* bishop_attacks[64] = { nullptr };
+bitboard attacks::king_attacks[64] = { 0 };
+bitboard attacks::knight_attacks[64] = { 0 };
+bitboard* attacks::rook_attacks[64] = { nullptr };
+bitboard* attacks::bishop_attacks[64] = { nullptr };
 
 static bitboard make_rocc(int index, bitboard mask, int bits);
-static int magic_index(bitboard rocc, bitboard magic, int bits);
 
 void attacks::init() {
 	for (int sq = 0; sq < 64; ++sq) {
@@ -140,38 +134,6 @@ void attacks::init() {
 			}
 		}
 	}
-
-	pine_debug("Initialized attack lookups.\n");
-}
-
-bitboard attacks::king(int sq) {
-	assert(square::is_valid(sq));
-
-	return king_attacks[sq];
-}
-
-bitboard attacks::knight(int sq) {
-	assert(square::is_valid(sq));
-
-	return knight_attacks[sq];
-}
-
-bitboard attacks::rook(int sq, bitboard occ) {
-	assert(square::is_valid(sq));
-
-	int mindex = magic_index(occ & magic::rook_masks[sq], magic::rook_magics[sq], magic::rook_bits[sq]);
-	return rook_attacks[sq][mindex];
-}
-
-bitboard attacks::bishop(int sq, bitboard occ) {
-	assert(square::is_valid(sq));
-
-	int mindex = magic_index(occ & magic::bishop_masks[sq], magic::bishop_magics[sq], magic::bishop_bits[sq]);
-	return bishop_attacks[sq][mindex];
-}
-
-bitboard attacks::queen(int sq, bitboard occ) {
-	return rook(sq, occ) | bishop(sq, occ);
 }
 
 bitboard make_rocc(int index, bitboard mask, int bits) {
@@ -194,8 +156,4 @@ bitboard make_rocc(int index, bitboard mask, int bits) {
 	}
 
 	return output;
-}
-
-int magic_index(bitboard rocc, bitboard magic, int bits) {
-	return (int) ((rocc * magic) >> (64 - bits));
 }
