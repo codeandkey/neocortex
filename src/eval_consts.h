@@ -8,6 +8,10 @@
 #pragma once
 
 namespace neocortex {
+	/**
+	 * This namespace contains all constants used in the evaluation function.
+	 */
+
 	namespace eval {
 		extern const int MATERIAL_MG[6];
 		extern const int MATERIAL_EG[6];
