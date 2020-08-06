@@ -10,7 +10,7 @@
 #include "eval_consts.h"
 #include "util.h"
 
-using namespace pine;
+using namespace neocortex;
 
 bool score::is_mate(int value) {
 	return (value >= CHECKMATE - MATE_THRESHOLD || value <= CHECKMATED + MATE_THRESHOLD);

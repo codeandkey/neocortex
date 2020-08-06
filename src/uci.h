@@ -11,10 +11,10 @@
 
 #include <iostream>
 
-namespace pine {
+namespace neocortex {
 	namespace uci {
-		constexpr const char* AUTHOR = "codeandkey";
-		constexpr const char* NAME = PINE_NAME " " PINE_VERSION;
+		constexpr const char* AUTHOR = "Justin Stanley";
+		constexpr const char* NAME = NEOCORTEX_NAME " " NEOCORTEX_VERSION;
 
 		void connect(std::istream& in, std::ostream& out);
 		void begin(std::istream& in, std::ostream& out);

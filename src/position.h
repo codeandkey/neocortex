@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-namespace pine {
+namespace neocortex {
 	constexpr int CASTLE_WHITE_K = 1;
 	constexpr int CASTLE_WHITE_Q = 2;
 	constexpr int CASTLE_BLACK_K = 4;
@@ -33,7 +33,7 @@ namespace pine {
 			int halfmove_clock;
 			int fullmove_number;
 			bitboard attacks[2];
-			zobrist::key key;
+			zobrist::Key key;
 		};
 
 		Position();
@@ -59,7 +59,7 @@ namespace pine {
 		/* get cached attack boards */
 		bitboard get_current_attacks(int color);
 
-		zobrist::key get_tt_key();
+		zobrist::Key get_tt_key();
 
 		bool check();
 		bool quiet();

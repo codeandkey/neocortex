@@ -18,7 +18,7 @@
 #include <iostream>
 #include <thread>
 
-namespace pine {
+namespace neocortex {
 	namespace search {
 		constexpr int QDEPTH = 4;
 		constexpr int PV_MAX = 128;
@@ -29,20 +29,10 @@ namespace pine {
 			Search(Position node = Position());
 			~Search();
 
-			void set_infinite(bool infinite);
-			void set_wtime(int wtime);
-			void set_btime(int btime);
-			void set_winc(int winc);
-			void set_binc(int binc);
-			void set_debug(bool debug);
-			void set_depth(int depth);
-			void set_nodes(int nodes);
-			void set_movetime(int movetime);
-			void clear_go_params();
-
 			bool is_time_expired();
+			void set_debug(bool enabled);
 
-			void go(std::ostream& out);
+			void go(std::istream& in, std::ostream& out);
 			void stop();
 
 			void load(Position p);
@@ -59,12 +49,10 @@ namespace pine {
 			std::mutex search_mutex;
 
 			Position root;
-			std::atomic<int> wtime, btime, winc, binc, depth, nodes, movetime, allocated_time;
-			std::atomic<bool> debug, infinite, stop_requested;
+			std::atomic<bool> debug, should_stop;
 
-			util::time_point search_starttime, iter_starttime;
-
-			unsigned long ctr_nodes;
+			util::time_point search_starttime, depth_starttime;
+			unsigned long numnodes;
 		};
 	}
 }

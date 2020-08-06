@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace pine {
+namespace neocortex {
 	namespace util {
 		/* String formatting */
 		template <typename ... Args>
@@ -41,10 +41,11 @@ namespace pine {
 
 		/* Time manipulation */
 		typedef std::chrono::steady_clock::time_point time_point;
+
 		std::string timestring();
-		time_point now();
-		double elapsed(time_point reference);
-		int elapsed_ms(time_point reference);
+		time_point time_now();
+		double time_elapsed(time_point reference);
+		int time_elapsed_ms(time_point reference);
 
 		/* String splitting */
 		std::vector<std::string> split(std::string input, char delim);

@@ -12,7 +12,7 @@
 
 #include <cassert>
 
-namespace pine {
+namespace neocortex {
 	namespace attacks {
 		extern bitboard king_attacks[64], knight_attacks[64];
 		extern bitboard* rook_attacks[64], *bishop_attacks[64];

@@ -13,7 +13,7 @@
 
 #include <stdexcept>
 
-using namespace pine;
+using namespace neocortex;
 
 int piece::make_piece(int color, int type) {
 	assert(color == WHITE || color == BLACK);

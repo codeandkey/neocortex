@@ -12,8 +12,8 @@
 
 #include <cassert>
 
-using namespace pine;
-using namespace pine::movegen;
+using namespace neocortex;
+using namespace neocortex::movegen;
 
 static const int quiet_type_order[] = {
 		piece::QUEEN,

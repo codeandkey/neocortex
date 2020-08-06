@@ -9,15 +9,15 @@
 
 #include <cstdint>
 
-namespace pine {
+namespace neocortex {
 	namespace zobrist {
-		typedef uint64_t key;
+		typedef uint64_t Key;
 
 		void init();
 
-		key piece(int sq, int piece);
-		key castle(int rights);
-		key en_passant(int file);
-		key black_to_move();
+		Key piece(int sq, int piece);
+		Key castle(int rights);
+		Key en_passant(int file);
+		Key black_to_move();
 	}
 }

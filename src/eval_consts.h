@@ -7,7 +7,7 @@
 
 #pragma once
 
-namespace pine {
+namespace neocortex {
 	namespace eval {
 		extern const int MATERIAL_MG[6];
 		extern const int MATERIAL_EG[6];

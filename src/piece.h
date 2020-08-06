@@ -7,7 +7,7 @@
 
 #pragma once
 
-namespace pine {
+namespace neocortex {
 	namespace piece {
 		/* Piece types */
 		constexpr int PAWN = 0;

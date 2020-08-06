@@ -7,23 +7,23 @@
 
 #pragma once
 
-#define PINE_NAME "pine"
-#define PINE_VERSION "0.1"
-#define PINE_BUILDTIME __DATE__
+#define NEOCORTEX_NAME "neocortex"
+#define NEOCORTEX_VERSION "1.0"
+#define NEOCORTEX_BUILDTIME __DATE__
 
 #ifdef _WIN32
-#define PINE_WIN32
-#define PINE_PLATFORM "Windows"
+#define NEOCORTEX_WIN32
+#define NEOCORTEX_PLATFORM "Windows"
 #elif defined(__linux__)
-#define PINE_LINUX
-#define PINE_PLATFORM "Linux"
+#define NEOCORTEX_LINUX
+#define NEOCORTEX_PLATFORM "Linux"
 #elif defined(__APPLE__)
-#define PINE_OSX
-#define PINE_PLATFORM "OSX"
+#define NEOCORTEX_OSX
+#define NEOCORTEX_PLATFORM "OSX"
 #else
 #error "Platform not detected! Supported platforms are Windows, Linux, and OSX."
 #endif
 
 #ifndef NDEBUG
-#define PINE_DEBUG
+#define NEOCORTEX_DEBUG
 #endif

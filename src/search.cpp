@@ -16,71 +16,22 @@
 #include <cassert>
 #include <cmath>
 
-using namespace pine;
+using namespace neocortex;
 
-search::Search::Search(Position root) : root(root)
-{
-	clear_go_params();
-	stop_requested = false;
-}
+search::Search::Search(Position root) : root(root) {}
 
 search::Search::~Search() {
 	stop();
 }
 
-void search::Search::set_wtime(int wtime)
-{
-	this->wtime = wtime;
-}
-
-void search::Search::set_btime(int btime)
-{
-	this->btime = btime;
-}
-
-void search::Search::set_winc(int winc)
-{
-	this->winc = winc;
-}
-
-void search::Search::set_binc(int binc)
-{
-	this->binc = binc;
-}
-
-void search::Search::set_depth(int depth)
-{
-	this->depth = depth;
-}
-
-void search::Search::set_nodes(int nodes)
-{
-	this->nodes = nodes;
-}
-
-void search::Search::set_movetime(int movetime)
-{
-	this->movetime = movetime;
-}
-
-void search::Search::set_debug(bool debug)
-{
-	this->debug = debug;
-}
-
-void search::Search::clear_go_params() {
-	wtime = btime = winc = binc = movetime = depth = nodes = movetime = allocated_time = -1;
-	infinite = stop_requested = false;
-}
-
-void search::Search::go(std::ostream& uci_out) {
+void search::Search::go(std::istream& in, std::ostream& out) {
 	if (search_thread.joinable()) {
 		stop();
 		search_thread.join();
 	}
 
-	stop_requested = false;
-	search_thread = std::thread([&] { worker(uci_out); });
+	should_stop = false;
+	search_thread = std::thread([&] { worker(out); });
 }
 
 void search::Search::stop() {
@@ -88,7 +39,7 @@ void search::Search::stop() {
 		return;
 	}
 
-	stop_requested = true;
+	should_stop = true;
 	search_thread.join();
 }
 
@@ -98,15 +49,19 @@ void search::Search::load(Position p) {
 }
 
 int search::Search::elapsed() {
-	return util::elapsed_ms(search_starttime);
+	return util::time_elapsed_ms(search_starttime);
 }
 
 int search::Search::elapsed_iter() {
-	return util::elapsed_ms(iter_starttime);
+	return util::time_elapsed_ms(depth_starttime);
 }
 
 bool search::Search::is_time_expired() {
 	return (allocated_time > 0) && (elapsed() >= allocated_time);
+}
+
+bool search::Search::set_debug(bool enabled) {
+	this->debug = enabled;
 }
 
 void search::Search::worker(std::ostream& out) {
@@ -122,7 +77,7 @@ void search::Search::worker(std::ostream& out) {
 
 	Move best_move;
 
-	pine_info("snapshot [%s]:\n%s", root.to_fen().c_str(), Eval(root).to_table().c_str());
+	neocortex_info("snapshot [%s]:\n%s", root.to_fen().c_str(), Eval(root).to_table().c_str());
 
 	/* Evaluate the position at depth 0 for an initial score. */
 	out << "info depth 0 nodes 1 score " << score::to_uci(Eval(root).to_score()) << "\n";
@@ -139,10 +94,10 @@ void search::Search::worker(std::ostream& out) {
 		out << " seldepth " << (first_pv.len - 1);
 	}
 	
-	out << " nodes " << ctr_nodes << " score " << score::to_uci(value) <<  " pv " << first_pv.to_string() << "\n";
+	out << " nodes " << numnodes << " score " << score::to_uci(value) <<  " pv " << first_pv.to_string() << "\n";
 	out.flush();
 
-	ebf_nodes[1] = ctr_nodes;
+	ebf_nodes[1] = numnodes;
 
 	assert(value != score::INCOMPLETE);
 	best_move = first_pv.moves[0];
@@ -160,18 +115,18 @@ void search::Search::worker(std::ostream& out) {
 		}
 	}
 	
-	search_starttime = util::now();
+	search_starttime = util::time_now();
 	
 	while (1) {
 		/* If the search should stop, break now and exit. */
-		if (stop_requested) break;
+		if (should_stop) break;
 		if (!infinite && (depth >= 0) && next_depth > depth) break;
 		if (is_time_expired()) break;
 
 		/* If we have an EBF and can predict the time of the next iter, try and do an early exit */
 		if (ebf > 0.0f) {
 			if (allocated_time > 0) {
-				if (util::elapsed_ms(search_starttime) + (int)(ebf * ebf_times[next_depth - 1]) >= allocated_time) {
+				if (util::time_elapsed_ms(search_starttime) + (int)(ebf * ebf_times[next_depth - 1]) >= allocated_time) {
 					break;
 				}
 			}
@@ -193,15 +148,15 @@ void search::Search::worker(std::ostream& out) {
 			out << " seldepth " << (next_pv.len - next_depth);
 		}
 
-		out << " nodes " << ctr_nodes;
+		out << " nodes " << numnodes;
 		out << " time " << elapsed_iter();
-		out << " nps " << (ctr_nodes * 1000) / (elapsed_iter() + 1);
+		out << " nps " << (numnodes * 1000) / (elapsed_iter() + 1);
 		out << " score " << score::to_uci(value);
 		out << " pv " << next_pv.to_string();
 		out << "\n";
 		out.flush();
 
-		ebf_nodes[next_depth] = ctr_nodes;
+		ebf_nodes[next_depth] = numnodes;
 		ebf_times[next_depth] = (elapsed_iter());
 
 		if (next_depth >= 2) {
@@ -220,8 +175,8 @@ void search::Search::worker(std::ostream& out) {
 }
 
 int search::Search::search_sync(int depth, int alpha, int beta, PV* pv_line) {
-	ctr_nodes = 0;
-	iter_starttime = util::now();
+	numnodes = 0;
+	depth_starttime = util::time_now();
 
 	return alphabeta(depth, alpha, beta, pv_line);
 }
@@ -231,10 +186,10 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 	Move tt_move;
 	int value;
 
-	++ctr_nodes;
-	if (nodes > 0 && ctr_nodes > (unsigned) nodes) return score::INCOMPLETE;
+	++numnodes;
+	if (nodes > 0 && numnodes > (unsigned) nodes) return score::INCOMPLETE;
 
-	if (is_time_expired() || stop_requested) {
+	if (is_time_expired() || should_stop) {
 		return score::INCOMPLETE;
 	}
 
@@ -348,7 +303,7 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 	PV local_pv;
 
-	if (is_time_expired() || stop_requested) {
+	if (is_time_expired() || should_stop) {
 		return score::INCOMPLETE;
 	}
 
@@ -357,8 +312,8 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 		return eval::CONTEMPT;
 	}
 
-	++ctr_nodes;
-	if (nodes > 0 && ctr_nodes > (unsigned) nodes) return score::INCOMPLETE;
+	++numnodes;
+	if (nodes > 0 && numnodes > (unsigned) nodes) return score::INCOMPLETE;
 
 	if (!depth || root.quiet()) {
 		pv_line->len = 0;

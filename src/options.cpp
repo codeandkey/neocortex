@@ -11,7 +11,7 @@
 
 #include <mutex>
 
-using namespace pine;
+using namespace neocortex;
 
 static std::mutex option_mutex;
 static std::map<std::string, options::Value> option_values;
@@ -59,7 +59,7 @@ T options::get(std::string key, T def) {
 	}
 	catch (std::out_of_range) {}
 	catch (std::exception& e) {
-		pine_warn("Failed retrieving option %s: %s", key.c_str(), e.what());
+		neocortex_warn("Failed retrieving option %s: %s", key.c_str(), e.what());
 	}
 
 	return def;

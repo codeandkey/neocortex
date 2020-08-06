@@ -9,7 +9,7 @@
 #include "util.h"
 #include "square.h"
 
-using namespace pine;
+using namespace neocortex;
 
 bitboard attacks::king_attacks[64] = { 0 };
 bitboard attacks::knight_attacks[64] = { 0 };

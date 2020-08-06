@@ -10,7 +10,7 @@
 #include <map>
 #include <string>
 
-namespace pine {
+namespace neocortex {
 	namespace options {
 		class Value {
 		public:

@@ -9,7 +9,7 @@
 
 #include <string>
 
-namespace pine {
+namespace neocortex {
 	namespace square {
 		constexpr int null = -1;
 

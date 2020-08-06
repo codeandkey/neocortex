@@ -23,7 +23,7 @@
  * 6. Quiet moves
  */
 
-namespace pine {
+namespace neocortex {
 	namespace movegen {
 		constexpr int STAGE_PV = 0;
 		constexpr int STAGE_PROMOTIONS = 1;

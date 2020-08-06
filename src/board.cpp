@@ -14,7 +14,7 @@
 #include <cctype>
 #include <vector>
 
-using namespace pine;
+using namespace neocortex;
 
 Board::Board() {
 	for (int i = 0; i < 64; ++i) {

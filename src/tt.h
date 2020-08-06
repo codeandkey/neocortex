@@ -11,10 +11,10 @@
 #include "zobrist.h"
 #include "eval.h"
 
-namespace pine {
+namespace neocortex {
 	namespace tt {
 		struct entry {
-			zobrist::key key = 0;
+			zobrist::Key key = 0;
 			Move pv_move = Move::null;
 			int type = EXACT;
 			int value = 0;
@@ -28,6 +28,6 @@ namespace pine {
 		constexpr size_t DEFAULT_MIB = 128;
 
 		void init(size_t mib = DEFAULT_MIB);
-		entry* lookup(zobrist::key key);
+		entry* lookup(zobrist::Key key);
 	}
 }

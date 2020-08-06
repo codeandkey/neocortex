@@ -7,7 +7,7 @@
 
 #include "eval_consts.h"
 
-using namespace pine;
+using namespace neocortex;
 
 const int eval::MATERIAL_MG[6] = {
 	100,

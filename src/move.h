@@ -15,7 +15,7 @@
 
 /* [0-5] src, [6-11] dst, [12-14] ptype, [15+] flags */
 
-namespace pine {
+namespace neocortex {
 	class Move {
 	public:
 		Move(int value = null);

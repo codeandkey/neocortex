@@ -9,7 +9,7 @@
 
 #include "position.h"
 
-namespace pine {
+namespace neocortex {
 	namespace perft {
 		struct results {
 			unsigned long nodes;
@@ -24,8 +24,7 @@ namespace pine {
 			static std::string header();
 		};
 
-		results run(Position& p, int depth); /* CANNOT be used from multiple threads. */
-
-		void write_run(Position& p, int depth, std::ostream& out);
+		results run(Position& p, int depth);
+		void start(Position& p, int depth, std::ostream& out);
 	}
 }

@@ -13,18 +13,18 @@
 #include <iomanip>
 #include <ctime>
 
-#if defined PINE_LINUX || defined PINE_APPLE
+#if defined NEOCORTEX_LINUX || defined NEOCORTEX_APPLE
 #include <errno.h>
 #include <cstring>
 #endif
 
-using namespace pine;
+using namespace neocortex;
 
 std::string util::timestring() {
 	std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	std::tm tm;
 	
-#ifdef PINE_WIN32
+#ifdef NEOCORTEX_WIN32
 	if (localtime_s(&tm, &t)) {
 		throw std::runtime_error("localtime() failed.");
 	}
@@ -40,16 +40,16 @@ std::string util::timestring() {
 	return ss.str();
 }
 
-util::time_point util::now() {
+util::time_point util::time_now() {
 	return std::chrono::steady_clock::now();
 }
 
-double util::elapsed(time_point reference) {
-	return std::chrono::duration_cast<std::chrono::microseconds>(pine::util::now() - reference).count() / 1000000.0;
+double util::time_elapsed(time_point reference) {
+	return std::chrono::duration_cast<std::chrono::microseconds>(util::time_now() - reference).count() / 1000000.0;
 }
 
-int util::elapsed_ms(time_point reference) {
-	return (int) std::chrono::duration_cast<std::chrono::milliseconds>(pine::util::now() - reference).count();
+int util::time_elapsed_ms(time_point reference) {
+	return (int) std::chrono::duration_cast<std::chrono::milliseconds>(util::time_now() - reference).count();
 }
 
 std::vector<std::string> util::split(std::string input, char delim) {

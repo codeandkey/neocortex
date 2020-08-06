@@ -12,7 +12,7 @@
 #include "square.h"
 #include "zobrist.h"
 
-namespace pine {
+namespace neocortex {
 	class Board {
 	public:
 		Board();
@@ -32,11 +32,11 @@ namespace pine {
 
 		int get_piece(int sq);
 
-		zobrist::key get_tt_key();
+		zobrist::Key get_tt_key();
 	private:
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
-		zobrist::key key;
+		zobrist::Key key;
 	};
 
 	inline int Board::get_piece(int sq) {
@@ -55,7 +55,7 @@ namespace pine {
 		return piece_occ[t];
 	}
 
-	inline zobrist::key Board::get_tt_key() {
+	inline zobrist::Key Board::get_tt_key() {
 		return key;
 	}
 }

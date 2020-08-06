@@ -13,13 +13,13 @@
 #include "util.h"
 #include "platform.h"
 
-#ifdef PINE_WIN32
+#ifdef NEOCORTEX_WIN32
 #include <Windows.h>
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 #include <unistd.h>
 #endif
 
-namespace pine {
+namespace neocortex {
 	namespace log {
 		enum class ColorMode {
 			ALWAYS,
@@ -55,27 +55,27 @@ namespace pine {
 			/* Test if color supported */
 			bool color_supported = true;
 
-#if defined PINE_LINUX || defined PINE_OSX
+#if defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 			color_supported &= isatty(fileno(stderr));
 #endif
 
 			/* Write color reset */
 			if (color_supported) {
-#if defined PINE_WIN32
+#if defined NEOCORTEX_WIN32
 				SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), 15);
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 				fprintf(stderr, "\e[0;39m");
 #endif
 			}
 
 			/* Write timestamp tag */
-			fprintf(stderr, "%s ", pine::util::timestring().c_str());
+			fprintf(stderr, "%s ", neocortex::util::timestring().c_str());
 
 			if (color_supported) {
-#if defined PINE_WIN32
+#if defined NEOCORTEX_WIN32
 				static const int colors[] = { 12, 14, 15, 11 };
 				SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), colors[level]);
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 				static const char* colors[] = {
 					"\e[0;31m",
 					"\e[0;33m",
@@ -98,13 +98,13 @@ namespace pine {
 			fprintf(stderr, "%s\xb3 ", level_strings[level]);
 
 			/* Write content */
-			fprintf(stderr, "%s", pine::util::format(message, args...).c_str());
+			fprintf(stderr, "%s", neocortex::util::format(message, args...).c_str());
 
 			/* Write color reset */
 			if (color_supported) {
-#if defined PINE_WIN32
+#if defined NEOCORTEX_WIN32
 				SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), 15);
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 				fprintf(stderr, "\e[0;39m");
 #endif
 			}
@@ -113,7 +113,7 @@ namespace pine {
 }
 
 /* Log convienience macros */
-#define pine_error pine::log::write<pine::log::ERR>
-#define pine_warn pine::log::write<pine::log::WARNING>
-#define pine_info pine::log::write<pine::log::INFO>
-#define pine_debug pine::log::write<pine::log::DEBUG>
+#define neocortex_error neocortex::log::write<neocortex::log::ERR>
+#define neocortex_warn neocortex::log::write<neocortex::log::WARNING>
+#define neocortex_info neocortex::log::write<neocortex::log::INFO>
+#define neocortex_debug neocortex::log::write<neocortex::log::DEBUG>

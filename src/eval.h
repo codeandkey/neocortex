@@ -12,7 +12,7 @@
 #include <climits>
 #include <string>
 
-namespace pine {
+namespace neocortex {
 	namespace score {
 		bool is_mate(int value);
 		int parent(int value);
