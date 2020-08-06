@@ -14,10 +14,39 @@
 
 namespace neocortex {
 	namespace score {
+		/**
+		 * Test if a value represents a forced mate for either color.
+		 *
+		 * @param value Value to test.
+		 * @return true iff input is a forced mate.
+		 */
 		bool is_mate(int value);
+
+		/**
+		 * Gets the "parent" for an eval. If the eval is a mate, this function increases the distance-to-mate.
+		 * If the eval is not a mate, this function returns the unaltered input.
+		 *
+		 * @param value Input value.
+		 * @return Evaluation parent value.
+		 */
 		int parent(int value);
 
+		/**
+		 * Converts a score into a human readable string.
+		 * Scores: "[+/-]<value>"
+		 * Mates: "#[+/-]<ply>"
+		 *
+		 * @param value Input score.
+		 * @return Human-readable score string.
+		 */
 		std::string to_string(int value);
+
+		/**
+		 * Converts a score into a UCI-compliant score string.
+		 *
+		 * @param value Input score.
+		 * @return UCI score string.
+		 */
 		std::string to_uci(int value);
 
 		static constexpr int CHECKMATE = 4000000;
@@ -31,9 +60,22 @@ namespace neocortex {
 	class Eval {
 	public:
 	public:
+		/**
+		 * Evaluates a position and constructs a resulting evaluation.
+		 *
+		 * @param pos Position to evaluate.
+		 */
 		Eval(Position& pos);
 
+		/**
+		 * Converts the evaluation to a score.
+		 */
 		int to_score();
+
+		/**
+		 * Converts the evaluation to a human-readable table,
+		 * with every element of the evaluation function present.
+		 */
 		std::string to_table();
 	private:
 		Position& pos;
