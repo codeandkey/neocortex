@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 		uci::begin(std::cin, std::cout);
 	}
 	catch (std::exception& e) {
-		neocortex_error("%s", e.what());
+		neocortex_error("Unhandled exception: %s\n", e.what());
 	}
 
 	return 0;
