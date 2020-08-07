@@ -33,7 +33,7 @@ namespace neocortex {
 			}
 
 			char* buffer = new char[length];
-			std::unique_ptr<char> buffer_ref(buffer);
+			std::unique_ptr<char[]> buffer_ref(buffer);
 
 			snprintf(buffer, length, fmt.c_str(), args ...);
 
