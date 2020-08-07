@@ -48,9 +48,6 @@ void search::Search::go(std::vector<std::string> args, std::ostream& out) {
 		else if (args[i] == "nodes") nodes = safe_parseint(args, i + 1);
 		else if (args[i] == "movetime") movetime = safe_parseint(args, i + 1);
 		else if (args[i] == "infinite") infinite = true;
-		else {
-			throw util::fmterr("Invalid argument: %s", args[i].c_str());
-		}
 	}
 
 	neocortex_debug("Parsed all arguments.\n");
