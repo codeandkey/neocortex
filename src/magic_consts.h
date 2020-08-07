@@ -9,7 +9,12 @@
 
 #include "bitboard.h"
 
-namespace pine {
+namespace neocortex {
+	/**
+	 * This file contains generated magic constants used in
+	 * the magic bitboard move generation. (see attacks.cpp)
+	 */
+
 	namespace magic {
 		static const bitboard rook_magics[64] = {
 		  0xa8002c000108020ULL,

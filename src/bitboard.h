@@ -10,7 +10,7 @@
 #include "square.h"
 #include "platform.h"
 
-#ifdef PINE_WIN32
+#ifdef NEOCORTEX_WIN32
 #include <intrin.h>
 #endif
 
@@ -18,7 +18,7 @@
 #include <cstdint>
 #include <string>
 
-namespace pine {
+namespace neocortex {
 	typedef uint64_t bitboard;
 
 	/* Rank masks */
@@ -73,12 +73,12 @@ namespace pine {
 		inline int getlsb(bitboard b) {
 			assert(b);
 
-#ifdef PINE_WIN32
+#ifdef NEOCORTEX_WIN32
 			unsigned long pos;
 			_BitScanForward64(&pos, b);
 
 			return (int) pos;
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 			return (int) __builtin_ctzll(b);
 #endif
 		}
@@ -126,9 +126,9 @@ namespace pine {
 		 * @return Number of '1' bits in input.
 		 */
 		inline int popcount(bitboard b) {
-#ifdef PINE_WIN32
+#ifdef NEOCORTEX_WIN32
 			return (int) __popcnt64(b);
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 			return (int) __builtin_popcountll(b);
 #endif
 		}

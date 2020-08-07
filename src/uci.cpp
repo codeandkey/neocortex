@@ -11,13 +11,12 @@
 #include "util.h"
 #include "search.h"
 #include "position.h"
-#include "options.h"
 
 #include <cassert>
 #include <iostream>
 #include <string>
 
-using namespace pine;
+using namespace neocortex;
 
 static std::string read_command(std::istream& in) {
 	std::string output;
@@ -55,7 +54,7 @@ void uci::begin(std::istream & in, std::ostream & out) {
 		}
 		else if (parts[0] == "debug") {
 			if (parts.size() < 2) {
-				pine_warn("Invalid UCI: debug expects an argument (\"on\" or \"off\")\n");
+				neocortex_warn("Invalid UCI: debug expects an argument (\"on\" or \"off\")\n");
 				continue;
 			}
 
@@ -67,64 +66,20 @@ void uci::begin(std::istream & in, std::ostream & out) {
 				searcher.set_debug(false);
 			}
 			else {
-				pine_warn("Invalid UCI: debug expects an argument (\"on\" or \"off\")\n");
+				neocortex_warn("Invalid UCI: debug expects an argument (\"on\" or \"off\")\n");
 			}
 		}
 		else if (parts[0] == "stop") {
 			searcher.stop();
 		}
 		else if (parts[0] == "go") {
-			/* Parse arguments */
-			searcher.clear_go_params();
-
-			std::string ucierr = "";
-			try {
-				for (size_t i = 1; i < parts.size(); ++i) {
-					if (parts[i] == "wtime") {
-						searcher.set_wtime(std::stoi(parts[i + 1]));
-					}
-
-					if (parts[i] == "btime") {
-						searcher.set_btime(std::stoi(parts[i + 1]));
-					}
-
-					if (parts[i] == "winc") {
-						searcher.set_winc(std::stoi(parts[i + 1]));
-					}
-
-					if (parts[i] == "binc") {
-						searcher.set_binc(std::stoi(parts[i + 1]));
-					}
-
-					if (parts[i] == "winc") {
-						searcher.set_winc(std::stoi(parts[i + 1]));
-					}
-
-					if (parts[i] == "depth") {
-						searcher.set_depth(std::stoi(parts[i + 1]));
-					}
-
-					if (parts[i] == "nodes") {
-						searcher.set_nodes(std::stoi(parts[i + 1]));
-					}
-
-					if (parts[i] == "movetime") {
-						searcher.set_movetime(std::stoi(parts[i + 1]));
-					}
-				}
-			}
-			catch (std::exception & e) {
-				pine_warn("Invalid UCI in command: caught %s\n", e.what());
-				continue;
-			}
-
-			searcher.go(out);
+			searcher.go(parts, out);
 		}
 		else if (parts[0] == "position") {
 			searcher.stop();
 
 			if (parts.size() < 2) {
-				pine_warn("Invalid UCI: position must be followed by 'startpos' or a FEN\n");
+				neocortex_warn("Invalid UCI: position must be followed by 'startpos' or a FEN\n");
 				continue;
 			}
 
@@ -133,7 +88,7 @@ void uci::begin(std::istream & in, std::ostream & out) {
 
 			if (parts[1] != "startpos") {
 				if (parts.size() < 7) {
-					pine_warn("Invalid UCI: not enough FEN fields for position\n");
+					neocortex_warn("Invalid UCI: not enough FEN fields for position\n");
 					continue;
 				}
 
@@ -145,7 +100,7 @@ void uci::begin(std::istream & in, std::ostream & out) {
 
 			if (expected_moves < (int) parts.size()) {
 				if (parts[expected_moves] != "moves") {
-					pine_warn("Invalid UCI: expected 'moves', read '%s'\n", parts[expected_moves].c_str());
+					neocortex_warn("Invalid UCI: expected 'moves', read '%s'\n", parts[expected_moves].c_str());
 					continue;
 				}
 
@@ -164,7 +119,7 @@ void uci::begin(std::istream & in, std::ostream & out) {
 					}
 
 					if (matched_move == Move::null) {
-						pine_warn("Invalid UCI: unmatched move '%s'\n", parts[i].c_str());
+						neocortex_warn("Invalid UCI: unmatched move '%s'\n", parts[i].c_str());
 						break;
 					}
 
@@ -173,7 +128,7 @@ void uci::begin(std::istream & in, std::ostream & out) {
 			}
 
 			searcher.load(pos);
-			pine_debug("Loaded position %s\n", pos.to_fen().c_str());
+			neocortex_debug("Loaded position %s\n", pos.to_fen().c_str());
 		}
 	}
 }

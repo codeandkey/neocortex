@@ -13,13 +13,13 @@
 #include "util.h"
 #include "platform.h"
 
-#ifdef PINE_WIN32
+#ifdef NEOCORTEX_WIN32
 #include <Windows.h>
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 #include <unistd.h>
 #endif
 
-namespace pine {
+namespace neocortex {
 	namespace log {
 		enum class ColorMode {
 			ALWAYS,
@@ -35,15 +35,44 @@ namespace pine {
 
 		constexpr ColorMode DEFAULT_COLORMODE = ColorMode::IF_TTY;
 
+		/**
+		 * Set the log color mode.
+		 *
+		 * @param mode Color mode to set.
+		 */
 		void set_color(ColorMode mode);
+
+		/**
+		 * Set the log verbosity level.
+		 *
+		 * @param level Maximum level to show.
+		 */
 		void set_level(int level);
 
+		/**
+		 * Gets the current log verbosity level.
+		 *
+		 * @return Log verbosity level.
+		 */
 		int get_level();
+
+		/**
+		 * Gets the current log color mode.
+		 *
+		 * @return Current color mode.
+		 */
 		ColorMode get_color();
 
 		/* Log mutex access */
 		extern std::recursive_mutex log_mutex;
 
+		/**
+		 * Writes a log message to the output if it should be displayed.
+		 * The log format and arguments should be formatted for printf().
+		 *
+		 * @param message Log format.
+		 * @param args Arguments to log.
+		 */
 		template <int level = DEFAULT_LEVEL, typename ... Args>
 		void write(std::string message, Args ... args) {
 			std::lock_guard<std::recursive_mutex> lock(log_mutex);
@@ -55,27 +84,27 @@ namespace pine {
 			/* Test if color supported */
 			bool color_supported = true;
 
-#if defined PINE_LINUX || defined PINE_OSX
+#if defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 			color_supported &= isatty(fileno(stderr));
 #endif
 
 			/* Write color reset */
 			if (color_supported) {
-#if defined PINE_WIN32
+#if defined NEOCORTEX_WIN32
 				SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), 15);
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 				fprintf(stderr, "\e[0;39m");
 #endif
 			}
 
 			/* Write timestamp tag */
-			fprintf(stderr, "%s ", pine::util::timestring().c_str());
+			fprintf(stderr, "%s ", neocortex::util::timestring().c_str());
 
 			if (color_supported) {
-#if defined PINE_WIN32
+#if defined NEOCORTEX_WIN32
 				static const int colors[] = { 12, 14, 15, 11 };
 				SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), colors[level]);
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 				static const char* colors[] = {
 					"\e[0;31m",
 					"\e[0;33m",
@@ -95,16 +124,16 @@ namespace pine {
 				"DEBUG   ",
 			};
 
-			fprintf(stderr, "%s\xb3 ", level_strings[level]);
+			fprintf(stderr, "%s > ", level_strings[level]);
 
 			/* Write content */
-			fprintf(stderr, "%s", pine::util::format(message, args...).c_str());
+			fprintf(stderr, "%s", neocortex::util::format(message, args...).c_str());
 
 			/* Write color reset */
 			if (color_supported) {
-#if defined PINE_WIN32
+#if defined NEOCORTEX_WIN32
 				SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), 15);
-#elif defined PINE_LINUX || defined PINE_OSX
+#elif defined NEOCORTEX_LINUX || defined NEOCORTEX_OSX
 				fprintf(stderr, "\e[0;39m");
 #endif
 			}
@@ -113,7 +142,7 @@ namespace pine {
 }
 
 /* Log convienience macros */
-#define pine_error pine::log::write<pine::log::ERR>
-#define pine_warn pine::log::write<pine::log::WARNING>
-#define pine_info pine::log::write<pine::log::INFO>
-#define pine_debug pine::log::write<pine::log::DEBUG>
+#define neocortex_error neocortex::log::write<neocortex::log::ERR>
+#define neocortex_warn neocortex::log::write<neocortex::log::WARNING>
+#define neocortex_info neocortex::log::write<neocortex::log::INFO>
+#define neocortex_debug neocortex::log::write<neocortex::log::DEBUG>

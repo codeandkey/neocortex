@@ -13,17 +13,17 @@
 #include <cassert>
 #include <random>
 
-using namespace pine;
+using namespace neocortex;
 
 static bool zobrist_initialized = false;
-static zobrist::key piece_keys[64][12], castle_keys[16], en_passant_keys[8], black_to_move_key;
+static zobrist::Key piece_keys[64][12], castle_keys[16], en_passant_keys[8], black_to_move_key;
 
 void zobrist::init() {
 	assert(!zobrist_initialized);
 
 	std::random_device rng;
 	std::mt19937_64 twister(rng()); /* TODO: tune a good zobrist seed */
-	std::uniform_int_distribution<zobrist::key> dist;
+	std::uniform_int_distribution<zobrist::Key> dist;
 
 	for (int sq = 0; sq < 64; ++sq) {
 		for (int p = 0; p < 12; ++p) {
@@ -43,24 +43,24 @@ void zobrist::init() {
 	zobrist_initialized = true;
 }
 
-zobrist::key zobrist::piece(int sq, int p) {
+zobrist::Key zobrist::piece(int sq, int p) {
 	assert(zobrist_initialized);
 	if (p == piece::null) return 0;
 	return piece_keys[sq][p];
 }
 
-zobrist::key zobrist::castle(int rights) {
+zobrist::Key zobrist::castle(int rights) {
 	assert(zobrist_initialized);
 	return castle_keys[rights];
 }
 
-zobrist::key zobrist::en_passant(int sq) {
+zobrist::Key zobrist::en_passant(int sq) {
 	assert(zobrist_initialized);
 	if (sq == square::null) return 0;
 	return en_passant_keys[square::file(sq)];
 }
 
-zobrist::key zobrist::black_to_move() {
+zobrist::Key zobrist::black_to_move() {
 	assert(zobrist_initialized);
 	return black_to_move_key;
 }

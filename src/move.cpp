@@ -12,7 +12,7 @@
 
 #include <cassert>
 
-using namespace pine;
+using namespace neocortex;
 
 Move::Move(int value) : value(value) {}
 

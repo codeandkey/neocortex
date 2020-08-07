@@ -5,11 +5,18 @@ LDFLAGS = -pthread
 SOURCES = $(wildcard src/*.cpp)
 OBJECTS = $(SOURCES:.cpp=.o)
 
-OUTPUT = pine
+OUTPUT = neocortex
 
-.PHONY: clean
+.PHONY: clean debug release
+.DEFAULT_GOAL := release
 
-all: $(OUTPUT)
+debug: CXXFLAGS+=-g
+debug: clean $(OUTPUT)
+
+release: CXXFLAGS+=-DNDEBUG
+release: clean $(OUTPUT)
+
+all: release
 
 $(OUTPUT): $(OBJECTS)
 	$(CXX) $^ $(LDFLAGS) -o $@

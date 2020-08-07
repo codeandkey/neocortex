@@ -15,20 +15,20 @@
 
 #include <iostream>
 
-using namespace pine;
+using namespace neocortex;
 
 int main(int argc, char** argv) {
-#ifdef PINE_DEBUG
+#ifdef NEOCORTEX_DEBUG
 	log::set_level(log::DEBUG);
 #endif
 
 	try {
-		pine_debug("Starting pine %s\n", PINE_VERSION);
-		pine_debug("Build: %s\n", PINE_BUILDTIME);
-		pine_debug("Platform: %s\n", PINE_PLATFORM);
+		neocortex_debug("Starting neocortex %s\n", NEOCORTEX_VERSION);
+		neocortex_debug("Build: %s\n", NEOCORTEX_BUILDTIME);
+		neocortex_debug("Platform: %s\n", NEOCORTEX_PLATFORM);
 
-#ifdef PINE_DEBUG
-		pine_warn("Compile time debug enabled. Performance will be slower!\n");
+#ifdef NEOCORTEX_DEBUG
+		neocortex_warn("Compile time debug enabled. Performance will be slower!\n");
 #endif
 
 		uci::connect(std::cin, std::cout);
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 		uci::begin(std::cin, std::cout);
 	}
 	catch (std::exception& e) {
-		pine_error("%s", e.what());
+		neocortex_error("Unhandled exception: %s\n", e.what());
 	}
 
 	return 0;

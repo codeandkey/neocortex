@@ -13,7 +13,7 @@
 
 #include <cassert>
 
-using namespace pine;
+using namespace neocortex;
 
 Position::Position() {
 	board = Board::standard();
@@ -420,7 +420,7 @@ bitboard Position::get_current_attacks(int color) {
 	return ply.back().attacks[color];
 }
 
-zobrist::key Position::get_tt_key() {
+zobrist::Key Position::get_tt_key() {
 	return ply.back().key;
 }
 

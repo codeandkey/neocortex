@@ -9,7 +9,7 @@
 
 #include <cassert>
 
-using namespace pine;
+using namespace neocortex;
 
 int square::at(int rank, int file) {
 	assert(rank >= 0 && rank < 8 && file >= 0 && file < 8);

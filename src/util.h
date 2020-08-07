@@ -14,9 +14,16 @@
 #include <stdexcept>
 #include <vector>
 
-namespace pine {
+namespace neocortex {
 	namespace util {
-		/* String formatting */
+		/**
+		 * Formats a string.
+		 * Behaves as printf() does, except the output is formatted to an std::string.
+		 *
+		 * @param fmt Format.
+		 * @param args Parameters.
+		 * @return Formatted string.
+		 */
 		template <typename ... Args>
 		std::string format(std::string fmt, Args ... args) {
 			int length = snprintf(nullptr, 0, fmt.c_str(), args ...) + 1;
@@ -33,7 +40,13 @@ namespace pine {
 			return std::string(buffer, buffer + length - 1);
 		}
 
-		/* Exception shorthand */
+		/**
+		 * Shorthand for formatting a runtime error.
+		 *
+		 * @param fmt Format string.
+		 * @param args Format parameters.
+		 * @return runtime_error exception with formatted string as content.
+		 */
 		template <typename ... Args>
 		std::exception fmterr(std::string fmt, Args ... args) {
 			return std::runtime_error(format(fmt, args...).c_str());
@@ -41,18 +54,64 @@ namespace pine {
 
 		/* Time manipulation */
 		typedef std::chrono::steady_clock::time_point time_point;
-		std::string timestring();
-		time_point now();
-		double elapsed(time_point reference);
-		int elapsed_ms(time_point reference);
 
-		/* String splitting */
+		/**
+		 * Gets a string representing the current time.
+		 *
+		 * @return Current time string.
+		 */
+		std::string timestring();
+
+		/**
+		 * Gets a reference to the current time.
+		 *
+		 * @return Current time point.
+		 */
+		time_point time_now();
+
+		/**
+		 * Gets the elapsed time in seconds since a reference point.
+		 *
+		 * @param reference Reference point.
+		 * @return Seconds elapsed since the reference point.
+		 */
+		double time_elapsed(time_point reference);
+
+		/**
+		 * Gets the elapsed time in milliseconds since a reference point.
+		 *
+		 * @param reference Reference point.
+		 * @return Milliseconds elapsed since the reference point.
+		 */
+		int time_elapsed_ms(time_point reference);
+
+		/**
+		 * Splits a string by a delimiter into a list of tokens.
+		 *
+		 * @param input Input string.
+		 * @param delim Delimiter character.
+		 * @return List of tokens in input, seperated by delimiter.
+		 */
 		std::vector<std::string> split(std::string input, char delim);
 
-		/* String trimming */
+		/**
+		 * Trims whitespace off of the head and tail of the input.
+		 *
+		 * @param input Input string.
+		 * @return Trimmed input.
+		 */
 		std::string trim(std::string input);
 
 		/* String joining */
+		/**
+		 * Joins a list of tokens together with a delimiter seperating them.
+		 * Inverse of util::split().
+		 *
+		 * @param parts Input tokens.
+		 * @param delim Delimiter.
+		 *
+		 * @return Joined string.
+		 */
 		std::string join(std::vector<std::string> parts, std::string delim);
 	}
 }

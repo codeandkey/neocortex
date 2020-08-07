@@ -7,7 +7,7 @@
 
 #include "bitboard.h"
 
-using namespace pine;
+using namespace neocortex;
 
 std::string bb::to_string(bitboard inp) {
 	std::string output;

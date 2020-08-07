@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{24960595-4769-4442-B998-A444B095D401}</ProjectGuid>
-    <RootNamespace>pine</RootNamespace>
+    <RootNamespace>neocortex</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -160,7 +160,7 @@
     <ClCompile Include="src\options.cpp" />
     <ClCompile Include="src\perft.cpp" />
     <ClCompile Include="src\piece.cpp" />
-    <ClCompile Include="src\pine.cpp" />
+    <ClCompile Include="src\neocortex.cpp" />
     <ClCompile Include="src\position.cpp" />
     <ClCompile Include="src\search.cpp" />
     <ClCompile Include="src\square.cpp" />

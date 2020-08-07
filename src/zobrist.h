@@ -9,15 +9,46 @@
 
 #include <cstdint>
 
-namespace pine {
+namespace neocortex {
 	namespace zobrist {
-		typedef uint64_t key;
+		typedef uint64_t Key;
 
+		/**
+		 * Initializes Zobrist keys.
+		 * Must be called before querying any keys.
+		 */
 		void init();
 
-		key piece(int sq, int piece);
-		key castle(int rights);
-		key en_passant(int file);
-		key black_to_move();
+		/**
+		 * Gets the Zobrist key for a piece on a square.
+		 *
+		 * @param sq Input square.
+		 * @param piece Input piece.
+		 * @return Zobrist key for piece on square.
+		 */
+		Key piece(int sq, int piece);
+
+		/**
+		 * Gets the Zobrist key for a castle rights key.
+		 *
+		 * @param rights Castle rights.
+		 * @return Associated Zobrist key.
+		 */
+		Key castle(int rights);
+
+		/**
+		 * Gets the zobrist key for an en-passant state.
+		 *
+		 * @param file File for en-passant.
+		 * @return Associated Zobrist key.
+		 */
+		Key en_passant(int file);
+
+		/**
+		 * Gets the black-to-move Zobrist key.
+		 *
+		 * @return Zobrist key.
+		 */
+		Key black_to_move();
 	}
 }

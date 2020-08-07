@@ -13,7 +13,7 @@
 #include <cassert>
 #include <iostream>
 
-using namespace pine;
+using namespace neocortex;
 
 static perft::results current_results;
 static void perft_movegen(Position& p, int depth);
@@ -36,24 +36,22 @@ perft::results perft::run(Position& p, int depth) {
 	current_results.castles = 0;
 	current_results.checks = 0;
 
-	util::time_point now = util::now();
+	util::time_point now = util::time_now();
 
 	perft_movegen(p, depth);
 
-	current_results.totaltime = util::elapsed(now);
+	current_results.totaltime = util::time_elapsed(now);
 	current_results.nps = (unsigned long) (current_results.nodes / current_results.totaltime);
 
 	return current_results;
 }
 
-void perft::write_run(Position& p, int depth, std::ostream& out) {
-	out << results::header();
+void perft::start(Position& p, int depth, std::ostream& out) {
+	std::cout << "| depth |     nodes |   captures |   checks | castles |   time |       nps |\n";
 
 	for (int i = 1; i <= depth; ++i) {
-		out << perft::run(p, i).to_row(i);
+		std::cout << perft::run(p, i).to_row(i);
 	}
-
-	out << "end of perft.\n";
 }
 
 void perft_movegen(Position& p, int depth) {
