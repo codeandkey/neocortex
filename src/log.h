@@ -127,7 +127,8 @@ namespace neocortex {
 			fprintf(stderr, "%s > ", level_strings[level]);
 
 			/* Write content */
-			fprintf(stderr, "%s", neocortex::util::format(message, args...).c_str());
+			std::string content = neocortex::util::format(message, args...);
+			fprintf(stderr, "%s", content.c_str());
 
 			/* Write color reset */
 			if (color_supported) {
