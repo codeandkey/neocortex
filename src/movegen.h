@@ -44,21 +44,92 @@ namespace neocortex {
 
 		class Generator {
 		public:
+			/**
+			 * Constructs a new move generator.
+			 *
+			 * @param position Position to generate for.
+			 * @param pv_move PV move to emit first, if present.
+			 * @param mode Move generation mode.
+			 */
 			Generator(Position& position, Move pv_move = Move::null, int mode = NORMAL);
 
-			std::list<Move> next_batch();
-			std::list<Move> generate();
+			/**
+			 * Gets the next pseudolegal move.
+			 * Returns a null move if there are none left.
+			 *
+			 * @return Next pseudolegal move.
+			 */
 			Move next();
 
-			std::list<Move> pawn_jumps(); /* pawn doublejumps */
-			std::list<Move> pawn_advances(); /* pawn doublejumps */
-			std::list<Move> pawn_promotions(); /* pawn promotions */
-			std::list<Move> captures(int attacker, int victim); /* all captures */
-			std::list<Move> quiets(int type);
-			std::list<Move> castles();
-
+			/**
+			 * Generates all pseudolegal moves simultaneously without staging.
+			 * Used for perft runs.
+			 *
+			 * @return All pseudolegal moves.
+			 */
 			std::list<std::list<Move>> generate_perft(); /* generate all pseudolegal moves for perft */
 		private:
+			/**
+			 * Gets the next stage batch of moves. Advances the stage.
+			 * Used internally.
+			 *
+			 * @return Next stage batch.
+			 */
+			std::list<Move> next_batch();
+
+			/**
+			 * Gets the next batch of moves. Always returns at least one move,
+			 * or an empty list if the movegen is completed.
+			 *
+			 * @return Next move batch.
+			 */
+			std::list<Move> generate();
+
+			/**
+			 * Generates pawn double jump moves for the position.
+			 *
+			 * @return Pseudolegal moves.
+			 */
+			std::list<Move> pawn_jumps();
+
+			/**
+			 * Generates nonpromoting pawn advances for the position.
+			 *
+			 * @return Pseudolegal moves.
+			 */
+			std::list<Move> pawn_advances();
+
+			/**
+			 * Generates promoting pawn moves for the position.
+			 *
+			 * @return Pseudolegal moves.
+			 */
+			std::list<Move> pawn_promotions(); /* pawn promotions */
+
+			/**
+			 * Generates captures for the position.
+			 *
+			 * @param attacker Attacking piece type.
+			 * @param victim Victim piece type.
+			 *
+			 * @return Pseudolegal moves.
+			 */
+			std::list<Move> captures(int attacker, int victim); /* all captures */
+
+			/**
+			 * Generates quiet moves for the position.
+			 *
+			 * @return Pseudolegal moves.
+			 */
+			std::list<Move> quiets(int type);
+
+			/**
+			 * Generates castles moves for the position.
+			 *
+			 * @return Pseudolegal moves.
+			 */
+			std::list<Move> castles();
+
 			int stage, mode;
 			Move pv_move;
 
