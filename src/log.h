@@ -35,15 +35,44 @@ namespace neocortex {
 
 		constexpr ColorMode DEFAULT_COLORMODE = ColorMode::IF_TTY;
 
+		/**
+		 * Set the log color mode.
+		 *
+		 * @param mode Color mode to set.
+		 */
 		void set_color(ColorMode mode);
+
+		/**
+		 * Set the log verbosity level.
+		 *
+		 * @param level Maximum level to show.
+		 */
 		void set_level(int level);
 
+		/**
+		 * Gets the current log verbosity level.
+		 *
+		 * @return Log verbosity level.
+		 */
 		int get_level();
+
+		/**
+		 * Gets the current log color mode.
+		 *
+		 * @return Current color mode.
+		 */
 		ColorMode get_color();
 
 		/* Log mutex access */
 		extern std::recursive_mutex log_mutex;
 
+		/**
+		 * Writes a log message to the output if it should be displayed.
+		 * The log format and arguments should be formatted for printf().
+		 *
+		 * @param message Log format.
+		 * @param args Arguments to log.
+		 */
 		template <int level = DEFAULT_LEVEL, typename ... Args>
 		void write(std::string message, Args ... args) {
 			std::lock_guard<std::recursive_mutex> lock(log_mutex);
