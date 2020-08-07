@@ -11,18 +11,11 @@ OUTPUT = neocortex
 .DEFAULT_GOAL := release
 
 debug: CXXFLAGS+=-g
-release: CXXFLAGS+=-DNDEBUG
-
 debug: clean $(OUTPUT)
-	@if [ -e $(dirname $0)/build-release ]; then make clean; fi
-	@rm -f .build-release
-	@touch .build-debug
 
+release: CXXFLAGS+=-DNDEBUG
 release: clean $(OUTPUT)
-	@if [ -e $(dirname $0)/build-debug ]; then make clean; fi
-	@rm -f .build-debug
-	@touch .build-release
-	
+
 all: release
 
 $(OUTPUT): $(OBJECTS)
