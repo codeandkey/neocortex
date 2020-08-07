@@ -27,7 +27,20 @@ namespace neocortex {
 
 		constexpr size_t DEFAULT_MIB = 128;
 
+		/**
+		 * Initializes the transposition table.
+		 * Must be called before any lookups.
+		 *
+		 * @param mib Table memory to allocate, in MiB.
+		 */
 		void init(size_t mib = DEFAULT_MIB);
+
+		/**
+		 * Looks up an entry in the table.
+		 *
+		 * @param key Zobrist key.
+		 * @return Matching entry for key.
+		 */
 		entry* lookup(zobrist::Key key);
 	}
 }
