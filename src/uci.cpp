@@ -11,7 +11,6 @@
 #include "util.h"
 #include "search.h"
 #include "position.h"
-#include "options.h"
 
 #include <cassert>
 #include <iostream>
