@@ -33,7 +33,7 @@ void search::Search::go(std::vector<std::string> args, std::ostream& out) {
 		search_thread.join();
 	}
 
-	wtime = btime = winc = binc = movetime = depth = nodes = -1;
+	allocated_time = wtime = btime = winc = binc = movetime = depth = nodes = -1;
 	infinite = false;
 
 	/* Parse UCI options. */
@@ -278,8 +278,6 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 				return value;
 			}
 
-			if (value >= beta) return beta;
-
 			if (value > alpha) {
 				alpha = value;
 
@@ -287,6 +285,13 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 				pv_line->len = local_pv.len + 1;
 
 				memcpy(pv_line->moves + 1, local_pv.moves, local_pv.len * sizeof local_pv.moves[0]);
+			}
+
+			if (alpha >= beta) {
+				pv_line->moves[0] = next_move;
+				pv_line->len = local_pv.len + 1;
+
+				return beta;
 			}
 		}
 		else {
