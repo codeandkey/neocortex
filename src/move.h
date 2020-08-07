@@ -18,23 +18,101 @@
 namespace neocortex {
 	class Move {
 	public:
+		/**
+		 * Constructs a move from an encoded value.
+		 */
 		Move(int value = null);
-		Move(int src, int dst, int flags = 0, int ptype = piece::PAWN);
-		Move(std::string uci);  /* note: will not add any flags except promotion */
 
+		/**
+		 * Constructs a move.
+		 *
+		 * @param src Source square.
+		 * @param dst Destination square.
+		 * @param flags Move flags.
+		 * @param ptype Promotion type.
+		 */
+		Move(int src, int dst, int flags = 0, int ptype = piece::PAWN);
+
+		/**
+		 * Parses a move from UCI.
+		 * Does not apply any flags, just sets the source and dest squares as well as the promotion type.
+		 *
+		 * @param uci Input uci.
+		 */
+		Move(std::string uci);
+
+		/**
+		 * Converts a move to a UCI string.
+		 *
+		 * @return UCI string.
+		 */
 		std::string to_uci();
+
+		/**
+		 * Converts a move to PGN.
+		 *
+		 * @param context Current board context.
+		 */
 		std::string to_pgn(Board& context);
+
+		/**
+		 * Tests if this move is not null.
+		 *
+		 * @return true if this move is not null.
+		 */
 		bool is_valid();
+
+		/**
+		 * Tests if this move matches with a UCI string.
+		 * This is used for matching input UCI moves to generated actual moves.
+		 *
+		 * @param uci Input uci.
+		 * @return true if this move can be represented with the input.
+		 */
 		bool match_uci(std::string uci);
 
+		/**
+		 * Gets the move source square.
+		 *
+		 * @return Source square.
+		 */
 		int src();
+
+		/**
+		 * Gets the move destination square.
+		 *
+		 * @return Destination square.
+		 */
 		int dst();
+
+		/**
+		 * Gets the move promotion type, or null if there is none set.
+		 *
+		 * @return Promotion type, or null.
+		 */
 		int ptype();
 
+		/**
+		 * Sets a flag on this move.
+		 *
+		 * @param flag Flag to set.
+		 * @return Reference to self.
+		 */
 		Move& set(int flag);
+
+		/**
+		 * Queries a flag on this move.
+		 *
+		 * @param flag Flag to get
+		 * @return true if flag is set, false otherwise.
+		 */
 		bool get(int flag);
 
+		/**
+		 * Shorthand for to_uci().
+		 */
 		operator std::string();
+
 		bool operator==(const Move& rhs);
 		bool operator!=(const Move& rhs);
 
