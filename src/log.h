@@ -124,7 +124,7 @@ namespace neocortex {
 				"DEBUG   ",
 			};
 
-			fprintf(stderr, "%s\xb3 ", level_strings[level]);
+			fprintf(stderr, "%s > ", level_strings[level]);
 
 			/* Write content */
 			fprintf(stderr, "%s", neocortex::util::format(message, args...).c_str());
