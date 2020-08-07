@@ -12,11 +12,14 @@
 #include "eval_consts.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <cassert>
 #include <cmath>
 
 using namespace neocortex;
+
+static int safe_parseint(std::vector<std::string> parts, size_t ind);
 
 search::Search::Search(Position root) : root(root) {}
 
@@ -24,11 +27,33 @@ search::Search::~Search() {
 	stop();
 }
 
-void search::Search::go(std::istream& in, std::ostream& out) {
+void search::Search::go(std::vector<std::string> args, std::ostream& out) {
 	if (search_thread.joinable()) {
 		stop();
 		search_thread.join();
 	}
+
+	wtime = btime = winc = binc = movetime = depth = nodes = -1;
+	infinite = false;
+
+	/* Parse UCI options. */
+	for (size_t i = 1; i < args.size(); ++i) {
+		if (isdigit(args[i][0])) continue;
+
+		if (args[i] == "wtime") wtime = safe_parseint(args, i + 1);
+		else if (args[i] == "btime") btime = safe_parseint(args, i + 1);
+		else if (args[i] == "winc") winc = safe_parseint(args, i + 1);
+		else if (args[i] == "binc") binc = safe_parseint(args, i + 1);
+		else if (args[i] == "depth") depth = safe_parseint(args, i + 1);
+		else if (args[i] == "nodes") nodes = safe_parseint(args, i + 1);
+		else if (args[i] == "movetime") movetime = safe_parseint(args, i + 1);
+		else if (args[i] == "infinite") infinite = true;
+		else {
+			throw util::fmterr("Invalid argument: %s", args[i].c_str());
+		}
+	}
+
+	neocortex_debug("Parsed all arguments.\n");
 
 	should_stop = false;
 	search_thread = std::thread([&] { worker(out); });
@@ -60,7 +85,7 @@ bool search::Search::is_time_expired() {
 	return (allocated_time > 0) && (elapsed() >= allocated_time);
 }
 
-bool search::Search::set_debug(bool enabled) {
+void search::Search::set_debug(bool enabled) {
 	this->debug = enabled;
 }
 
@@ -187,7 +212,7 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 	int value;
 
 	++numnodes;
-	if (nodes > 0 && numnodes > (unsigned) nodes) return score::INCOMPLETE;
+	if (nodes > 0 && numnodes > nodes) return score::INCOMPLETE;
 
 	if (is_time_expired() || should_stop) {
 		return score::INCOMPLETE;
@@ -313,7 +338,7 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 	}
 
 	++numnodes;
-	if (nodes > 0 && numnodes > (unsigned) nodes) return score::INCOMPLETE;
+	if (nodes > 0 && numnodes > nodes) return score::INCOMPLETE;
 
 	if (!depth || root.quiet()) {
 		pv_line->len = 0;
@@ -364,4 +389,14 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 	}
 
 	return alpha;
+}
+
+int safe_parseint(std::vector<std::string> parts, size_t ind) {
+	if (ind >= parts.size()) {
+		throw std::runtime_error("Expected argument!");
+	}
+
+	neocortex_debug("Parsing %s\n", parts[ind].c_str());
+
+	return std::stoi(parts[ind]);
 }

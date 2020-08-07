@@ -32,7 +32,7 @@ namespace neocortex {
 			bool is_time_expired();
 			void set_debug(bool enabled);
 
-			void go(std::istream& in, std::ostream& out);
+			void go(std::vector<std::string> parts, std::ostream& out);
 			void stop();
 
 			void load(Position p);
@@ -52,7 +52,8 @@ namespace neocortex {
 			std::atomic<bool> debug, should_stop;
 
 			util::time_point search_starttime, depth_starttime;
-			unsigned long numnodes;
+			std::atomic<int> wtime, btime, winc, binc, movetime, allocated_time, nodes, numnodes, depth;
+			std::atomic<bool> infinite;
 		};
 	}
 }
