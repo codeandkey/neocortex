@@ -175,7 +175,7 @@ void search::Search::worker(std::ostream& out) {
 
 		out << " nodes " << numnodes;
 		out << " time " << elapsed_iter();
-		out << " nps " << (numnodes * 1000) / (elapsed_iter() + 1);
+		out << " nps " << ((unsigned long) numnodes * 1000) / (elapsed_iter() + 1);
 		out << " score " << score::to_uci(value);
 		out << " pv " << next_pv.to_string();
 		out << "\n";
