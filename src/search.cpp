@@ -166,6 +166,11 @@ void search::Search::worker(std::ostream& out) {
 
 		value = next_value;
 
+		int iter_time = elapsed_iter();
+
+		assert(iter_time >= 0);
+		if (!iter_time) iter_time = 1;
+
 		/* Write info from the results. */
 		out << "info depth " << next_depth;
 
@@ -174,15 +179,15 @@ void search::Search::worker(std::ostream& out) {
 		}
 
 		out << " nodes " << numnodes;
-		out << " time " << elapsed_iter();
-		out << " nps " << ((unsigned long) numnodes * 1000) / (elapsed_iter() + 1);
+		out << " time " << iter_time;
+		out << " nps " << (int) (1000.0 * (double) numnodes / (double) iter_time);
 		out << " score " << score::to_uci(value);
 		out << " pv " << next_pv.to_string();
 		out << "\n";
 		out.flush();
 
 		ebf_nodes[next_depth] = numnodes;
-		ebf_times[next_depth] = (elapsed_iter());
+		ebf_times[next_depth] = iter_time;
 
 		if (next_depth >= 2) {
 			ebf = sqrtf((float) ebf_nodes[next_depth] / (float) ebf_nodes[next_depth - 1]);
