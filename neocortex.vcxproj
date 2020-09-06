@@ -136,7 +136,6 @@
     <ClInclude Include="src\magic_consts.h" />
     <ClInclude Include="src\move.h" />
     <ClInclude Include="src\movegen.h" />
-    <ClInclude Include="src\options.h" />
     <ClInclude Include="src\perft.h" />
     <ClInclude Include="src\piece.h" />
     <ClInclude Include="src\platform.h" />
@@ -155,12 +154,11 @@
     <ClCompile Include="src\eval.cpp" />
     <ClCompile Include="src\eval_consts.cpp" />
     <ClCompile Include="src\log.cpp" />
+    <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\move.cpp" />
     <ClCompile Include="src\movegen.cpp" />
-    <ClCompile Include="src\options.cpp" />
     <ClCompile Include="src\perft.cpp" />
     <ClCompile Include="src\piece.cpp" />
-    <ClCompile Include="src\neocortex.cpp" />
     <ClCompile Include="src\position.cpp" />
     <ClCompile Include="src\search.cpp" />
     <ClCompile Include="src\square.cpp" />
