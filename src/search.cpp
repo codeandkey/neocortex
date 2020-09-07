@@ -275,7 +275,15 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 		if (root.make_move(next_move)) {
 			num_moves++;
 
-			value = score::parent(-alphabeta(depth - 1, -beta, -alpha, &local_pv));
+			if (next_move == tt_move) {
+				value = score::parent(-alphabeta(depth - 1, -beta, -alpha, &local_pv));
+			} else {
+				value = score::parent(-alphabeta(depth - 1, -alpha - 1, -alpha, &local_pv));
+
+				if (alpha < value && value < beta) {
+					value = score::parent(-alphabeta(depth - 1, -beta, -value, &local_pv));
+				}
+			}
 
 			root.unmake_move(next_move);
 
