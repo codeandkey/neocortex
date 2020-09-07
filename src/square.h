@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <string>
 
 namespace neocortex {
@@ -14,12 +15,25 @@ namespace neocortex {
 		constexpr int null = -1;
 
 		/**
+		 * Tests if a square is non-null.
+		 *
+		 * @param sq Input square.
+		 * @return true if square is not null, false otherwise.
+		 */
+		inline bool is_valid(int sq) {
+			return sq >= 0 && sq < 64;
+		}
+
+		/**
 		 * Gets a square from board coordinates.
 		 *
 		 * @param rank Input rank (0-7 inclusive).
 		 * @param file Input file (0-7 inclusive).
 		 */
-		int at(int rank, int file);
+		inline int at(int rank, int file) {
+			assert(rank >= 0 && rank < 8 && file >= 0 && file < 8);
+			return rank * 8 + file;
+		}
 
 		/**
 		 * Parses a square from a FEN/UCI string.
@@ -35,7 +49,10 @@ namespace neocortex {
 		 * @param sq Input square.
 		 * @return Square rank index.
 		 */
-		int rank(int sq);
+		inline int rank(int sq) {
+			assert(is_valid(sq));
+			return sq >> 3;
+		}
 
 		/**
 		 * Gets a square's file.
@@ -43,7 +60,10 @@ namespace neocortex {
 		 * @param sq Input square.
 		 * @return Square file index.
 		 */
-		int file(int sq);
+		inline int file(int sq) {
+			assert(is_valid(sq));
+			return sq & 7;
+		}
 
 		/**
 		 * Converts a square to a FEN/UCI string.
@@ -52,13 +72,5 @@ namespace neocortex {
 		 * @return FEN string.
 		 */
 		std::string to_uci(int sq);
-
-		/**
-		 * Tests if a square is non-null.
-		 *
-		 * @param sq Input square.
-		 * @return true if square is not null, false otherwise.
-		 */
-		bool is_valid(int sq);
 	}
 }
