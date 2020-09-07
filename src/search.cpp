@@ -252,10 +252,10 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 
 				return value;
 			case tt::entry::LOWERBOUND:
-                if (entry->value > alpha) alpha = entry->value;
+				if (entry->value > alpha) alpha = entry->value;
 				break;
 			case tt::entry::UPPERBOUND:
-                if (entry->value < beta) beta = entry->value;
+				if (entry->value < beta) beta = entry->value;
 				break;
 			}
 		}
