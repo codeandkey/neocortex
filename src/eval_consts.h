@@ -40,5 +40,7 @@ namespace neocortex {
 		constexpr int ADV_PASSEDPAWN_EG = 16;
 		constexpr int KING_ADV_MG = -35;
 		constexpr int KING_ADV_EG = 10;
+		constexpr int PIN_BONUS = 5;
+		constexpr int ABSPIN_BONUS = 3;
 	}
 }

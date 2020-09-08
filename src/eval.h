@@ -92,6 +92,6 @@ namespace neocortex {
 		int adv_pawn_mg[2], adv_pawn_eg[2];
 		int adv_passedpawn_mg[2], adv_passedpawn_eg[2];
 		int king_adv_mg[2], king_adv_eg[2];
-		int pin_bonus[2];
+		int pin_bonus[2], abspin_bonus[2];;
 	};
 }

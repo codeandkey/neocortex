@@ -182,7 +182,7 @@ Eval::Eval(Position& pos) : pos(pos) {
 
 	/* Compute pin bonus */
 	for (int c = 0; c < 2; ++c) {
-		pin_bonus[c] = 0;
+		pin_bonus[c] = abspin_bonus[c] = 0;
 
 		/* Search sliding attack pieces */
 		bitboard bishops = pos.get_board().get_color_occ(c) & pos.get_board().get_piece_occ(piece::BISHOP);
@@ -193,9 +193,13 @@ Eval::Eval(Position& pos) : pos(pos) {
 			/* Find potential pin attacks */
 			bitboard actual_attacks = attacks::bishop(next, pos.get_board().get_global_occ());
 			bitboard pin_attacks = attacks::bishop(next, 0) & ~actual_attacks;
+			bitboard pins = bb::popcount(pin_attacks & pos.get_board().get_color_occ(!c));
 
 			/* Search for pinned pieces */
-			pin_bonus[c] += bb::popcount(pin_attacks & pos.get_board().get_color_occ(!c));
+			pin_bonus[c] += bb::popcount(pins) * eval::PIN_BONUS;
+
+			/* Apply another bonus for pinned kings */
+			abspin_bonus[c] += bb::popcount(pins & pos.get_board().get_piece_occ(piece::KING)) * eval::PIN_BONUS;
 		}
 
 		bitboard rooks = pos.get_board().get_color_occ(c) & pos.get_board().get_piece_occ(piece::ROOK);
@@ -206,9 +210,13 @@ Eval::Eval(Position& pos) : pos(pos) {
 			/* Find potential pin attacks */
 			bitboard actual_attacks = attacks::rook(next, pos.get_board().get_global_occ());
 			bitboard pin_attacks = attacks::rook(next, 0) & ~actual_attacks;
+			bitboard pins = bb::popcount(pin_attacks & pos.get_board().get_color_occ(!c));
 
 			/* Search for pinned pieces */
-			pin_bonus[c] += bb::popcount(pin_attacks & pos.get_board().get_color_occ(!c));
+			pin_bonus[c] += bb::popcount(pins) * eval::PIN_BONUS;
+
+			/* Apply another bonus for pinned kings */
+			abspin_bonus[c] += bb::popcount(pins & pos.get_board().get_piece_occ(piece::KING)) * eval::PIN_BONUS;
 		}
 
 		bitboard queens = pos.get_board().get_color_occ(c) & pos.get_board().get_piece_occ(piece::QUEEN);
@@ -219,9 +227,13 @@ Eval::Eval(Position& pos) : pos(pos) {
 			/* Find potential pin attacks */
 			bitboard actual_attacks = attacks::queen(next, pos.get_board().get_global_occ());
 			bitboard pin_attacks = attacks::queen(next, 0) & ~actual_attacks;
+			bitboard pins = bb::popcount(pin_attacks & pos.get_board().get_color_occ(!c));
 
 			/* Search for pinned pieces */
-			pin_bonus[c] += bb::popcount(pin_attacks & pos.get_board().get_color_occ(!c));
+			pin_bonus[c] += bb::popcount(pins) * eval::PIN_BONUS;
+
+			/* Apply another bonus for pinned kings */
+			abspin_bonus[c] += bb::popcount(pins & pos.get_board().get_piece_occ(piece::KING)) * eval::PIN_BONUS;
 		}
 	}
 
@@ -338,6 +350,7 @@ std::string Eval::to_table() {
 	output += util::format("adv_king_mg | %5d | %5d |\n", king_adv_mg[piece::WHITE], king_adv_mg[piece::BLACK]);
 	output += util::format("adv_king_eg | %5d | %5d |\n", king_adv_eg[piece::WHITE], king_adv_eg[piece::BLACK]);
 	output += util::format("pin_bonus   | %5d | %5d |\n", pin_bonus[piece::WHITE], pin_bonus[piece::BLACK]);
+	output += util::format("abspin_bonus   | %5d | %5d |\n", abspin_bonus[piece::WHITE], abspin_bonus[piece::BLACK]);
 	output += util::format("phase       | %13d |\n", phase);
 
 	return output;
