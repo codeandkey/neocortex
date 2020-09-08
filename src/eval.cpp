@@ -180,6 +180,51 @@ Eval::Eval(Position& pos) : pos(pos) {
 		king_adv_eg[c] += adv * eval::KING_ADV_EG;
 	}
 
+	/* Compute pin bonus */
+	for (int c = 0; c < 2; ++c) {
+		pin_bonus[c] = 0;
+
+		/* Search sliding attack pieces */
+		bitboard bishops = pos.get_board().get_color_occ(c) & pos.get_board().get_piece_occ(piece::BISHOP);
+
+		while (bishops) {
+			int next = bb::poplsb(bishops);
+
+			/* Find potential pin attacks */
+			bitboard actual_attacks = attacks::bishop(next, pos.get_board().get_global_occ());
+			bitboard pin_attacks = attacks::bishop(next, 0) & ~actual_attacks;
+
+			/* Search for pinned pieces */
+			pin_bonus[c] += bb::popcount(pin_attacks & pos.get_board().get_color_occ(!c));
+		}
+
+		bitboard rooks = pos.get_board().get_color_occ(c) & pos.get_board().get_piece_occ(piece::ROOK);
+
+		while (rooks) {
+			int next = bb::poplsb(rooks);
+
+			/* Find potential pin attacks */
+			bitboard actual_attacks = attacks::rook(next, pos.get_board().get_global_occ());
+			bitboard pin_attacks = attacks::rook(next, 0) & ~actual_attacks;
+
+			/* Search for pinned pieces */
+			pin_bonus[c] += bb::popcount(pin_attacks & pos.get_board().get_color_occ(!c));
+		}
+
+		bitboard queens = pos.get_board().get_color_occ(c) & pos.get_board().get_piece_occ(piece::QUEEN);
+
+		while (queens) {
+			int next = bb::poplsb(queens);
+
+			/* Find potential pin attacks */
+			bitboard actual_attacks = attacks::queen(next, pos.get_board().get_global_occ());
+			bitboard pin_attacks = attacks::queen(next, 0) & ~actual_attacks;
+
+			/* Search for pinned pieces */
+			pin_bonus[c] += bb::popcount(pin_attacks & pos.get_board().get_color_occ(!c));
+		}
+	}
+
 	/* Compute blocking pawn penalties, passed pawn bonus */
 	blocking_pawns[piece::WHITE] = blocking_pawns[piece::BLACK] = 0;
 	passed_pawns[piece::WHITE] = passed_pawns[piece::BLACK] = 0;
@@ -266,6 +311,8 @@ int Eval::to_score() {
 
 	score += (phase * adv_king_score_mg) / 256;
 	score += ((256 - phase) * adv_king_score_eg) / 256;
+
+	score += pin_bonus[ctm] - pin_bonus[opp];
 	
 	return score + eval::TEMPO_BONUS;
 }
@@ -290,6 +337,7 @@ std::string Eval::to_table() {
 	output += util::format("adv_psd_eg  | %5d | %5d |\n", adv_passedpawn_eg[piece::WHITE], adv_passedpawn_eg[piece::BLACK]);
 	output += util::format("adv_king_mg | %5d | %5d |\n", king_adv_mg[piece::WHITE], king_adv_mg[piece::BLACK]);
 	output += util::format("adv_king_eg | %5d | %5d |\n", king_adv_eg[piece::WHITE], king_adv_eg[piece::BLACK]);
+	output += util::format("pin_bonus   | %5d | %5d |\n", pin_bonus[piece::WHITE], pin_bonus[piece::BLACK]);
 	output += util::format("phase       | %13d |\n", phase);
 
 	return output;
