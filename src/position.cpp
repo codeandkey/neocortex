@@ -122,9 +122,31 @@ Board& Position::get_board() {
 }
 
 bool Position::make_move(Move move) {
-	assert(move.is_valid());
-
 	struct State last_state = ply.back(), next_state = last_state;
+
+	if (move == Move::null) {
+		/* Perform null move */
+		next_state.en_passant_square = square::null;
+		next_state.captured_piece = piece::null;
+		next_state.last_move = Move::null;
+		
+		if (color_to_move == piece::BLACK) {
+			next_state.fullmove_number++;
+		}
+
+		next_state.halfmove_clock++;
+		next_state.captured_square = square::null;
+
+		color_to_move = !color_to_move;
+
+		if (color_to_move == piece::BLACK) {
+			ply.back().key ^= zobrist::black_to_move();
+		}
+
+		ply.push_back(next_state);
+
+		return true;
+	}
 
 	/* reset attack masks */
 	next_state.attacks[piece::WHITE] = 0ULL;
@@ -266,6 +288,11 @@ void Position::unmake_move(Move move) {
 	ply.pop_back();
 
 	color_to_move = !color_to_move;
+
+	/* Unmake null move */
+	if (move == Move::null) {
+		return;
+	}
 
 	/* Unmake castling moves */
 	if (move.get(Move::CASTLE_KINGSIDE)) {

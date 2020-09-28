@@ -272,6 +272,26 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 	Move next_move;
 	int num_moves = 0;
 
+	/* Null-move pruning */
+
+	if (!root.check()) {
+		root.make_move(Move::null);
+
+		int r = 3;
+
+		if (depth >= 7 && bb::popcount(root.get_board().get_color_occ(root.get_color_to_move())) > 3) {
+			++r; /* Extend reduction in large searches */
+		}
+
+		value = score::parent(-alphabeta(max(depth - r, 0), -beta, -alpha, &local_pv));
+
+		root.unmake_move(Move::null);
+
+		if (value >= beta) {
+			return beta;
+		}
+	}
+
 	while ((next_move = g.next()).is_valid()) {
 		if (root.make_move(next_move)) {
 			num_moves++;
