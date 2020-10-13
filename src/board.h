@@ -97,6 +97,14 @@ namespace neocortex {
 		int get_piece(int sq);
 
 		/**
+		 * Gets the occupancy of a square.
+		 *
+		 * @param sq Square to retrieve.
+		 * @return true if the square is occupied.
+		 */
+		bool is_occ(int sq);
+
+		/**
 		 * Gets the zobrist key for the board state.
 		 *
 		 * @return Current zobrist key.
@@ -122,6 +130,10 @@ namespace neocortex {
 
 	inline bitboard Board::get_piece_occ(int t) {
 		return piece_occ[t];
+	}
+
+	inline bool Board::is_occ(int sq) {
+		return piece::is_valid(state[sq]);
 	}
 
 	inline zobrist::Key Board::get_tt_key() {
