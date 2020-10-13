@@ -33,7 +33,7 @@ void search::Search::go(std::vector<std::string> args, std::ostream& out) {
 		search_thread.join();
 	}
 
-	allocated_time = wtime = btime = winc = binc = movetime = depth = nodes = -1;
+	allocated_time = wtime = btime = winc = binc = movetime = maxdepth = nodes = -1;
 	infinite = false;
 
 	/* Parse UCI options. */
@@ -44,7 +44,7 @@ void search::Search::go(std::vector<std::string> args, std::ostream& out) {
 		else if (args[i] == "btime") btime = safe_parseint(args, i + 1);
 		else if (args[i] == "winc") winc = safe_parseint(args, i + 1);
 		else if (args[i] == "binc") binc = safe_parseint(args, i + 1);
-		else if (args[i] == "depth") depth = safe_parseint(args, i + 1);
+		else if (args[i] == "depth") maxdepth = safe_parseint(args, i + 1);
 		else if (args[i] == "nodes") nodes = safe_parseint(args, i + 1);
 		else if (args[i] == "movetime") movetime = safe_parseint(args, i + 1);
 		else if (args[i] == "infinite") infinite = true;
@@ -142,7 +142,7 @@ void search::Search::worker(std::ostream& out) {
 	while (1) {
 		/* If the search should stop, break now and exit. */
 		if (should_stop) break;
-		if (!infinite && (depth >= 0) && next_depth > depth) break;
+		if (!infinite && (maxdepth >= 0) && next_depth > maxdepth) break;
 		if (is_time_expired()) break;
 
 		/* If we have an EBF and can predict the time of the next iter, try and do an early exit */
@@ -172,7 +172,7 @@ void search::Search::worker(std::ostream& out) {
 
 		out << " nodes " << numnodes;
 		out << " time " << elapsed_iter();
-		out << " nps " << (numnodes * 1000) / (elapsed_iter() + 1);
+		out << " nps " << ((unsigned long) numnodes * 1000) / (elapsed_iter() + 1);
 		out << " score " << score::to_uci(value);
 		out << " pv " << next_pv.to_string();
 		out << "\n";
@@ -200,10 +200,10 @@ int search::Search::search_sync(int depth, int alpha, int beta, PV* pv_line) {
 	numnodes = 0;
 	depth_starttime = util::time_now();
 
-	return alphabeta(depth, alpha, beta, pv_line);
+	return alphabeta(depth, alpha, beta, pv_line, 0);
 }
 
-int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
+int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line, int ply) {
 	PV local_pv;
 	Move tt_move;
 	int value;
@@ -221,7 +221,7 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 	}
 
 	if (!depth) {
-		return quiescence(search::QDEPTH, alpha, beta, pv_line);
+		return quiescence(search::QDEPTH, alpha, beta, pv_line, ply + 1);
 	}
 
 	int alpha_orig = alpha;
@@ -234,7 +234,7 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 				// Re-search under pv node to regenerate complete pv, should be fast as all should hit TT
 				root.make_move(entry->pv_move);
 
-				value = score::parent(-alphabeta(depth - 1, -beta, -alpha, &local_pv));
+				value = score::parent(-alphabeta(depth - 1, -beta, -alpha, &local_pv, ply + 1));
 
 				pv_line->moves[0] = entry->pv_move;
 				pv_line->len = local_pv.len + 1;
@@ -260,6 +260,8 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 	}
 
 	movegen::Generator g(root, tt_move);
+	g.set_killers(killers[ply]);
+
 	Move next_move;
 	int num_moves = 0;
 
@@ -268,12 +270,12 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 			num_moves++;
 
 			if (next_move == tt_move) {
-				value = score::parent(-alphabeta(depth - 1, -beta, -alpha, &local_pv));
+				value = score::parent(-alphabeta(depth - 1, -beta, -alpha, &local_pv, ply + 1));
 			} else {
-				value = score::parent(-alphabeta(depth - 1, -alpha - 1, -alpha, &local_pv));
+				value = score::parent(-alphabeta(depth - 1, -alpha - 1, -alpha, &local_pv, ply + 1));
 
 				if (alpha < value && value < beta) {
-					value = score::parent(-alphabeta(depth - 1, -beta, -value, &local_pv));
+					value = score::parent(-alphabeta(depth - 1, -beta, -value, &local_pv, ply + 1));
 				}
 			}
 
@@ -296,7 +298,12 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 				pv_line->moves[0] = next_move;
 				pv_line->len = local_pv.len + 1;
 
-				return beta;
+				memcpy(pv_line->moves + 1, local_pv.moves, local_pv.len * sizeof local_pv.moves[0]);
+
+				killers[ply][1] = killers[ply][0];
+				killers[ply][0] = next_move;
+
+				break;
 			}
 		}
 		else {
@@ -335,7 +342,7 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 	return alpha;
 }
 
-int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
+int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line, int ply) {
 	PV local_pv;
 
 	if (is_time_expired() || should_stop) {
@@ -363,15 +370,13 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 		if (root.make_move(next_move)) {
 			num_moves++;
 
-			int value = score::parent(-quiescence(depth - 1, -beta, -alpha, &local_pv));
+			int value = score::parent(-quiescence(depth - 1, -beta, -alpha, &local_pv, ply + 1));
 
 			root.unmake_move(next_move);
 
 			if (value == score::INCOMPLETE) {
 				return value;
 			}
-
-			if (value >= beta) return beta;
 
 			if (value > alpha) {
 				alpha = value;
@@ -380,6 +385,10 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 				pv_line->len = local_pv.len + 1;
 
 				memcpy(pv_line->moves + 1, local_pv.moves, local_pv.len * sizeof local_pv.moves[0]);
+			}
+
+			if (alpha >= beta) {
+				break;
 			}
 		}
 		else {

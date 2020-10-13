@@ -35,6 +35,7 @@ Position::Position() {
 
 	ply.push_back(first_state);
 	color_to_move = piece::WHITE;
+	invalid_state = false;
 }
 
 Position::Position(std::string fen) {
@@ -46,6 +47,7 @@ Position::Position(std::string fen) {
 
 	board = Board(fields[0]);
 	color_to_move = piece::color_from_uci(fields[1][0]);
+	invalid_state = false;
 	
 	State first_state;
 
@@ -124,126 +126,220 @@ Board& Position::get_board() {
 bool Position::make_move(Move move) {
 	assert(move.is_valid());
 
-	struct State last_state = ply.back(), next_state = last_state;
+	struct State last_state = ply.back();
+	bool moving_color = color_to_move;
 
-	/* reset attack masks */
-	next_state.attacks[piece::WHITE] = 0ULL;
-	next_state.attacks[piece::BLACK] = 0ULL;
+	ply.push_back(last_state);
 
-	next_state.last_move = move;
-	
-	if (color_to_move == piece::BLACK) {
-		next_state.fullmove_number++;
+	ply.back().last_move = move;
+	ply.back().halfmove_clock++;
+
+	color_to_move = !color_to_move;
+
+	if (moving_color == piece::BLACK) {
+		ply.back().fullmove_number++;
 	}
 
+	/* reset attack masks */
+	ply.back().attacks[piece::WHITE] = 0ULL;
+	ply.back().attacks[piece::BLACK] = 0ULL;
+	
 	int dst_piece = board.get_piece(move.dst());
 	int src_piece = board.get_piece(move.src());
 
-	next_state.halfmove_clock++;
+	if (!piece::is_valid(src_piece)) {
+		invalid_state = true;
+		return false;
+	}
 
 	if (piece::type(src_piece) == piece::PAWN) {
-		next_state.halfmove_clock = 0;
+		ply.back().halfmove_clock = 0;
 	}
 
 	/* Perform castling moves */
 	if (move.get(Move::CASTLE_KINGSIDE)) {
-		int rights = (color_to_move == piece::WHITE) ? 0x3 : 0xC;
-		int rank = (color_to_move == piece::WHITE) ? 0 : 7;
+		int rights = (moving_color == piece::WHITE) ? 0x3 : 0xC;
+		int rank = (moving_color == piece::WHITE) ? 0 : 7;
+
+		if (moving_color == piece::WHITE) {
+			if (move.src() != 4 || move.dst() != 6 || src_piece != piece::make_piece(piece::WHITE, piece::KING) || !(rights & CASTLE_WHITE_K)) {
+				invalid_state = true;
+				return false;
+			}
+
+			if (last_state.attacks[piece::BLACK] & (bb::mask(4) | bb::mask(5) | bb::mask(6))) {
+				invalid_state = true;
+				return false;
+			}
+
+			if (board.get_global_occ() & (bb::mask(5) | bb::mask(6))) {
+				invalid_state = true;
+				return false;
+			}
+		} else {
+			if (move.src() != 60 || move.dst() != 58 || src_piece != piece::make_piece(piece::BLACK, piece::KING) || !(rights & CASTLE_BLACK_K)) {
+				invalid_state = true;
+				return false;
+			}
+
+			if (last_state.attacks[piece::WHITE] & (bb::mask(60) | bb::mask(61) | bb::mask(62))) {
+				invalid_state = true;
+				return false;
+			}
+
+			if (board.get_global_occ() & (bb::mask(61) | bb::mask(62))) {
+				invalid_state = true;
+				return false;
+			}
+		}
 
 		/* the king will be moved during promotion checking, so just move the rook */
 		board.place(square::at(rank, 5), board.remove(square::at(rank, 7)));
 
-		next_state.castle_rights &= ~rights;
+		ply.back().castle_rights &= ~rights;
 	}
 
 	if (move.get(Move::CASTLE_QUEENSIDE)) {
-		int rights = (color_to_move == piece::WHITE) ? 0x3 : 0xC;
-		int rank = (color_to_move == piece::WHITE) ? 0 : 7;
+		int rights = (moving_color == piece::WHITE) ? 0x3 : 0xC;
+		int rank = (moving_color == piece::WHITE) ? 0 : 7;
+
+		if (moving_color == piece::WHITE) {
+			if (move.src() != 4 || move.dst() != 2 || src_piece != piece::make_piece(piece::WHITE, piece::KING) || !(rights & CASTLE_WHITE_Q)) {
+				invalid_state = true;
+				return false;
+			}
+
+			if (last_state.attacks[piece::BLACK] & (bb::mask(2) | bb::mask(3) | bb::mask(4))) {
+				invalid_state = true;
+				return false;
+			}
+
+			if (board.get_global_occ() & (bb::mask(1) | bb::mask(2) | bb::mask(3))) {
+				invalid_state = true;
+				return false;
+			}
+		} else {
+			if (move.src() != 60 || move.dst() != 58 || src_piece != piece::make_piece(piece::BLACK, piece::KING) || !(rights & CASTLE_BLACK_Q)) {
+				invalid_state = true;
+				return false;
+			}
+
+			if (last_state.attacks[piece::WHITE] & (bb::mask(58) | bb::mask(59) | bb::mask(60))) {
+				invalid_state = true;
+				return false;
+			}
+
+			if (board.get_global_occ() & (bb::mask(57) | bb::mask(58) | bb::mask(59))) {
+				invalid_state = true;
+				return false;
+			}
+		}
 
 		board.place(square::at(rank, 3), board.remove(square::at(rank, 0)));
 
-		next_state.castle_rights &= ~rights;
+		ply.back().castle_rights &= ~rights;
 	}
 
 	/* Revoke castling rights */
 	if (piece::type(src_piece) == piece::KING) {
-		int rights = (color_to_move == piece::WHITE) ? 0x3 : 0xC;
-		next_state.castle_rights &= ~rights;
+		int rights = (moving_color == piece::WHITE) ? 0x3 : 0xC;
+		ply.back().castle_rights &= ~rights;
 	}
 
 	if (move.src() == 0) {
-		next_state.castle_rights &= ~CASTLE_WHITE_Q;
+		ply.back().castle_rights &= ~CASTLE_WHITE_Q;
 	}
 
 	if (move.src() == 7) {
-		next_state.castle_rights &= ~CASTLE_WHITE_K;
+		ply.back().castle_rights &= ~CASTLE_WHITE_K;
 	}
 
 	if (move.src() == 56) {
-		next_state.castle_rights &= ~CASTLE_BLACK_Q;
+		ply.back().castle_rights &= ~CASTLE_BLACK_Q;
 	}
 
 	if (move.src() == 63) {
-		next_state.castle_rights &= ~CASTLE_BLACK_K;
+		ply.back().castle_rights &= ~CASTLE_BLACK_K;
 	}
 
 	/* Perform captures */
 	if (move.get(Move::CAPTURE)) {
 		if (dst_piece == piece::null) {
 			/* En-passant capture */
-			assert(piece::type(src_piece) == piece::PAWN);
-			assert(move.dst() == last_state.en_passant_square);
+			if (piece::type(src_piece) != piece::PAWN || move.dst() != last_state.en_passant_square) {
+				invalid_state = true;
+				return false;
+			}
 
-			int psq = (color_to_move == piece::WHITE) ? move.dst() + SOUTH : move.dst() + NORTH;
+			int psq = (moving_color == piece::WHITE) ? move.dst() + SOUTH : move.dst() + NORTH;
 
-			next_state.captured_piece = board.remove(psq);
-			next_state.captured_square = psq;
+			if (!board.is_occ(psq)) {
+				invalid_state = true;
+				return false;
+			}
+
+			ply.back().captured_piece = board.remove(psq);
+			ply.back().captured_square = psq;
 		} else {
-			assert(piece::is_valid(dst_piece));
-
-			next_state.captured_piece = board.remove(move.dst());
-			next_state.captured_square = move.dst();
+			ply.back().captured_piece = board.remove(move.dst());
+			ply.back().captured_square = move.dst();
 		}
 
-		next_state.halfmove_clock = 0;
+		ply.back().halfmove_clock = 0;
 	} else {
-		next_state.captured_piece = piece::null;
-		next_state.captured_square = square::null;
+		if (dst_piece != piece::null) {
+			invalid_state = true;
+			return false;
+		}
+
+		ply.back().captured_piece = piece::null;
+		ply.back().captured_square = square::null;
 	}
 
 	/* Update en passant */
 	if (move.get(Move::PAWN_JUMP)) {
-		int epsq = (color_to_move == piece::WHITE) ? move.dst() + SOUTH : move.dst() + NORTH;
-		next_state.en_passant_square = epsq;
+		if (piece::type(src_piece) != piece::PAWN) {
+			invalid_state = true;
+			return false;
+		}
+
+		int epsq = (moving_color == piece::WHITE) ? move.dst() + SOUTH : move.dst() + NORTH;
+		ply.back().en_passant_square = epsq;
 	}
 	else {
-		next_state.en_passant_square = square::null;
+		ply.back().en_passant_square = square::null;
 	}
 
 	/* Perform promotion and final move */
 	if (move.get(Move::PROMOTION)) {
 		board.remove(move.src());
-		board.place(move.dst(), piece::make_piece(color_to_move, move.ptype()));
+
+		if (board.is_occ(move.dst())) {
+			invalid_state = true;
+			return false;
+		}
+
+		board.place(move.dst(), piece::make_piece(moving_color, move.ptype()));
 	} else {
 		board.place(move.dst(), board.remove(move.src()));
 	}
 
-	/* Move made, update color to move and push state */
-	color_to_move = !color_to_move;
+	bitboard moving_color_king = board.get_color_occ(moving_color) & board.get_piece_occ(piece::KING);
 
-	ply.push_back(next_state);
+	if (!moving_color_king) {
+		/* There is no king to test check for.. it must have been captured. Declare this an illegal capture */
+		return false;
+	}
 
 	/* Check if color that moved is in check */
-	if (square_is_attacked(bb::getlsb(board.get_color_occ(!color_to_move) & board.get_piece_occ(piece::KING)), color_to_move)) {
+	if (square_is_attacked(bb::getlsb(board.get_color_occ(moving_color) & board.get_piece_occ(piece::KING)), color_to_move)) {
 		/* King is in check -- illegal move */
 		return false;
 	}
 
 	/* Update complete attack masks */
-	ply.back().attacks[color_to_move] = squares_attacked_by(color_to_move);
-
-	/* TODO: check for illegal castles here */
-	ply.back().attacks[!color_to_move] = squares_attacked_by(!color_to_move);
+	ply.back().attacks[piece::WHITE] = squares_attacked_by(piece::WHITE);
+	ply.back().attacks[piece::BLACK] = squares_attacked_by(piece::BLACK);
 
 	/* update zobrist key */
 	ply.back().key = 0;
@@ -251,7 +347,7 @@ bool Position::make_move(Move move) {
 	ply.back().key ^= zobrist::en_passant(ply.back().en_passant_square);
 	ply.back().key ^= zobrist::castle(castle_rights());
 
-	if (color_to_move == piece::BLACK) {
+	if (moving_color == piece::BLACK) {
 		ply.back().key ^= zobrist::black_to_move();
 	}
 
@@ -266,6 +362,12 @@ void Position::unmake_move(Move move) {
 	ply.pop_back();
 
 	color_to_move = !color_to_move;
+
+	/* Don't try and undo the move if it made no sense. */
+	if (invalid_state) {
+		invalid_state = false;
+		return;
+	}
 
 	/* Unmake castling moves */
 	if (move.get(Move::CASTLE_KINGSIDE)) {

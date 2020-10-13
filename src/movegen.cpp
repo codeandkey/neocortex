@@ -41,6 +41,11 @@ Generator::Generator(Position& p, Move pv_move, int mode) : stage(0), mode(mode)
 	}
 }
 
+void Generator::set_killers(Move* killers) {
+	this->killers[0] = killers[0];
+	this->killers[1] = killers[1];
+}
+
 std::list<Move> Generator::next_batch() {
 	switch (stage) {
 	case STAGE_PV:
@@ -57,6 +62,19 @@ std::list<Move> Generator::next_batch() {
 		return pawn_promotions();
 	case STAGE_KILLERS:
 		++stage;
+
+		if (killers[0] != Move::null) {
+			std::list<Move> killer_moves;
+
+			killer_moves.push_back(killers[0]);
+
+			if (killers[1] != Move::null) {
+				killer_moves.push_back(killers[1]);
+			}
+
+			return killer_moves;
+		}
+
 		return next_batch();
 	case QSTAGE_CAPTURES:
 	case STAGE_CAPTURES:

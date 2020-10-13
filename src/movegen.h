@@ -54,6 +54,11 @@ namespace neocortex {
 			Generator(Position& position, Move pv_move = Move::null, int mode = NORMAL);
 
 			/**
+			 * Sets the killer moves to generate from.
+			 */
+			void set_killers(Move* killers);
+
+			/**
 			 * Gets the next pseudolegal move.
 			 * Returns a null move if there are none left.
 			 *
@@ -131,7 +136,7 @@ namespace neocortex {
 			std::list<Move> castles();
 
 			int stage, mode;
-			Move pv_move;
+			Move pv_move, killers[2];
 
 			Position& position;
 			std::list<Move> batch;

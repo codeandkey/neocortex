@@ -194,6 +194,7 @@ namespace neocortex {
 		Board board;
 		std::vector<State> ply;
 		int color_to_move;
+		bool invalid_state;
 	};
 
 	inline int Position::get_color_to_move() {

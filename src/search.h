@@ -113,7 +113,7 @@ namespace neocortex {
 			 *
 			 * @return Search score.
 			 */
-			int alphabeta(int depth, int alpha, int beta, PV* pv_line);
+			int alphabeta(int depth, int alpha, int beta, PV* pv_line, int ply);
 
 			/**
 			 * Quiescence search routine.
@@ -126,7 +126,7 @@ namespace neocortex {
 			 *
 			 * @return Search score.
 			 */
-			int quiescence(int depth, int alpha, int beta, PV* pv_line);
+			int quiescence(int depth, int alpha, int beta, PV* pv_line, int ply);
 
 			std::thread search_thread;
 			std::mutex search_mutex;
@@ -135,8 +135,10 @@ namespace neocortex {
 			std::atomic<bool> debug, should_stop;
 
 			util::time_point search_starttime, depth_starttime;
-			std::atomic<int> wtime, btime, winc, binc, movetime, allocated_time, nodes, numnodes, depth;
+			std::atomic<int> wtime, btime, winc, binc, movetime, allocated_time, nodes, numnodes, maxdepth;
 			std::atomic<bool> infinite;
+
+			Move killers[128][2];
 		};
 	}
 }
