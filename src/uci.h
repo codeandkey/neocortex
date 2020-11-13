@@ -33,5 +33,12 @@ namespace neocortex {
 		 * @param out Output stream.
 		 */
 		void begin(std::istream& in, std::ostream& out);
+
+		/**
+		 * Gets the uci hash size in MB.
+		 *
+		 * @return UCI_Hash value or default.
+		 */
+		int get_hash_size();
 	}
 }

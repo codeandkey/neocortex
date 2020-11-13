@@ -19,19 +19,18 @@ namespace neocortex {
 	class Move {
 	public:
 		/**
-		 * Constructs a move from an encoded value.
+		 * Constructs a null move.
 		 */
-		Move(int value = null);
+		Move();
 
 		/**
 		 * Constructs a move.
 		 *
 		 * @param src Source square.
 		 * @param dst Destination square.
-		 * @param flags Move flags.
 		 * @param ptype Promotion type.
 		 */
-		Move(int src, int dst, int flags = 0, int ptype = piece::PAWN);
+		Move(int src, int dst, int ptype = piece::null);
 
 		/**
 		 * Parses a move from UCI.
@@ -93,22 +92,6 @@ namespace neocortex {
 		int ptype();
 
 		/**
-		 * Sets a flag on this move.
-		 *
-		 * @param flag Flag to set.
-		 * @return Reference to self.
-		 */
-		Move& set(int flag);
-
-		/**
-		 * Queries a flag on this move.
-		 *
-		 * @param flag Flag to get
-		 * @return true if flag is set, false otherwise.
-		 */
-		bool get(int flag);
-
-		/**
 		 * Shorthand for to_uci().
 		 */
 		operator std::string();
@@ -116,15 +99,10 @@ namespace neocortex {
 		bool operator==(const Move& rhs);
 		bool operator!=(const Move& rhs);
 
-		static constexpr int null = -1;
-		static constexpr int PAWN_JUMP = 1 << 15;
-		static constexpr int PROMOTION = 1 << 16;
-		static constexpr int CAPTURE = 1 << 17;
-		static constexpr int CASTLE_KINGSIDE = 1 << 18;
-		static constexpr int CASTLE_QUEENSIDE = 1 << 19;
+		static const Move null;
 	private:
 
-		int value;
+		int m_src, m_dst, m_ptype;
 	};
 
 	struct PV {

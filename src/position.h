@@ -22,18 +22,19 @@ namespace neocortex {
 	constexpr int CASTLE_BLACK_K = 4;
 	constexpr int CASTLE_BLACK_Q = 8;
 
+	constexpr int MAX_PL_MOVES = 100;
+
 	class Position {
 	public:
 		struct State {
-			Move last_move;
-			int en_passant_square;
-			int castle_rights;
-			int captured_piece;
-			int captured_square;
-			int halfmove_clock;
-			int fullmove_number;
-			bitboard attacks[2];
-			zobrist::Key key;
+			Move last_move = Move::null;
+			int en_passant_square = square::null;
+			int castle_rights = 0xF;
+			int captured_piece = piece::null;
+			int captured_square = square::null;
+			int halfmove_clock = 0;
+			int fullmove_number = 1;
+			zobrist::Key key = 0;
 		};
 
 		/**
@@ -92,56 +93,6 @@ namespace neocortex {
 		bitboard en_passant_mask(); /* gets a mask of valid en passant capture targets, or 0 if none */
 
 		/**
-		 * Computes all squares attacked by the color to move.
-		 *
-		 * @return Attacked squares.
-		 */
-		bitboard attacking_squares(); /* squares attacked by color to move */
-
-		/**
-		 * Computes all squares attacked by the color not to move.
-		 *
-		 * @return Attacked squares.
-		 */
-		bitboard attacked_squares(); /* squares attacked by not color to move */
-
-		/**
-		 * Computes all squares attacked by a specific color.
-		 *
-		 * @param color Attacking color.
-		 * @return Attacked squares.
-		 */
-		bitboard squares_attacked_by(int color); /* squares attacked by color */
-
-		/**
-		 * Faster test to determine if a square is attacked by a color.
-		 *
-		 * @param sq Target square.
-		 * @param color Attacking color.
-		 * @return true if the square is attacked by the color, false otherwise.
-		 */
-		bool square_is_attacked(int sq, int color); /* early-exit test for square attacked by color*/
-
-		/**
-		 * Counts the attackers from each color on a certain square.
-		 *
-		 * @param sq Target square.
-		 * @param white White attackers output.
-		 * @param black Black attackers output.
-		 */
-		void get_attackers_defenders(int sq, int& white, int& black);
-
-		/**
-		 * Gets the current attack bitboard for a color.
-		 * Pulled from the ply and does not require computation.
-		 * This should be used by all other systems.
-		 *
-		 * @param color Attacking color.
-		 * @return Attack bitboard.
-		 */
-		bitboard get_current_attacks(int color);
-
-		/**
 		 * Gets the position's zobrist key for TT indexing.
 		 *
 		 * @return Zobrist key.
@@ -156,12 +107,11 @@ namespace neocortex {
 		bool check();
 
 		/**
-		 * Test if a position is quiet.
-		 * A position is quiet if no capture or check was made.
+		 * Test if the last move made was a capture.
 		 *
-		 * @return true if position is quiet, false otherwise.
+		 * @return true if a capture was made, false otherwise.
 		 */
-		bool quiet();
+		bool capture();
 
 		/**
 		 * Gets the castle rights mask for both colors.
@@ -190,6 +140,22 @@ namespace neocortex {
 		 * @return PGN string.
 		 */
 		std::string game_string();
+
+		/**
+		 * Evaluates the current position.
+		 *
+		 * @param dbg String output pointer for debug information.
+		 * @return Evaluation score.
+		 */
+		int evaluate(std::string* dbg = NULL);
+
+		/**
+		 * Gets the pseudolegal moves for the position.
+		 * 
+		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
+		 * @return Number of moves generated.
+		 */
+		int pseudolegal_moves(Move* dst);
 	private:
 		Board board;
 		std::vector<State> ply;
@@ -200,11 +166,11 @@ namespace neocortex {
 		return color_to_move;
 	}
 
-	inline bitboard Position::attacking_squares() {
-		return ply.back().attacks[color_to_move];
+	inline bool Position::capture() {
+		return ply.back().captured_piece != piece::null;
 	}
 
-	inline bitboard Position::attacked_squares() {
-		return ply.back().attacks[!color_to_move];
+	inline bool Position::check() {
+		return board.attacks(!color_to_move) & board.get_piece_occ(piece::KING) & board.get_color_occ(color_to_move);
 	}
 }

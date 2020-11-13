@@ -6,7 +6,6 @@
  */
 
 #include "perft.h"
-#include "movegen.h"
 #include "util.h"
 #include "log.h"
 
@@ -55,30 +54,23 @@ void perft::start(Position& p, int depth, std::ostream& out) {
 }
 
 void perft_movegen(Position& p, int depth) {
-	if (!depth) return;
+	if (!depth) {
+		current_results.nodes++;
 
-	movegen::Generator g(p);
+		if (p.capture()) current_results.captures++;
+		if (p.check()) current_results.checks++;
+	
+		return;
+	}
 
-	for (auto movelist : g.generate_perft()) {
-		if (!movelist.size()) continue;
+	Move pl_moves[MAX_PL_MOVES];
+	int num_pl_moves = p.pseudolegal_moves(pl_moves);
 
-		for (auto next_move : movelist) {
-			if (p.make_move(next_move)) {
-				/* Move was legal, update perft results */
-
-				if (depth == 1) {
-					if (next_move.get(Move::CAPTURE)) current_results.captures++;
-					if (next_move.get(Move::CASTLE_KINGSIDE | Move::CASTLE_QUEENSIDE)) {
-						current_results.castles++;
-					}
-					if (p.check()) current_results.checks++;
-					current_results.nodes++;
-				}
-
-				perft_movegen(p, depth - 1);
-			}
-
-			p.unmake_move(next_move);
+	for (int i = 0; i < num_pl_moves; ++i) {
+		if (p.make_move(pl_moves[i])) {
+			perft_movegen(p, depth - 1);
 		}
+
+		p.unmake_move(pl_moves[i]);
 	}
 }

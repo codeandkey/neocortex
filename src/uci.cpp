@@ -7,7 +7,6 @@
 
 #include "uci.h"
 #include "log.h"
-#include "movegen.h"
 #include "util.h"
 #include "search.h"
 #include "position.h"
@@ -105,16 +104,15 @@ void uci::begin(std::istream & in, std::ostream & out) {
 				}
 
 				for (size_t i = expected_moves + 1; i < parts.size(); ++i) {
-					movegen::Generator g(pos);
-					Move matched_move;
+					Move pl_moves[MAX_PL_MOVES], matched_move = Move::null;
+					int num_pl_moves;
 
-					for (auto movelist : g.generate_perft()) {
-						if (!movelist.size()) continue;
-						for (auto move : movelist) {
-							if (move.match_uci(parts[i])) {
-								assert(matched_move == Move::null);
-								matched_move = move;
-							}
+					num_pl_moves = pos.pseudolegal_moves(pl_moves);
+
+					for (int j = 0; j < num_pl_moves; ++j) {
+						if (pl_moves[j].match_uci(parts[i])) {
+							assert(matched_move == Move::null);
+							matched_move = pl_moves[j];
 						}
 					}
 

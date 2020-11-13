@@ -56,41 +56,4 @@ namespace neocortex {
 		static constexpr int MIN = INT_MIN;
 		static constexpr int MATE_THRESHOLD = 32;
 	}
-
-	class Eval {
-	public:
-	public:
-		/**
-		 * Evaluates a position and constructs a resulting evaluation.
-		 *
-		 * @param pos Position to evaluate.
-		 */
-		Eval(Position& pos);
-
-		/**
-		 * Converts the evaluation to a score.
-		 */
-		int to_score();
-
-		/**
-		 * Converts the evaluation to a human-readable table,
-		 * with every element of the evaluation function present.
-		 */
-		std::string to_table();
-	private:
-		Position& pos;
-		int phase;
-
-		int material_mg[2];
-		int material_eg[2];
-		int attackbonus[2];
-		int mobility_mg[2], mobility_eg[2];
-		int center_control[2];
-		int king_safety[2];
-		int blocking_pawns[2];
-		int passed_pawns[2];
-		int adv_pawn_mg[2], adv_pawn_eg[2];
-		int adv_passedpawn_mg[2], adv_passedpawn_eg[2];
-		int king_adv_mg[2], king_adv_eg[2];
-	};
 }

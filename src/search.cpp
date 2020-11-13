@@ -7,7 +7,6 @@
 
 #include "search.h"
 #include "log.h"
-#include "movegen.h"
 #include "tt.h"
 #include "eval_consts.h"
 
@@ -103,10 +102,12 @@ void search::Search::worker(std::ostream& out) {
 
 	Move best_move;
 
-	neocortex_info("snapshot [%s]:\n%s", root.to_fen().c_str(), Eval(root).to_table().c_str());
+	std::string eval_dbg;
+	int cur_score = root.evaluate(&eval_dbg);
+	neocortex_info("snapshot [%s]:\n%s", root.to_fen().c_str(), eval_dbg.c_str());
 
 	/* Evaluate the position at depth 0 for an initial score. */
-	out << "info depth 0 nodes 1 score " << score::to_uci(Eval(root).to_score()) << "\n";
+	out << "info depth 0 nodes 1 score " << score::to_uci(cur_score) << "\n";
 	out.flush();
 
 	/* Search depth 1 before setting any time constraints. */
@@ -268,17 +269,17 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 		}
 	}
 
-	movegen::Generator g(root, tt_move);
-	Move next_move;
-	int num_moves = 0;
+	Move pl_moves[MAX_PL_MOVES];
+	int num_pl_moves = root.pseudolegal_moves(pl_moves);
+	int num_moves = 0; /* num of legal moves */
 
-	while ((next_move = g.next()).is_valid()) {
-		if (root.make_move(next_move)) {
+	for (int i = 0; i < num_pl_moves; ++i) {
+		if (root.make_move(pl_moves[i])) {
 			num_moves++;
 
 			value = score::parent(-alphabeta(depth - 1, -beta, -alpha, &local_pv));
 
-			root.unmake_move(next_move);
+			root.unmake_move(pl_moves[i]);
 
 			if (value == score::INCOMPLETE) {
 				return value;
@@ -289,14 +290,14 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 			if (value > alpha) {
 				alpha = value;
 
-				pv_line->moves[0] = next_move;
+				pv_line->moves[0] = pl_moves[i];
 				pv_line->len = local_pv.len + 1;
 
 				memcpy(pv_line->moves + 1, local_pv.moves, local_pv.len * sizeof local_pv.moves[0]);
 			}
 		}
 		else {
-			root.unmake_move(next_move);
+			root.unmake_move(pl_moves[i]);
 		}
 	}
 
@@ -346,22 +347,22 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 	++numnodes;
 	if (nodes > 0 && numnodes > nodes) return score::INCOMPLETE;
 
-	if (!depth || root.quiet()) {
+	if (!depth || (!root.check() && !root.capture())) {
 		pv_line->len = 0;
-		return Eval(root).to_score();
+		return root.evaluate();
 	}
 
-	movegen::Generator g(root, Move::null, movegen::QUIESCENCE);
-	Move next_move;
-	int num_moves = 0;
+	Move pl_moves[MAX_PL_MOVES];
+	int num_pl_moves = root.pseudolegal_moves(pl_moves);
+	int num_moves = 0; /* num of legal moves */
 
-	while ((next_move = g.next()).is_valid()) {
-		if (root.make_move(next_move)) {
+	for (int i = 0; i < num_pl_moves; ++i) {
+		if (root.make_move(pl_moves[i])) {
 			num_moves++;
 
 			int value = score::parent(-quiescence(depth - 1, -beta, -alpha, &local_pv));
 
-			root.unmake_move(next_move);
+			root.unmake_move(pl_moves[i]);
 
 			if (value == score::INCOMPLETE) {
 				return value;
@@ -372,14 +373,14 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 			if (value > alpha) {
 				alpha = value;
 
-				pv_line->moves[0] = next_move;
+				pv_line->moves[0] = pl_moves[i];
 				pv_line->len = local_pv.len + 1;
 
 				memcpy(pv_line->moves + 1, local_pv.moves, local_pv.len * sizeof local_pv.moves[0]);
 			}
 		}
 		else {
-			root.unmake_move(next_move);
+			root.unmake_move(pl_moves[i]);
 		}
 	}
 

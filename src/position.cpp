@@ -8,6 +8,7 @@
 #include "position.h"
 #include "util.h"
 #include "attacks.h"
+#include "eval_consts.h"
 
 #include "log.h"
 
@@ -27,8 +28,6 @@ Position::Position() {
 	first_state.captured_piece = piece::null;
 	first_state.captured_square = piece::null;
 	first_state.last_move = Move::null;
-	first_state.attacks[piece::WHITE] = squares_attacked_by(piece::WHITE);
-	first_state.attacks[piece::BLACK] = squares_attacked_by(piece::BLACK);
 	first_state.key = 0;
 	first_state.key ^= board.get_tt_key();
 	first_state.key ^= zobrist::castle(first_state.castle_rights);
@@ -75,8 +74,6 @@ Position::Position(std::string fen) {
 	first_state.captured_piece = piece::null;
 	first_state.captured_square = piece::null;
 	first_state.last_move = Move::null;
-	first_state.attacks[piece::WHITE] = squares_attacked_by(piece::WHITE);
-	first_state.attacks[piece::BLACK] = squares_attacked_by(piece::BLACK);
 
 	first_state.key = 0;
 	first_state.key ^= board.get_tt_key();
@@ -124,11 +121,10 @@ Board& Position::get_board() {
 bool Position::make_move(Move move) {
 	assert(move.is_valid());
 
-	struct State last_state = ply.back(), next_state = last_state;
+	State last_state = ply.back();
+	ply.push_back(last_state);
 
-	/* reset attack masks */
-	next_state.attacks[piece::WHITE] = 0ULL;
-	next_state.attacks[piece::BLACK] = 0ULL;
+	State& next_state = ply.back();
 
 	next_state.last_move = move;
 	
@@ -137,7 +133,7 @@ bool Position::make_move(Move move) {
 	}
 
 	int dst_piece = board.get_piece(move.dst());
-	int src_piece = board.get_piece(move.src());
+	int src_piece = board.remove(move.src());
 
 	next_state.halfmove_clock++;
 
@@ -145,24 +141,51 @@ bool Position::make_move(Move move) {
 		next_state.halfmove_clock = 0;
 	}
 
-	/* Perform castling moves */
-	if (move.get(Move::CASTLE_KINGSIDE)) {
-		int rights = (color_to_move == piece::WHITE) ? 0x3 : 0xC;
-		int rank = (color_to_move == piece::WHITE) ? 0 : 7;
+	next_state.en_passant_square = square::null;
+	next_state.captured_piece = piece::null;
+	next_state.captured_square = square::null;
 
-		/* the king will be moved during promotion checking, so just move the rook */
-		board.place(square::at(rank, 5), board.remove(square::at(rank, 7)));
+	/* Check for EP capture */
+	if (piece::type(src_piece) == piece::PAWN && move.dst() == last_state.en_passant_square) {
+		/* EP, need to remove piece */
+		int adv_dir = (color_to_move == piece::WHITE) ? NORTH : SOUTH;
+		int capture_square = last_state.en_passant_square - adv_dir;
+		int removed = board.remove(capture_square);
 
-		next_state.castle_rights &= ~rights;
+		next_state.captured_piece = removed;
+		next_state.captured_square = capture_square;
+		next_state.halfmove_clock = 0;
+
+		assert(piece::type(removed) == piece::PAWN);
 	}
 
-	if (move.get(Move::CASTLE_QUEENSIDE)) {
-		int rights = (color_to_move == piece::WHITE) ? 0x3 : 0xC;
-		int rank = (color_to_move == piece::WHITE) ? 0 : 7;
+	/* Move rook also if castling */
+	if (piece::type(src_piece) == piece::KING && abs(square::file(move.src()) - square::file(move.dst())) > 1) {
+		int is_ks = move.dst() > move.src();
+		int castle_rank = (color_to_move == piece::WHITE) ? 0 : 7;
+		int rook_file = is_ks ? 7 : 0;
+		int rook_dstfile = is_ks ? 5 : 2;
 
-		board.place(square::at(rank, 3), board.remove(square::at(rank, 0)));
+		int rook_src = square::at(castle_rank, rook_file);
+		int rook_dst = square::at(castle_rank, rook_dstfile);
 
-		next_state.castle_rights &= ~rights;
+		board.place(rook_dst, board.remove(rook_src));
+	}
+
+	/* Test if destination is occupied */
+	if (piece::is_valid(dst_piece)) {
+		/* Normal capture */
+		next_state.captured_piece = board.replace(move.dst(), src_piece);
+		next_state.captured_square = move.dst();
+		next_state.halfmove_clock = 0;
+	} else {
+		/* Quiet */
+		board.place(move.dst(), src_piece);
+	}
+
+	/* Apply promotion */
+	if (piece::is_type(move.ptype())) {
+		board.replace(move.dst(), piece::make_piece(color_to_move, move.ptype()));
 	}
 
 	/* Revoke castling rights */
@@ -187,75 +210,27 @@ bool Position::make_move(Move move) {
 		next_state.castle_rights &= ~CASTLE_BLACK_K;
 	}
 
-	/* Perform captures */
-	if (move.get(Move::CAPTURE)) {
-		if (dst_piece == piece::null) {
-			/* En-passant capture */
-			assert(piece::type(src_piece) == piece::PAWN);
-			assert(move.dst() == last_state.en_passant_square);
-
-			int psq = (color_to_move == piece::WHITE) ? move.dst() + SOUTH : move.dst() + NORTH;
-
-			next_state.captured_piece = board.remove(psq);
-			next_state.captured_square = psq;
-		} else {
-			assert(piece::is_valid(dst_piece));
-
-			next_state.captured_piece = board.remove(move.dst());
-			next_state.captured_square = move.dst();
-		}
-
-		next_state.halfmove_clock = 0;
-	} else {
-		next_state.captured_piece = piece::null;
-		next_state.captured_square = square::null;
-	}
-
 	/* Update en passant */
-	if (move.get(Move::PAWN_JUMP)) {
+	if (piece::type(src_piece) == piece::PAWN && abs(square::rank(move.dst()) - square::rank(move.src())) > 1) {
 		int epsq = (color_to_move == piece::WHITE) ? move.dst() + SOUTH : move.dst() + NORTH;
 		next_state.en_passant_square = epsq;
 	}
-	else {
-		next_state.en_passant_square = square::null;
-	}
 
-	/* Perform promotion and final move */
-	if (move.get(Move::PROMOTION)) {
-		board.remove(move.src());
-		board.place(move.dst(), piece::make_piece(color_to_move, move.ptype()));
-	} else {
-		board.place(move.dst(), board.remove(move.src()));
-	}
-
-	/* Move made, update color to move and push state */
+	/* Flip color to move */
 	color_to_move = !color_to_move;
 
-	ply.push_back(next_state);
-
-	/* Check if color that moved is in check */
-	if (square_is_attacked(bb::getlsb(board.get_color_occ(!color_to_move) & board.get_piece_occ(piece::KING)), color_to_move)) {
-		/* King is in check -- illegal move */
-		return false;
-	}
-
-	/* Update complete attack masks */
-	ply.back().attacks[color_to_move] = squares_attacked_by(color_to_move);
-
-	/* TODO: check for illegal castles here */
-	ply.back().attacks[!color_to_move] = squares_attacked_by(!color_to_move);
-
-	/* update zobrist key */
-	ply.back().key = 0;
-	ply.back().key ^= board.get_tt_key();
-	ply.back().key ^= zobrist::en_passant(ply.back().en_passant_square);
-	ply.back().key ^= zobrist::castle(castle_rights());
+	/* Update zobrist key */
+	next_state.key = 0;
+	next_state.key ^= board.get_tt_key();
+	next_state.key ^= zobrist::en_passant(next_state.en_passant_square);
+	next_state.key ^= zobrist::castle(castle_rights());
 
 	if (color_to_move == piece::BLACK) {
-		ply.back().key ^= zobrist::black_to_move();
+		next_state.key ^= zobrist::black_to_move();
 	}
 
-	return true;
+	/* Check that king is not in attack */
+	return (board.attacks(color_to_move) & board.get_piece_occ(piece::KING) & board.get_color_occ(!color_to_move)) == 0;
 }
 
 void Position::unmake_move(Move move) {
@@ -265,30 +240,33 @@ void Position::unmake_move(Move move) {
 	State last_state = ply.back();
 	ply.pop_back();
 
+	/* Flip CTM early for readability */
 	color_to_move = !color_to_move;
 
-	/* Unmake castling moves */
-	if (move.get(Move::CASTLE_KINGSIDE)) {
-		int rank = (color_to_move == piece::WHITE) ? 0 : 7;
-
-		/* the king will be moved during promotion checking, so just move the rook */
-		board.place(square::at(rank, 7), board.remove(square::at(rank, 5)));
+	/* Unpromote */
+	if (piece::is_type(move.ptype())) {
+		board.replace(move.dst(), piece::make_piece(color_to_move, piece::PAWN));
 	}
 
-	if (move.get(Move::CASTLE_QUEENSIDE)) {
-		int rank = (color_to_move == piece::WHITE) ? 0 : 7;
+	/* Move piece back to source */
+	int dst_piece = board.remove(move.dst());
+	board.place(move.src(), dst_piece);
 
-		board.place(square::at(rank, 0), board.remove(square::at(rank, 3)));
+	/* Unmove rook in castling */
+	if (piece::type(dst_piece) == piece::KING && abs(square::file(move.src()) - square::file(move.dst())) > 1) {
+		int is_ks = move.dst() > move.src();
+		int castle_rank = (color_to_move == piece::WHITE) ? 0 : 7;
+		int rook_file = is_ks ? 5 : 2;
+		int rook_dstfile = is_ks ? 7 : 0;
+
+		int rook_src = square::at(castle_rank, rook_file);
+		int rook_dst = square::at(castle_rank, rook_dstfile);
+
+		board.place(rook_dst, board.remove(rook_src));
 	}
 
-	if (move.get(Move::PROMOTION)) {
-		board.remove(move.dst());
-		board.place(move.src(), piece::make_piece(color_to_move, piece::PAWN));
-	} else {
-		board.place(move.src(), board.remove(move.dst()));
-	}
-
-	if (move.get(Move::CAPTURE)) {
+	/* Replace captured pieces */
+	if (piece::is_valid(last_state.captured_piece)) {
 		board.place(last_state.captured_square, last_state.captured_piece);
 	}
 }
@@ -298,138 +276,433 @@ bitboard Position::en_passant_mask() {
 	return (sq == square::null) ? 0ULL : bb::mask(sq);
 }
 
-bitboard Position::squares_attacked_by(int color) {
-	assert(color == piece::WHITE || color == piece::BLACK);
+int Position::pseudolegal_moves(Move* out) {
+	int count = 0;
 
-	bitboard output = 0ULL;
-	int left_dir = (color == piece::WHITE) ? NORTHWEST : SOUTHWEST;
-	int right_dir = (color == piece::WHITE) ? NORTHEAST : SOUTHEAST;
+	bitboard ctm = board.get_color_occ(color_to_move);
+	bitboard opp = board.get_color_occ(!color_to_move);
+	
+	bitboard ep_mask = 0;
+	int ep_square = ply.back().en_passant_square;
 
-	bitboard queens = board.get_color_occ(color) & board.get_piece_occ(piece::QUEEN);
-
-	while (queens) {
-		int src = bb::poplsb(queens);
-		output |= attacks::queen(src, board.get_global_occ());
+	if (square::is_valid(ep_square)) {
+		ep_mask = bb::mask(ep_square);
 	}
 
-	bitboard rooks = board.get_color_occ(color) & board.get_piece_occ(piece::ROOK);
+	/* Pawn moves */
+	bitboard pawns = ctm & board.get_piece_occ(piece::PAWN);
+
+	bitboard promoting_rank = (color_to_move == piece::WHITE) ? RANK_7 : RANK_2;
+	bitboard starting_rank = (color_to_move == piece::WHITE) ? RANK_2 : RANK_7;
+
+	int adv_dir = (color_to_move == piece::WHITE) ? NORTH : SOUTH;
+	int left_dir = (color_to_move == piece::WHITE) ? NORTHWEST : SOUTHWEST;
+	int right_dir = (color_to_move == piece::WHITE) ? NORTHEAST : SOUTHEAST;
+
+	bitboard promoting_pawns = pawns & promoting_rank;
+
+	/* Promoting left captures */
+	bitboard promoting_left_cap = bb::shift(promoting_pawns, left_dir) & opp;
+
+	while (promoting_left_cap) {
+		int dst = bb::poplsb(promoting_left_cap);
+		out[count++] = Move(dst - left_dir, dst, piece::QUEEN);
+		out[count++] = Move(dst - left_dir, dst, piece::KNIGHT);
+		out[count++] = Move(dst - left_dir, dst, piece::ROOK);
+		out[count++] = Move(dst - left_dir, dst, piece::BISHOP);
+	}
+
+	/* Promoting right captures */
+	bitboard promoting_right_cap = bb::shift(promoting_pawns, right_dir) & opp;
+
+	while (promoting_right_cap) {
+		int dst = bb::poplsb(promoting_right_cap);
+		out[count++] = Move(dst - right_dir, dst, piece::QUEEN);
+		out[count++] = Move(dst - right_dir, dst, piece::KNIGHT);
+		out[count++] = Move(dst - right_dir, dst, piece::ROOK);
+		out[count++] = Move(dst - right_dir, dst, piece::BISHOP);
+	}
+
+	/* Promoting advances */
+	bitboard promoting_advances = bb::shift(promoting_pawns, adv_dir) & ~board.get_global_occ();
+
+	while (promoting_advances) {
+		int dst = bb::poplsb(promoting_advances);
+		out[count++] = Move(dst - adv_dir, dst, piece::QUEEN);
+		out[count++] = Move(dst - adv_dir, dst, piece::KNIGHT);
+		out[count++] = Move(dst - adv_dir, dst, piece::ROOK);
+		out[count++] = Move(dst - adv_dir, dst, piece::BISHOP);
+	}
+
+	/* Nonpromoting pawn moves */
+	bitboard npm_pawns = pawns ^ promoting_pawns;
+
+	/* Advances */
+	bitboard npm_advances = bb::shift(npm_pawns, adv_dir) & ~board.get_global_occ();
+
+	while (npm_advances) {
+		int dst = bb::poplsb(npm_advances);
+		out[count++] = Move(dst - adv_dir, dst);
+	}
+
+	/* Left captures */
+	bitboard npm_left_cap = bb::shift(npm_pawns, left_dir) & (opp | ep_mask);
+
+	while (npm_left_cap) {
+		int dst = bb::poplsb(npm_left_cap);
+		out[count++] = Move(dst - left_dir, dst);
+	}
+
+	/* Right captures */
+	bitboard npm_right_cap = bb::shift(npm_pawns, right_dir) & (opp | ep_mask);
+
+	while (npm_right_cap) {
+		int dst = bb::poplsb(npm_right_cap);
+		out[count++] = Move(dst - right_dir, dst);
+	}
+
+	/* Jumps */
+	bitboard npm_jumps = bb::shift(pawns & starting_rank, adv_dir) & ~board.get_global_occ();
+	npm_jumps = bb::shift(npm_jumps, adv_dir) & ~board.get_global_occ();
+
+	while (npm_jumps) {
+		int dst = bb::poplsb(npm_jumps);
+		out[count++] = Move(dst - 2 * adv_dir, dst);
+	}
+
+	/* Queen moves */
+	bitboard queens = ctm & board.get_piece_occ(piece::QUEEN);
+	
+	while (queens) {
+		int src = bb::poplsb(queens);
+		bitboard moves = attacks::queen(src, board.get_global_occ()) & ~ctm;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* Rook moves */
+	bitboard rooks = ctm & board.get_piece_occ(piece::ROOK);
 
 	while (rooks) {
 		int src = bb::poplsb(rooks);
-		output |= attacks::rook(src, board.get_global_occ());
+		bitboard moves = attacks::rook(src, board.get_global_occ()) & ~ctm;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
 	}
 
-	bitboard bishops = board.get_color_occ(color) & board.get_piece_occ(piece::BISHOP);
-
-	while (bishops) {
-		int src = bb::poplsb(bishops);
-		output |= attacks::bishop(src, board.get_global_occ());
-	}
-
-	bitboard knights = board.get_color_occ(color) & board.get_piece_occ(piece::KNIGHT);
+	/* Knight moves */
+	bitboard knights = ctm & board.get_piece_occ(piece::KNIGHT);
 
 	while (knights) {
 		int src = bb::poplsb(knights);
-		output |= attacks::knight(src);
+		bitboard moves = attacks::knight(src) & ~ctm;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
 	}
 
-	bitboard pawns = board.get_color_occ(color) & board.get_piece_occ(piece::PAWN);
+	/* Bishop moves */
+	bitboard bishops = ctm & board.get_piece_occ(piece::BISHOP);
 
-	output |= bb::shift(pawns & ~FILE_A, left_dir);
-	output |= bb::shift(pawns & ~FILE_A, right_dir);
+	while (bishops) {
+		int src = bb::poplsb(bishops);
+		bitboard moves = attacks::bishop(src, board.get_global_occ()) & ~ctm;
 
-	bitboard kings = board.get_color_occ(color) & board.get_piece_occ(piece::KING);
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* King moves */
+	bitboard kings = ctm & board.get_piece_occ(piece::KING);
 
 	while (kings) {
 		int src = bb::poplsb(kings);
-		output |= attacks::king(src);
+		bitboard moves = attacks::king(src) & ~ctm;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
 	}
 
-	return output;
+	/* Castling moves */
+
+	/* We perform most of the legal move tests here, notably the noattack and occ tests */
+	bitboard castle_rank = (color_to_move == piece::WHITE) ? RANK_1 : RANK_8;
+	bitboard noattack_ks = castle_rank & (FILE_E | FILE_F);
+	bitboard noattack_qs = castle_rank & (FILE_E | FILE_D);
+	bitboard no_occ_ks = castle_rank & (FILE_F | FILE_G);
+	bitboard no_occ_qs = castle_rank & (FILE_B | FILE_C | FILE_D);
+
+	int king_src = (color_to_move == piece::WHITE) ? square::at(0, 4) : square::at(7, 4);
+	int ks_dst = (color_to_move == piece::WHITE) ? square::at(0, 6) : square::at(7, 6);
+	int qs_dst = (color_to_move == piece::WHITE) ? square::at(0, 2) : square::at(7, 2);
+
+	/* Kingside */
+	if (ply.back().castle_rights & (1 << (color_to_move * 2))) {
+		/* occ test */
+		if (!(board.get_global_occ() & no_occ_ks)) {
+			/* noattack test */
+			if (!(board.attacks(!color_to_move) & noattack_ks)) {
+				out[count++] = Move(king_src, ks_dst);
+			}
+		}
+	}
+
+	/* Queenside */
+	if (ply.back().castle_rights & (1 << (color_to_move * 2 + 1))) {
+		/* occ test */
+		if (!(board.get_global_occ() & no_occ_qs)) {
+			/* noattack test */
+			if (!(board.attacks(!color_to_move) & noattack_qs)) {
+				out[count++] = Move(king_src, qs_dst);
+			}
+		}
+	}
+
+	assert(count <= MAX_PL_MOVES);
+	return count;
 }
 
-bool Position::square_is_attacked(int sq, int color) {
-	assert(square::is_valid(sq));
-	assert(color == piece::WHITE || color == piece::BLACK);
+int Position::evaluate(std::string* dbg) {
+	int phase;
 
-	int left_dir = (color == piece::WHITE) ? SOUTHWEST : NORTHWEST;
-	int right_dir = (color == piece::WHITE) ? SOUTHEAST : NORTHEAST;
+	int material_mg[2];
+	int material_eg[2];
+	int attackbonus[2];
+	int mobility_mg[2], mobility_eg[2];
+	int center_control[2];
+	int king_safety[2];
+	int blocking_pawns[2];
+	int passed_pawns[2];
+	int adv_pawn_mg[2], adv_pawn_eg[2];
+	int adv_passedpawn_mg[2], adv_passedpawn_eg[2];
+	int king_adv_mg[2], king_adv_eg[2];
 
-	bitboard diag_attacks = attacks::bishop(sq, board.get_global_occ());
-	bitboard rank_attacks = attacks::rook(sq, board.get_global_occ());
+	/* Compute material values */
+	material_mg[piece::WHITE] = material_mg[piece::BLACK] = 0;
+	material_eg[piece::WHITE] = material_eg[piece::BLACK] = 0;
 
-	if ((diag_attacks | rank_attacks) & board.get_color_occ(color) & board.get_piece_occ(piece::QUEEN)) {
-		return true;
+	for (int t = 0; t < 6; ++t) {
+		int white = bb::popcount(board.get_color_occ(piece::WHITE) & board.get_piece_occ(t));
+		int black = bb::popcount(board.get_color_occ(piece::BLACK) & board.get_piece_occ(t));
+
+		material_mg[piece::WHITE] += white * eval::MATERIAL_MG[t];
+		material_mg[piece::BLACK] += black * eval::MATERIAL_MG[t];
+		material_eg[piece::WHITE] += white * eval::MATERIAL_EG[t];
+		material_eg[piece::BLACK] += black * eval::MATERIAL_EG[t];
 	}
 
-	if (diag_attacks & board.get_color_occ(color) & board.get_piece_occ(piece::BISHOP)) {
-		return true;
+	phase = ((material_mg[piece::WHITE] + material_mg[piece::BLACK]) * 256) / eval::MATERIAL_MG_MAX;
+
+	/* Compute attack mobility bonus */
+	attackbonus[piece::WHITE] = bb::popcount(board.attacks(piece::WHITE)) * eval::ATTACK_BONUS;
+	attackbonus[piece::BLACK] = bb::popcount(board.attacks(piece::BLACK)) * eval::ATTACK_BONUS;
+
+	/* Compute safe mobility bonus */
+	for (int c = 0; c < 2; ++c) {
+		mobility_mg[c] = mobility_eg[c] = 0;
+
+		int bishop_mobility = 0, knight_mobility = 0, rook_mobility = 0, queen_mobility = 0;
+
+		bitboard bishops = board.get_color_occ(c) & board.get_piece_occ(piece::BISHOP);
+
+		while (bishops) {
+			bishop_mobility += bb::popcount(~board.attacks(!c) & attacks::bishop(bb::poplsb(bishops), board.get_global_occ()));
+		}
+
+		bitboard knights = board.get_color_occ(c) & board.get_piece_occ(piece::KNIGHT);
+
+		while (knights) {
+			knight_mobility += bb::popcount(~board.attacks(!c) & attacks::knight(bb::poplsb(knights)));
+		}
+
+		bitboard rooks = board.get_color_occ(c) & board.get_piece_occ(piece::ROOK);
+
+		while (rooks) {
+			rook_mobility += bb::popcount(~board.attacks(!c) & attacks::rook(bb::poplsb(rooks), board.get_global_occ()));
+		}
+
+		bitboard queens = board.get_color_occ(c) & board.get_piece_occ(piece::QUEEN);
+
+		while (queens) {
+			queen_mobility += bb::popcount(~board.attacks(!c) & attacks::queen(bb::poplsb(queens), board.get_global_occ()));
+		}
+
+		mobility_mg[c] += bishop_mobility * eval::MOBILITY_BISHOP;
+		mobility_mg[c] += knight_mobility * eval::MOBILITY_KNIGHT;
+		mobility_mg[c] += rook_mobility * eval::MOBILITY_ROOK_MG;
+		mobility_mg[c] += queen_mobility * eval::MOBILITY_QUEEN;
+
+		mobility_eg[c] += bishop_mobility * eval::MOBILITY_BISHOP;
+		mobility_eg[c] += knight_mobility * eval::MOBILITY_KNIGHT;
+		mobility_eg[c] += rook_mobility * eval::MOBILITY_ROOK_EG;
+		mobility_eg[c] += queen_mobility * eval::MOBILITY_QUEEN;
 	}
 
-	if (rank_attacks & board.get_color_occ(color) & board.get_piece_occ(piece::ROOK)) {
-		return true;
+	center_control[piece::WHITE] = center_control[piece::BLACK] = 0;
+
+	/* Compute center square control */
+	int center_squares[4] = { 27, 28, 35, 36 };
+
+	for (int i = 0; i < 4; ++i) {
+		center_control[piece::WHITE] += board.get_ad(piece::WHITE)[center_squares[i]] * eval::CENTER_CONTROL;
+		center_control[piece::BLACK] += board.get_ad(piece::BLACK)[center_squares[i]] * eval::CENTER_CONTROL;
 	}
 
-	if (attacks::knight(sq) & board.get_color_occ(color) & board.get_piece_occ(piece::KNIGHT)) {
-		return true;
+	/* Compute king safety */
+	king_safety[piece::WHITE] = king_safety[piece::BLACK] = 0;
+	king_adv_mg[piece::WHITE] = king_adv_mg[piece::BLACK] = 0;
+	king_adv_eg[piece::WHITE] = king_adv_eg[piece::BLACK] = 0;
+
+	for (int c = 0; c < 2; ++c) {
+		int ksq = bb::getlsb(board.get_color_occ(c) & board.get_piece_occ(piece::KING));
+		bitboard king_squares = attacks::king(ksq);
+
+		while (king_squares) {
+			int next = bb::poplsb(king_squares);
+
+			/* this could be better, but could also incentivise severely overprotecting the king */
+			king_safety[c] += (board.get_ad(c)[next] - board.get_ad(!c)[next]) * eval::KING_SAFETY;
+		}
+
+		int adv = square::rank(ksq);
+
+		if (c == piece::BLACK) {
+			adv = 7 - adv;
+		}
+
+		king_adv_mg[c] += adv * eval::KING_ADV_MG;
+		king_adv_eg[c] += adv * eval::KING_ADV_EG;
 	}
 
-	if (attacks::king(sq) & board.get_color_occ(color) & board.get_piece_occ(piece::KING)) {
-		return true;
+	/* Compute blocking pawn penalties, passed pawn bonus */
+	blocking_pawns[piece::WHITE] = blocking_pawns[piece::BLACK] = 0;
+	passed_pawns[piece::WHITE] = passed_pawns[piece::BLACK] = 0;
+	adv_pawn_mg[piece::WHITE] = adv_pawn_mg[piece::BLACK] = 0;
+	adv_pawn_eg[piece::WHITE] = adv_pawn_eg[piece::BLACK] = 0;
+	adv_passedpawn_mg[piece::WHITE] = adv_passedpawn_mg[piece::BLACK] = 0;
+	adv_passedpawn_eg[piece::WHITE] = adv_passedpawn_eg[piece::BLACK] = 0;
+	passed_pawns[piece::WHITE] = passed_pawns[piece::BLACK] = 0;
+
+	for (int c = 0; c < 2; ++c) {
+		for (int f = 0; f < 8; ++f) {
+			bitboard pawns = bb::file(f) & board.get_color_occ(c) & board.get_piece_occ(piece::PAWN);
+			int count = bb::popcount(pawns);
+
+			if (count) {
+				if (count > 1) {
+					blocking_pawns[c] += eval::BLOCKING_PAWNS;
+				}
+
+				bool passed = !bb::popcount(bb::file(f) & board.get_color_occ(!c) & board.get_piece_occ(piece::PAWN));
+
+				if (passed) {
+					passed_pawns[c] += eval::PASSED_PAWNS * count;
+				}
+
+				/* Grab pawn ranks and apply bonuses */
+				while (pawns) {
+					int adv = square::rank(bb::poplsb(pawns));
+
+					if (c == piece::BLACK) {
+						adv = 7 - adv;
+					}
+
+					adv_pawn_mg[c] += eval::ADV_PAWN_MG * adv;
+					adv_pawn_eg[c] += eval::ADV_PAWN_EG * adv;
+
+					if (passed) {
+						adv_passedpawn_mg[c] += eval::ADV_PASSEDPAWN_MG * adv;
+						adv_passedpawn_eg[c] += eval::ADV_PASSEDPAWN_EG * adv;
+					}
+				}
+			}
+		}
 	}
 
-	bitboard sq_mask = bb::mask(sq);
-	bitboard pawn_mask = bb::shift(sq_mask & ~FILE_A, left_dir) | bb::shift(sq_mask & ~FILE_H, right_dir);
+	/* Compute score */
+	int score = 0;
+	int ctm = color_to_move;
+	int opp = !ctm;
 
-	if (pawn_mask & board.get_color_occ(color) & board.get_piece_occ(piece::PAWN)) {
-		return true;
+	int material_score_mg = material_mg[ctm] - material_mg[opp];
+	int material_score_eg = material_eg[ctm] - material_eg[opp];
+
+	score += (material_score_mg * phase) / 256;
+	score += (material_score_eg * (256 - phase)) / 256;
+
+	score += attackbonus[ctm] - attackbonus[opp];
+
+	int mobility_score_mg = mobility_mg[ctm] - mobility_mg[opp];
+	int mobility_score_eg = mobility_eg[ctm] - mobility_eg[opp];
+
+	score += (mobility_score_mg * phase) / 256;
+	score += (mobility_score_eg * (256 - phase)) / 256;
+
+	score += (phase * (center_control[ctm] - center_control[opp])) / 256;
+
+	score += king_safety[ctm] - king_safety[opp];
+
+	score += blocking_pawns[ctm] - blocking_pawns[opp];
+
+	int adv_pawn_score_mg = adv_pawn_mg[ctm] - adv_pawn_mg[opp];
+	int adv_pawn_score_eg = adv_pawn_eg[ctm] - adv_pawn_eg[opp];
+	int adv_passedpawn_score_mg = adv_passedpawn_mg[ctm] - adv_passedpawn_mg[opp];
+	int adv_passedpawn_score_eg = adv_passedpawn_eg[ctm] - adv_passedpawn_eg[opp];
+
+	int adv_king_score_mg = king_adv_mg[ctm] - king_adv_mg[opp];
+	int adv_king_score_eg = king_adv_eg[ctm] - king_adv_eg[opp];
+
+	score += (phase * adv_pawn_score_mg) / 256;
+	score += ((256 - phase) * adv_pawn_score_eg) / 256;
+	score += (phase * adv_passedpawn_score_mg) / 256;
+	score += ((256 - phase) * adv_passedpawn_score_eg) / 256;
+
+	score += (phase * adv_king_score_mg) / 256;
+	score += ((256 - phase) * adv_king_score_eg) / 256;
+
+	/* Write debug if needed */
+	if (dbg) {
+		std::string output;
+
+		output += "            | white | black |\n";
+		output += "------------|-------|-------|\n";
+		output += util::format("material_mg | %5d | %5d |\n", material_mg[piece::WHITE], material_mg[piece::BLACK]);
+		output += util::format("material_eg | %5d | %5d |\n", material_eg[piece::WHITE], material_eg[piece::BLACK]);
+		output += util::format("attackbonus | %5d | %5d |\n", attackbonus[piece::WHITE], attackbonus[piece::BLACK]);
+		output += util::format("mobility_mg | %5d | %5d |\n", mobility_mg[piece::WHITE], mobility_mg[piece::BLACK]);
+		output += util::format("mobility_eg | %5d | %5d |\n", mobility_eg[piece::WHITE], mobility_eg[piece::BLACK]);
+		output += util::format("ctr_control | %5d | %5d |\n", center_control[piece::WHITE], center_control[piece::BLACK]);
+		output += util::format("king_safety | %5d | %5d |\n", king_safety[piece::WHITE], king_safety[piece::BLACK]);
+		output += util::format("blocked_pns | %5d | %5d |\n", blocking_pawns[piece::WHITE], blocking_pawns[piece::BLACK]);
+		output += util::format("passed_pns  | %5d | %5d |\n", passed_pawns[piece::WHITE], passed_pawns[piece::BLACK]);
+		output += util::format("adv_pawn_mg | %5d | %5d |\n", adv_pawn_mg[piece::WHITE], adv_pawn_mg[piece::BLACK]);
+		output += util::format("adv_pawn_eg | %5d | %5d |\n", adv_pawn_eg[piece::WHITE], adv_pawn_eg[piece::BLACK]);
+		output += util::format("adv_psd_mg  | %5d | %5d |\n", adv_passedpawn_mg[piece::WHITE], adv_passedpawn_mg[piece::BLACK]);
+		output += util::format("adv_psd_eg  | %5d | %5d |\n", adv_passedpawn_eg[piece::WHITE], adv_passedpawn_eg[piece::BLACK]);
+		output += util::format("adv_king_mg | %5d | %5d |\n", king_adv_mg[piece::WHITE], king_adv_mg[piece::BLACK]);
+		output += util::format("adv_king_eg | %5d | %5d |\n", king_adv_eg[piece::WHITE], king_adv_eg[piece::BLACK]);
+		output += util::format("phase       | %13d |\n", phase);
+
+		*dbg = output;
 	}
 
-	return false;
-}
-
-void Position::get_attackers_defenders(int sq, int& white, int& black) {
-	bitboard rook_attacks = attacks::rook(sq, get_board().get_global_occ());
-	bitboard bishop_attacks = attacks::bishop(sq, get_board().get_global_occ());
-	bitboard queen_attacks = rook_attacks | bishop_attacks;
-	bitboard king_attacks = attacks::king(sq);
-	bitboard knight_attacks = attacks::knight(sq);
-
-	bitboard mask = bb::mask(sq);
-	
-	bitboard wp_attacks = bb::shift(mask & ~RANK_1 & ~RANK_2 & ~FILE_H, SOUTHEAST) | bb::shift(mask & ~RANK_1 & ~RANK_2 & ~FILE_A, SOUTHWEST);
-	bitboard bp_attacks = bb::shift(mask & ~RANK_7 & ~RANK_8 & ~FILE_H, NORTHEAST) | bb::shift(mask & ~RANK_7 & ~RANK_8 & ~FILE_A, NORTHWEST);
-	
-	white = black = 0;
-
-	white += bb::popcount(rook_attacks & board.get_piece_occ(piece::ROOK) & board.get_color_occ(piece::WHITE));
-	black += bb::popcount(rook_attacks & board.get_piece_occ(piece::ROOK) & board.get_color_occ(piece::BLACK));
-	white += bb::popcount(bishop_attacks & board.get_piece_occ(piece::BISHOP) & board.get_color_occ(piece::WHITE));
-	black += bb::popcount(bishop_attacks & board.get_piece_occ(piece::BISHOP) & board.get_color_occ(piece::BLACK));
-	white += bb::popcount(knight_attacks & board.get_piece_occ(piece::KNIGHT) & board.get_color_occ(piece::WHITE));
-	black += bb::popcount(knight_attacks & board.get_piece_occ(piece::KNIGHT) & board.get_color_occ(piece::BLACK));
-	white += bb::popcount(queen_attacks & board.get_piece_occ(piece::QUEEN) & board.get_color_occ(piece::WHITE));
-	black += bb::popcount(queen_attacks & board.get_piece_occ(piece::QUEEN) & board.get_color_occ(piece::BLACK));
-	white += bb::popcount(wp_attacks & board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::WHITE));
-	black += bb::popcount(bp_attacks & board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::BLACK));
-	white += bb::popcount(king_attacks & board.get_piece_occ(piece::KING) & board.get_color_occ(piece::WHITE));
-	black += bb::popcount(king_attacks & board.get_piece_occ(piece::KING) & board.get_color_occ(piece::BLACK));
-}
-
-bitboard Position::get_current_attacks(int color) {
-	return ply.back().attacks[color];
+	return score + eval::TEMPO_BONUS;
 }
 
 zobrist::Key Position::get_tt_key() {
 	return ply.back().key;
-}
-
-bool Position::check() {
-	return (ply.back().attacks[!color_to_move] & board.get_color_occ(color_to_move) & board.get_piece_occ(piece::KING)) != 0;
-}
-
-bool Position::quiet() {
-	return !(check() || ply.back().last_move.get(Move::CAPTURE | Move::PROMOTION));
 }
 
 int Position::castle_rights() {

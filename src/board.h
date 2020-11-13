@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "attacks.h"
 #include "bitboard.h"
 #include "piece.h"
 #include "square.h"
@@ -49,6 +50,23 @@ namespace neocortex {
 		 * @return The removed piece.
 		 */
 		int remove(int sq);
+
+		/**
+		 * Replaces a piece on the board.
+		 *
+		 * @param sq Square to replace on.
+		 * @param p Piece to replace with.
+		 * @return The removed piece.
+		 */
+		int replace(int sq, int p);
+
+		/**
+		 * Gets a mask of squares attacked by a color.
+		 * 
+		 * @param c Source color
+		 * @return Bitbaord of attacked squares
+		 */
+		bitboard attacks(int c);
 
 		/**
 		 * Converts the board state to a FEN field.
@@ -97,6 +115,14 @@ namespace neocortex {
 		int get_piece(int sq);
 
 		/**
+		 * Gets the AD information for each color.
+		 * 
+		 * @param col Color
+		 * @return Array of attacks from col on each square.
+		 */
+		int* get_ad(int col);
+
+		/**
 		 * Gets the zobrist key for the board state.
 		 *
 		 * @return Current zobrist key.
@@ -105,7 +131,23 @@ namespace neocortex {
 	private:
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
+		int ad[2][64];
+		bitboard amask[2];
 		zobrist::Key key;
+
+		/**
+		 * Adds attacks from <sq> to the AD map.
+		 * 
+		 * @param sq Source square.
+		 */
+		void add_attacks(int sq);
+
+		/**
+		 * Removes attacks from <sq> from the AD map.
+		 *
+		 * @param sq Source square.
+		 */
+		void remove_attacks(int sq);
 	};
 
 	inline int Board::get_piece(int sq) {
@@ -126,5 +168,13 @@ namespace neocortex {
 
 	inline zobrist::Key Board::get_tt_key() {
 		return key;
+	}
+
+	inline int* Board::get_ad(int col) {
+		return ad[col];
+	}
+
+	inline bitboard Board::attacks(int col) {
+		return amask[col];
 	}
 }
