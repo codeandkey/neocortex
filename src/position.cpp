@@ -474,6 +474,152 @@ int Position::pseudolegal_moves(Move* out) {
 	return count;
 }
 
+void Position::order_moves(Move* moves, int num_moves, Move pv_move) {
+	int scores[MAX_PL_MOVES] = { 0 };
+
+	for (int i = 0; i < num_moves; ++i) {
+		/* Assign move scores */
+
+		// PV move bonus
+		if (moves[i] == pv_move) scores[i] += eval::ORDER_PV_MOVE;
+
+		// SEE on basic captures
+		if (board.get_color_occ(!color_to_move) & bb::mask(moves[i].dst())) scores[i] += see_capture(moves[i]);
+
+		// SEE on EP captures
+		if (piece::type(board.get_piece(moves[i].src())) == piece::PAWN && moves[i].dst() == ply.back().en_passant_square) scores[i] += see_capture(moves[i]);
+	}
+
+	/* Perform selection sort */
+	for (int i = 0; i < num_moves - 1; ++i) {
+		int m = scores[i];
+		int sind = i;
+
+		for (int j = i + 1; j < num_moves; ++j) {
+			if (scores[j] > m) {
+				sind = j;
+				m = scores[j];
+			}
+		}
+
+		if (sind != i) {
+			int tmp = scores[sind];
+			scores[sind] = scores[i];
+			scores[i] = tmp;
+
+			Move tmove = moves[sind];
+			moves[sind] = moves[i];
+			moves[i] = tmove;
+		}
+	}
+}
+
+int Position::see_capture(Move cap) {
+	int ret = SEE_ILLEGAL;
+
+	if (make_move(cap)) {
+		ret = see(cap.dst());
+	}
+
+	unmake_move(cap);
+	return ret;
+}
+
+int Position::see(int sq, bitboard valid_attackers) {
+	bitboard mask = bb::mask(sq);
+
+	if (!(board.attacks(color_to_move) & mask)) {
+		// No attackers, return no gain.
+		return 0;
+	}
+
+	bitboard ctm = board.get_color_occ(color_to_move);
+	int value = 0;
+	int lva = square::null;
+
+	/* Find least valuable attacker */
+
+	// Search for pawn attacks
+	bitboard pawn_attackers = attacks::pawn(!color_to_move, sq) & board.get_piece_occ(piece::PAWN) & ctm & valid_attackers;
+
+	if (pawn_attackers) {
+		lva = bb::poplsb(pawn_attackers);
+	}
+	else {
+		// Find bishop attackers
+		bitboard bishop_attacks = attacks::bishop(sq, board.get_global_occ());
+		bitboard bishop_attackers = bishop_attacks & ctm & board.get_piece_occ(piece::BISHOP) & valid_attackers;
+
+		if (bishop_attackers) {
+			lva = bb::poplsb(bishop_attackers);
+		}
+		else {
+			// Find knight attackers
+			bitboard knight_attackers = attacks::knight(sq) & ctm & board.get_piece_occ(piece::KNIGHT) & valid_attackers;
+
+			if (knight_attackers) {
+				lva = bb::poplsb(knight_attackers);
+			}
+			else {
+				// Find rook attackers
+				bitboard rook_attacks = attacks::rook(sq, board.get_global_occ());
+				bitboard rook_attackers = rook_attacks & ctm & board.get_piece_occ(piece::ROOK) & valid_attackers;
+
+				if (rook_attackers) {
+					lva = bb::poplsb(rook_attackers);
+				}
+				else {
+					// Find queen attackers
+					bitboard queen_attackers = (bishop_attacks | rook_attacks) & ctm & board.get_piece_occ(piece::QUEEN) & valid_attackers;
+
+					if (queen_attackers) {
+						lva = bb::poplsb(queen_attackers);
+					}
+					else {
+						// Find king attackers
+						bitboard king_attackers = attacks::king(sq) & ctm & board.get_piece_occ(piece::KING) & valid_attackers;
+
+						if (king_attackers) {
+							lva = bb::poplsb(king_attackers);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (square::is_valid(lva)) {
+		/* Remove LVA from board, ensure king is not in check */
+		int removed = board.remove(lva);
+
+		if (board.attacks(!color_to_move) & ctm & board.get_piece_occ(piece::KING)) {
+			// King in check, replace piece and try again.
+			board.place(lva, removed);
+			valid_attackers &= ~bb::mask(lva);
+			return see(sq, valid_attackers);
+		}
+
+		/* Perform capture with LVA, record material gain */
+		int dst_removed = board.replace(sq, removed);
+		int dst_value = eval::MATERIAL_MG[piece::type(dst_removed)];
+
+		color_to_move = !color_to_move;
+
+		int ret = dst_value - see(sq);
+
+		/* Undo capture, reset color to move */
+		color_to_move = !color_to_move;
+
+		board.replace(sq, dst_removed);
+		board.place(lva, removed);
+
+		return ret;
+	} else {
+		// No valid attackers, SEE is 0
+		return 0;
+	}
+}
+
 int Position::evaluate(std::string* dbg) {
 	int phase;
 

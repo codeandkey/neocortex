@@ -7,12 +7,14 @@
 
 #include "attacks.h"
 #include "util.h"
+#include "piece.h"
 #include "square.h"
 
 using namespace neocortex;
 
 bitboard attacks::king_attacks[64] = { 0 };
 bitboard attacks::knight_attacks[64] = { 0 };
+bitboard attacks::pawn_attacks[2][64] = { {0} };
 bitboard* attacks::rook_attacks[64] = { nullptr };
 bitboard* attacks::bishop_attacks[64] = { nullptr };
 
@@ -21,6 +23,19 @@ static bitboard make_rocc(int index, bitboard mask, int bits);
 void attacks::init() {
 	for (int sq = 0; sq < 64; ++sq) {
 		int src_r = square::rank(sq), src_f = square::file(sq);
+
+		if (src_r < 7) {
+			pawn_attacks[piece::WHITE][sq] = bb::shift(bb::mask(sq) & ~FILE_A, NORTHWEST) | bb::shift(bb::mask(sq) & ~FILE_H, NORTHEAST);
+		} else {
+			pawn_attacks[piece::WHITE][sq] = 0;
+		}
+
+		if (src_r > 0) {
+			pawn_attacks[piece::BLACK][sq] = bb::shift(bb::mask(sq) & ~FILE_A, SOUTHWEST) | bb::shift(bb::mask(sq) & ~FILE_H, SOUTHEAST);
+		}
+		else {
+			pawn_attacks[piece::BLACK][sq] = 0;
+		}
 
 		king_attacks[sq] |= bb::shift((bb::mask(sq) & ~FILE_H), EAST);
 		king_attacks[sq] |= bb::shift((bb::mask(sq) & ~FILE_A), WEST);

@@ -23,6 +23,7 @@ namespace neocortex {
 	constexpr int CASTLE_BLACK_Q = 8;
 
 	constexpr int MAX_PL_MOVES = 100;
+	constexpr int SEE_ILLEGAL = -100000;
 
 	class Position {
 	public:
@@ -156,6 +157,30 @@ namespace neocortex {
 		 * @return Number of moves generated.
 		 */
 		int pseudolegal_moves(Move* dst);
+
+		/**
+		 * Performs move ordering on a list of pseudolegal moves.
+		 *
+		 * @param moves Move list pointer.
+		 * @param num_moves Number of moves in the list.
+		 * @param pv_move PV move if available.
+		 */
+		void order_moves(Move* moves, int num_moves, Move pv_move = Move::null);
+
+		/**
+		 * Performs static exchange evaluation on a capture.
+		 * 
+		 * @param capture Capturing move.
+		 */
+		int see_capture(Move capture);
+
+		/**
+		 * Performs static exchange evaluation on a square.
+		 *
+		 * @param sq Destination square.
+		 * @param valid_attackers Mask of allowed attackers.
+		 */
+		int see(int sq, bitboard valid_attackers = ~0);
 	private:
 		Board board;
 		std::vector<State> ply;

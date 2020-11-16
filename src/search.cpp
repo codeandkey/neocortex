@@ -273,6 +273,8 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 	int num_pl_moves = root.pseudolegal_moves(pl_moves);
 	int num_moves = 0; /* num of legal moves */
 
+	root.order_moves(pl_moves, num_pl_moves, tt_move);
+
 	for (int i = 0; i < num_pl_moves; ++i) {
 		if (root.make_move(pl_moves[i])) {
 			num_moves++;
@@ -355,6 +357,8 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 	Move pl_moves[MAX_PL_MOVES];
 	int num_pl_moves = root.pseudolegal_moves(pl_moves);
 	int num_moves = 0; /* num of legal moves */
+
+	root.order_moves(pl_moves, num_pl_moves);
 
 	for (int i = 0; i < num_pl_moves; ++i) {
 		if (root.make_move(pl_moves[i])) {
