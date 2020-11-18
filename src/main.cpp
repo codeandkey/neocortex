@@ -9,6 +9,7 @@
 #include "log.h"
 #include "platform.h"
 #include "uci.h"
+#include "test.h"
 #include "tt.h"
 #include "zobrist.h"
 #include "search.h"
@@ -32,7 +33,16 @@ int main(int argc, char** argv) {
 
 	if (argc > 1) {
 		if (std::string("test") == std::string(argv[1])) {
+#ifdef NDEBUG
+			neocortex_error("Tests can only be run on debug builds.\n");
+			return -1;
+#else
+			return Test::run_all();
+#endif
 		} else {
+			neocortex_error("Unknown argument \"%s\"\n", argv[1]);
+			neocortex_info("Available modes: debug, uci\n");
+			return -1;
 		}
 	}
 
