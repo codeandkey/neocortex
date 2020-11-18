@@ -62,6 +62,14 @@ namespace neocortex {
 			void stop();
 
 			/**
+			 * Sets the number of threads in the search.
+			 * Defaults to the number of processors.
+			 *
+			 * @param count Number of search threads.
+			 */
+			void set_threads(int count);
+
+			/**
 			 * Loads a new position into the search.
 			 *
 			 * @param p Position to load.
@@ -86,13 +94,16 @@ namespace neocortex {
 			 * Search thread worker function.
 			 *
 			 * @param out UCI output stream.
+			 * @param id Thread id.
+			 * @param root Root position for worker.
 			 */
-			void worker(std::ostream& out);
+			void worker(std::ostream& out, int id, Position root);
 
 			/**
 			 * Run a search.
 			 * This function is called once per search and initializes the time control points.
 			 *
+			 * @param root Position to search.
 			 * @param depth Search depth.
 			 * @param alpha Search alpha.
 			 * @param beta Search beta.
@@ -100,12 +111,13 @@ namespace neocortex {
 			 *
 			 * @return Search score.
 			 */
-			int search_sync(int depth, int alpha, int beta, PV* pv_line);
+			int search_sync(Position& root, int depth, int alpha, int beta, PV* pv_line);
 
 			/**
 			 * Alpha-beta search routine.
 			 * This function is called recursively throughout the search.
 			 *
+			 * @param root Position to search.
 			 * @param depth Search depth.
 			 * @param alpha Search alpha.
 			 * @param beta Search beta.
@@ -113,12 +125,13 @@ namespace neocortex {
 			 *
 			 * @return Search score.
 			 */
-			int alphabeta(int depth, int alpha, int beta, PV* pv_line);
+			int alphabeta(Position& root, int depth, int alpha, int beta, PV* pv_line);
 
 			/**
 			 * Quiescence search routine.
 			 * This function is called selectively at the tail end of the search tree.
 			 *
+			 * @param root Position to search.
 			 * @param depth Search depth.
 			 * @param alpha Search alpha.
 			 * @param beta Search beta.
@@ -126,9 +139,12 @@ namespace neocortex {
 			 *
 			 * @return Search score.
 			 */
-			int quiescence(int depth, int alpha, int beta, PV* pv_line);
+			int quiescence(Position& root, int depth, int alpha, int beta, PV* pv_line);
 
-			std::thread search_thread;
+			std::atomic<int> num_threads;
+
+			std::vector<std::thread> search_threads;
+			std::vector<std::ostream> null_streams;
 			std::mutex search_mutex;
 
 			Position root;
