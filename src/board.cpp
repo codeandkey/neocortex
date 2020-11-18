@@ -19,14 +19,10 @@ using namespace neocortex;
 Board::Board() {
 	for (int i = 0; i < 64; ++i) {
 		state[i] = -1;
-
-		ad[piece::WHITE][i] = 0;
-		ad[piece::BLACK][i] = 0;
 	}
 
 	for (int c = 0; c < 2; ++c) {
 		color_occ[c] = 0;
-		amask[c] = 0;
 	}
 
 	for (int p = 0; p < 6; ++p) {
@@ -82,20 +78,7 @@ void Board::place(int sq, int p) {
 	assert(piece::is_valid(p));
 	assert(state[sq] == piece::null);
 
-	bitboard updates = 0;
-
-	updates |= attacks::rook(sq, global_occ) & (piece_occ[piece::ROOK] | piece_occ[piece::QUEEN]);
-	updates |= attacks::bishop(sq, global_occ) & (piece_occ[piece::BISHOP] | piece_occ[piece::QUEEN]);
-
-	bitboard updates_tmp = updates;
-
-	while (updates_tmp) {
-		remove_attacks(bb::poplsb(updates_tmp));
-	}
-
 	state[sq] = p;
-
-	add_attacks(sq);
 
 	bitboard mask = bb::mask(sq);
 
@@ -103,28 +86,11 @@ void Board::place(int sq, int p) {
 	piece_occ[piece::type(p)] ^= mask;
 	color_occ[piece::color(p)] ^= mask;
 	key ^= zobrist::piece(sq, p);
-
-	while (updates) {
-		add_attacks(bb::poplsb(updates));
-	}
 }
 
 int Board::remove(int sq) {
 	assert(square::is_valid(sq));
 	assert(piece::is_valid(state[sq]));
-
-	bitboard updates = 0;
-
-	updates |= attacks::rook(sq, global_occ) & (piece_occ[piece::ROOK] | piece_occ[piece::QUEEN]);
-	updates |= attacks::bishop(sq, global_occ) & (piece_occ[piece::BISHOP] | piece_occ[piece::QUEEN]);
-
-	bitboard updates_tmp = updates;
-
-	while (updates_tmp) {
-		remove_attacks(bb::poplsb(updates_tmp));
-	}
-
-	remove_attacks(sq);
 
 	int res = state[sq];
 
@@ -137,18 +103,12 @@ int Board::remove(int sq) {
 
 	state[sq] = piece::null;
 
-	while (updates) {
-		add_attacks(bb::poplsb(updates));
-	}
-
 	return res;
 }
 
 int Board::replace(int sq, int p) {
 	assert(square::is_valid(sq));
 	assert(piece::is_valid(state[sq]));
-
-	remove_attacks(sq);
 
 	int res = state[sq];
 
@@ -163,7 +123,6 @@ int Board::replace(int sq, int p) {
 	key ^= zobrist::piece(sq, p);
 
 	state[sq] = p;
-	add_attacks(sq);
 
 	return res;
 }
@@ -220,88 +179,25 @@ std::string Board::to_pretty() {
 	return output;
 }
 
-void Board::add_attacks(int sq) {
-	int col = piece::color(state[sq]);
-	int pt = piece::type(state[sq]);
+bitboard Board::attacks_on(int sq) {
+	bitboard white_pawns = piece_occ[piece::PAWN] & color_occ[piece::WHITE];
+	bitboard black_pawns = piece_occ[piece::PAWN] & color_occ[piece::BLACK];
+	bitboard rooks_queens = piece_occ[piece::ROOK] | piece_occ[piece::QUEEN];
+	bitboard bishops_queens = piece_occ[piece::BISHOP] | piece_occ[piece::QUEEN];
 
-	bitboard att = 0;
-
-	switch (pt) {
-	case piece::PAWN:
-	{
-		int left_dir = (col == piece::WHITE) ? NORTHWEST : SOUTHWEST;
-		int right_dir = (col == piece::WHITE) ? NORTHEAST : SOUTHEAST;
-
-		bitboard left_att = bb::shift(bb::mask(sq) & ~FILE_A, left_dir);
-		bitboard right_att = bb::shift(bb::mask(sq) & ~FILE_H, right_dir);
-
-		att = left_att | right_att;
-	}
-	break;
-	case piece::BISHOP:
-		att = attacks::bishop(sq, global_occ);
-		break;
-	case piece::KNIGHT:
-		att = attacks::knight(sq);
-		break;
-	case piece::ROOK:
-		att = attacks::rook(sq, global_occ);
-		break;
-	case piece::QUEEN:
-		att = attacks::queen(sq, global_occ);
-		break;
-	case piece::KING:
-		att = attacks::king(sq);
-		break;
-	}
-
-	amask[col] |= att;
-
-	while (att) {
-		ad[col][bb::poplsb(att)]++;
-	}
+	return (attacks::pawn(piece::WHITE, sq) & black_pawns) |
+		(attacks::pawn(piece::BLACK, sq) & white_pawns) |
+		(attacks::knight(sq) & piece_occ[piece::KNIGHT]) |
+		(attacks::bishop(sq, global_occ) & bishops_queens) |
+		(attacks::rook(sq, global_occ) & rooks_queens);
 }
 
-void Board::remove_attacks(int sq) {
-	int col = piece::color(state[sq]);
-	int pt = piece::type(state[sq]);
+bool Board::mask_is_attacked(bitboard mask, int col) {
+	bitboard opp = color_occ[col];
 
-	bitboard att = 0;
-
-	switch (pt) {
-	case piece::PAWN:
-	{
-		int left_dir = (col == piece::WHITE) ? NORTHWEST : SOUTHWEST;
-		int right_dir = (col == piece::WHITE) ? NORTHEAST : SOUTHEAST;
-
-		bitboard left_att = bb::shift(bb::mask(sq) & ~FILE_A, left_dir);
-		bitboard right_att = bb::shift(bb::mask(sq) & ~FILE_H, right_dir);
-
-		att = left_att | right_att;
-	}
-	break;
-	case piece::BISHOP:
-		att = attacks::bishop(sq, global_occ);
-		break;
-	case piece::KNIGHT:
-		att = attacks::knight(sq);
-		break;
-	case piece::ROOK:
-		att = attacks::rook(sq, global_occ);
-		break;
-	case piece::QUEEN:
-		att = attacks::queen(sq, global_occ);
-		break;
-	case piece::KING:
-		att = attacks::king(sq);
-		break;
+	while (mask) {
+		if (attacks_on(bb::poplsb(mask)) & opp) return true;
 	}
 
-	while (att) {
-		int sq = bb::poplsb(att);
-
-		if (!--ad[col][sq]) {
-			amask[col] &= ~bb::mask(sq);
-		}
-	}
+	return false;
 }

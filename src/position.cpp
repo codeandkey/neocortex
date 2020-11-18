@@ -230,7 +230,7 @@ bool Position::make_move(Move move) {
 	}
 
 	/* Check that king is not in attack */
-	return (board.attacks(color_to_move) & board.get_piece_occ(piece::KING) & board.get_color_occ(!color_to_move)) == 0;
+	return !check(!color_to_move);
 }
 
 void Position::unmake_move(Move move) {
@@ -439,8 +439,8 @@ int Position::pseudolegal_moves(Move* out) {
 
 	/* We perform most of the legal move tests here, notably the noattack and occ tests */
 	bitboard castle_rank = (color_to_move == piece::WHITE) ? RANK_1 : RANK_8;
-	bitboard noattack_ks = castle_rank & (FILE_E | FILE_F);
-	bitboard noattack_qs = castle_rank & (FILE_E | FILE_D);
+	bitboard noattack_ks = castle_rank & (FILE_E | FILE_F | FILE_G);
+	bitboard noattack_qs = castle_rank & (FILE_E | FILE_D | FILE_C);
 	bitboard no_occ_ks = castle_rank & (FILE_F | FILE_G);
 	bitboard no_occ_qs = castle_rank & (FILE_B | FILE_C | FILE_D);
 
@@ -453,7 +453,7 @@ int Position::pseudolegal_moves(Move* out) {
 		/* occ test */
 		if (!(board.get_global_occ() & no_occ_ks)) {
 			/* noattack test */
-			if (!(board.attacks(!color_to_move) & noattack_ks)) {
+			if (!board.mask_is_attacked(noattack_ks, !color_to_move)) {
 				out[count++] = Move(king_src, ks_dst);
 			}
 		}
@@ -464,7 +464,7 @@ int Position::pseudolegal_moves(Move* out) {
 		/* occ test */
 		if (!(board.get_global_occ() & no_occ_qs)) {
 			/* noattack test */
-			if (!(board.attacks(!color_to_move) & noattack_qs)) {
+			if (!board.mask_is_attacked(noattack_qs, !color_to_move)) {
 				out[count++] = Move(king_src, qs_dst);
 			}
 		}
@@ -528,11 +528,6 @@ int Position::see_capture(Move cap) {
 int Position::see(int sq, bitboard valid_attackers) {
 	bitboard mask = bb::mask(sq);
 
-	if (!(board.attacks(color_to_move) & mask)) {
-		// No attackers, return no gain.
-		return 0;
-	}
-
 	bitboard ctm = board.get_color_occ(color_to_move);
 	int value = 0;
 	int lva = square::null;
@@ -589,15 +584,8 @@ int Position::see(int sq, bitboard valid_attackers) {
 	}
 
 	if (square::is_valid(lva)) {
-		/* Remove LVA from board, ensure king is not in check */
+		/* Remove LVA from board */
 		int removed = board.remove(lva);
-
-		if (board.attacks(!color_to_move) & ctm & board.get_piece_occ(piece::KING)) {
-			// King in check, replace piece and try again.
-			board.place(lva, removed);
-			valid_attackers &= ~bb::mask(lva);
-			return see(sq, valid_attackers);
-		}
 
 		/* Perform capture with LVA, record material gain */
 		int dst_removed = board.replace(sq, removed);
@@ -652,14 +640,15 @@ int Position::evaluate(std::string* dbg) {
 	phase = ((material_mg[piece::WHITE] + material_mg[piece::BLACK]) * 256) / eval::MATERIAL_MG_MAX;
 
 	/* Compute attack mobility bonus */
-	attackbonus[piece::WHITE] = bb::popcount(board.attacks(piece::WHITE)) * eval::ATTACK_BONUS;
-	attackbonus[piece::BLACK] = bb::popcount(board.attacks(piece::BLACK)) * eval::ATTACK_BONUS;
+	attackbonus[piece::WHITE] = 0;// bb::popcount(board.attacks(piece::WHITE))* eval::ATTACK_BONUS;
+	attackbonus[piece::BLACK] = 0;// bb::popcount(board.attacks(piece::BLACK))* eval::ATTACK_BONUS;
 
 	/* Compute safe mobility bonus */
 	for (int c = 0; c < 2; ++c) {
 		mobility_mg[c] = mobility_eg[c] = 0;
+		continue;
 
-		int bishop_mobility = 0, knight_mobility = 0, rook_mobility = 0, queen_mobility = 0;
+		/*int bishop_mobility = 0, knight_mobility = 0, rook_mobility = 0, queen_mobility = 0;
 
 		bitboard bishops = board.get_color_occ(c) & board.get_piece_occ(piece::BISHOP);
 
@@ -693,7 +682,7 @@ int Position::evaluate(std::string* dbg) {
 		mobility_eg[c] += bishop_mobility * eval::MOBILITY_BISHOP;
 		mobility_eg[c] += knight_mobility * eval::MOBILITY_KNIGHT;
 		mobility_eg[c] += rook_mobility * eval::MOBILITY_ROOK_EG;
-		mobility_eg[c] += queen_mobility * eval::MOBILITY_QUEEN;
+		mobility_eg[c] += queen_mobility * eval::MOBILITY_QUEEN;*/
 	}
 
 	center_control[piece::WHITE] = center_control[piece::BLACK] = 0;
@@ -702,8 +691,8 @@ int Position::evaluate(std::string* dbg) {
 	int center_squares[4] = { 27, 28, 35, 36 };
 
 	for (int i = 0; i < 4; ++i) {
-		center_control[piece::WHITE] += board.get_ad(piece::WHITE)[center_squares[i]] * eval::CENTER_CONTROL;
-		center_control[piece::BLACK] += board.get_ad(piece::BLACK)[center_squares[i]] * eval::CENTER_CONTROL;
+		//center_control[piece::WHITE] += board.get_ad(piece::WHITE)[center_squares[i]] * eval::CENTER_CONTROL;
+		//center_control[piece::BLACK] += board.get_ad(piece::BLACK)[center_squares[i]] * eval::CENTER_CONTROL;
 	}
 
 	/* Compute king safety */
@@ -719,7 +708,7 @@ int Position::evaluate(std::string* dbg) {
 			int next = bb::poplsb(king_squares);
 
 			/* this could be better, but could also incentivise severely overprotecting the king */
-			king_safety[c] += (board.get_ad(c)[next] - board.get_ad(!c)[next]) * eval::KING_SAFETY;
+			//king_safety[c] += (board.get_ad(c)[next] - board.get_ad(!c)[next]) * eval::KING_SAFETY;
 		}
 
 		int adv = square::rank(ksq);

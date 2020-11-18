@@ -58,7 +58,7 @@ void perft_movegen(Position& p, int depth) {
 		current_results.nodes++;
 
 		if (p.capture()) current_results.captures++;
-		if (p.check()) current_results.checks++;
+		if (p.check(p.get_color_to_move())) current_results.checks++;
 	
 		return;
 	}

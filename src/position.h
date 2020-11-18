@@ -103,9 +103,10 @@ namespace neocortex {
 		/**
 		 * Test if the position is a check.
 		 *
-		 * @return true if the color to move is in check, false otherwise.
+		 * @param col Color to test.
+		 * @return true if col is in check, false otherwise.
 		 */
-		bool check();
+		bool check(int col);
 
 		/**
 		 * Test if the last move made was a capture.
@@ -195,7 +196,7 @@ namespace neocortex {
 		return ply.back().captured_piece != piece::null;
 	}
 
-	inline bool Position::check() {
-		return board.attacks(!color_to_move) & board.get_piece_occ(piece::KING) & board.get_color_occ(color_to_move);
+	inline bool Position::check(int col) {
+		return board.attacks_on(bb::getlsb(board.get_piece_occ(piece::KING) & board.get_color_occ(col))) & board.get_color_occ(!col);
 	}
 }
