@@ -14,30 +14,30 @@
 #include "search.h"
 
 #include <iostream>
+#include <string>
 
 using namespace neocortex;
 
 int main(int argc, char** argv) {
+
 #ifdef NEOCORTEX_DEBUG
 	log::set_level(log::DEBUG);
 #endif
 
+	neocortex_info(NEOCORTEX_NAME " " NEOCORTEX_VERSION " " NEOCORTEX_BUILDTIME " " NEOCORTEX_DEBUG_STR "\n");
+
+	zobrist::init();
+	attacks::init();
+	tt::init();
+
+	if (argc > 1) {
+		if (std::string("test") == std::string(argv[1])) {
+		} else {
+		}
+	}
+
 	try {
-		neocortex_debug("Starting neocortex %s\n", NEOCORTEX_VERSION);
-		neocortex_debug("Build: %s\n", NEOCORTEX_BUILDTIME);
-		neocortex_debug("Platform: %s\n", NEOCORTEX_PLATFORM);
-
-#ifdef NEOCORTEX_DEBUG
-		neocortex_warn("Compile time debug enabled. Performance will be slower!\n");
-#endif
-
-		uci::connect(std::cin, std::cout);
-
-		zobrist::init();
-		attacks::init();
-		tt::init();
-
-		uci::begin(std::cin, std::cout);
+		uci::start(std::cin, std::cout);
 	}
 	catch (std::exception& e) {
 		neocortex_error("Unhandled exception: %s\n", e.what());

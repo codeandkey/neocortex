@@ -103,7 +103,7 @@ void search::Search::worker(std::ostream& out) {
 
 	Move best_move;
 
-	neocortex_info("snapshot [%s]:\n%s", root.to_fen().c_str(), Eval(root).to_table().c_str());
+	neocortex_debug("at [%s]:\n%s", root.to_fen().c_str(), Eval(root).to_table().c_str());
 
 	/* Evaluate the position at depth 0 for an initial score. */
 	out << "info depth 0 nodes 1 score " << score::to_uci(Eval(root).to_score()) << "\n";

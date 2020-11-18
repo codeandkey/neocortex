@@ -13,10 +13,10 @@ OUTPUT = neocortex
 debug: CXXFLAGS+=-g
 debug: clean $(OUTPUT)
 
-profile: CXXFLAGS+=-g
-profile: CXXFLAGS+=-pg
-profile: LDFLAGS+=-pg
-profile: clean $(OUTPUT)
+test: CXXFLAGS+=-g
+test: CXXFLAGS+=-pg
+test: LDFLAGS+=-pg
+test: clean $(OUTPUT)
 
 release: CXXFLAGS+=-DNDEBUG
 release: clean $(OUTPUT)

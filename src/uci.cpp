@@ -25,7 +25,7 @@ static std::string read_command(std::istream& in) {
 	return util::trim(output);
 }
 
-void uci::connect(std::istream& in, std::ostream& out) {
+void uci::start(std::istream & in, std::ostream & out) {
 	std::string handshake  = read_command(in);
 
 	if (handshake != "uci") {
@@ -35,9 +35,7 @@ void uci::connect(std::istream& in, std::ostream& out) {
 	out << "uciok\n";
 	out << "id name " << uci::NAME << "\n";
 	out << "id author " << uci::AUTHOR << "\n";
-}
 
-void uci::begin(std::istream & in, std::ostream & out) {
 	search::Search searcher;
 
 	while (true) {

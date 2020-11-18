@@ -8,21 +8,32 @@
 #include "tt.h"
 #include "log.h"
 
+#include <cstdlib>
 #include <cassert>
+#include <thread>
+#include <mutex>
 #include <vector>
 
 using namespace neocortex;
 
-static std::vector<tt::entry> tt_vector;
+static tt::entry* tt_buffer;
+static int tt_buffer_size;
+static std::mutex tt_mutex;
 
 void tt::init(size_t mib) {
-	assert(mib >= 16);
-
-	tt_vector.clear();
-	tt_vector.resize(((size_t) mib * 1024 * 1024) / sizeof(tt::entry));
-	neocortex_debug("Initialized %d MiB hash with %d entries\n", mib, tt_vector.size());
+	tt::resize(mib);
 }
 
 tt::entry* tt::lookup(zobrist::Key key) {
-	return &tt_vector[key % tt_vector.size()];
+	return &tt_buffer[key % tt_buffer_size];
+}
+
+void tt::resize(int mb) {
+	std::lock_guard<std::mutex> lock(tt_mutex);
+	if (tt_buffer) delete[] tt_buffer;
+
+	tt_buffer_size = mb * 1024 * 1024 / sizeof(tt::entry);
+	tt_buffer = new tt::entry[tt_buffer_size];
+
+	neocortex_debug("Transposition table resized to %d mb\n", mb);
 }
