@@ -15,21 +15,26 @@
 #include <cstring>
 #include <cassert>
 #include <cmath>
+#include <thread>
 
 using namespace neocortex;
 
 static int safe_parseint(std::vector<std::string> parts, size_t ind);
 
-search::Search::Search(Position root) : root(root) {}
+search::Search::Search(Position root) : root(root) {
+	set_threads(std::thread::hardware_concurrency());
+}
 
 search::Search::~Search() {
 	stop();
 }
 
 void search::Search::go(std::vector<std::string> args, std::ostream& out) {
-	if (search_thread.joinable()) {
-		stop();
-		search_thread.join();
+	for (auto &i : search_threads) {
+		if (i.joinable()) {
+			stop();
+			break;
+		}
 	}
 
 	wtime = btime = winc = binc = movetime = depth = nodes = -1;
@@ -56,16 +61,26 @@ void search::Search::go(std::vector<std::string> args, std::ostream& out) {
 	neocortex_debug("Parsed all arguments.\n");
 
 	should_stop = false;
-	search_thread = std::thread([&] { worker(out); });
+	numnodes = 0;
+	depth_starttime = util::time_now();
+
+	search_threads.push_back(std::thread([&] { worker(out, 0, root); }));
+
+	for (int i = 1; i < num_threads; ++i) {
+		search_threads.push_back(std::thread([&] { worker(out, i, root); }));
+	}
 }
 
 void search::Search::stop() {
-	if (!search_thread.joinable()) {
-		return;
+	should_stop = true;
+
+	for (auto &t : search_threads) {
+		if (!t.joinable()) continue;
+
+		t.join();
 	}
 
-	should_stop = true;
-	search_thread.join();
+	search_threads.clear();
 }
 
 void search::Search::load(Position p) {
@@ -89,7 +104,7 @@ void search::Search::set_debug(bool enabled) {
 	this->debug = enabled;
 }
 
-void search::Search::worker(std::ostream& out) {
+void search::Search::worker(std::ostream& out, int id, Position root) {
 	int next_depth = 2;
 	int value = 0;
 	float ebf = -1.0f; /* effective branching factor, set after depth 3 */
@@ -104,25 +119,30 @@ void search::Search::worker(std::ostream& out) {
 
 	std::string eval_dbg;
 	int cur_score = root.evaluate(&eval_dbg);
-	neocortex_info("snapshot [%s]:\n%s", root.to_fen().c_str(), eval_dbg.c_str());
+
+	if (!id) neocortex_debug("at [%s]:\n%s", root.to_fen().c_str(), eval_dbg.c_str());
 
 	/* Evaluate the position at depth 0 for an initial score. */
-	out << "info depth 0 nodes 1 score " << score::to_uci(cur_score) << "\n";
-	out.flush();
+	if (!id) {
+		out << "info depth 0 nodes 1 score " << score::to_uci(cur_score) << "\n";
+		out.flush();
+	}
 
 	/* Search depth 1 before setting any time constraints. */
 	PV first_pv;
 
-	value = search_sync(1, score::CHECKMATED, score::CHECKMATE, &first_pv);
+	value = search_sync(root, 1, score::CHECKMATED, score::CHECKMATE, &first_pv);
 
-	out << "info depth 1";
+	if (!id) {
+		out << "info depth 1";
+
+		if (first_pv.len > 1) {
+			out << " seldepth " << (first_pv.len - 1);
+		}
 	
-	if (first_pv.len > 1) {
-		out << " seldepth " << (first_pv.len - 1);
+		out << " nodes " << numnodes << " score " << score::to_uci(value) <<  " pv " << first_pv.to_string() << "\n";
+		out.flush();
 	}
-	
-	out << " nodes " << numnodes << " score " << score::to_uci(value) <<  " pv " << first_pv.to_string() << "\n";
-	out.flush();
 
 	ebf_nodes[1] = numnodes;
 
@@ -162,7 +182,7 @@ void search::Search::worker(std::ostream& out) {
 		/* OK to start next depth */
 		PV next_pv;
 
-		int next_value = search_sync(next_depth, score::CHECKMATED, score::CHECKMATE, &next_pv);
+		int next_value = search_sync(root, next_depth, score::CHECKMATED, score::CHECKMATE, &next_pv);
 
 		if (next_value == score::INCOMPLETE) break;
 
@@ -173,20 +193,22 @@ void search::Search::worker(std::ostream& out) {
 		assert(iter_time >= 0);
 		if (!iter_time) iter_time = 1;
 
-		/* Write info from the results. */
-		out << "info depth " << next_depth;
+		if (!id) {
+			/* Write info from the results. */
+			out << "info depth " << next_depth;
 
-		if (next_pv.len > next_depth) {
-			out << " seldepth " << (next_pv.len - next_depth);
+			if (next_pv.len > next_depth) {
+				out << " seldepth " << (next_pv.len - next_depth);
+			}
+
+			out << " nodes " << numnodes;
+			out << " time " << iter_time;
+			out << " nps " << (int) (1000.0 * (double) numnodes / (double) iter_time);
+			out << " score " << score::to_uci(value);
+			out << " pv " << next_pv.to_string();
+			out << "\n";
+			out.flush();
 		}
-
-		out << " nodes " << numnodes;
-		out << " time " << iter_time;
-		out << " nps " << (int) (1000.0 * (double) numnodes / (double) iter_time);
-		out << " score " << score::to_uci(value);
-		out << " pv " << next_pv.to_string();
-		out << "\n";
-		out.flush();
 
 		ebf_nodes[next_depth] = numnodes;
 		ebf_times[next_depth] = iter_time;
@@ -202,18 +224,18 @@ void search::Search::worker(std::ostream& out) {
 	/* Write the best move found. */
 	assert(best_move.is_valid());
 
-	out << util::format("bestmove %s\n", best_move.to_uci().c_str());
-	out.flush();
+	if (!id) {
+		out << util::format("bestmove %s\n", best_move.to_uci().c_str());
+		out.flush();
+	}
 }
 
-int search::Search::search_sync(int depth, int alpha, int beta, PV* pv_line) {
-	numnodes = 0;
-	depth_starttime = util::time_now();
+int search::Search::search_sync(Position& root, int depth, int alpha, int beta, PV* pv_line) {
 
-	return alphabeta(depth, alpha, beta, pv_line);
+	return alphabeta(root, depth, alpha, beta, pv_line);
 }
 
-int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
+int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, PV* pv_line) {
 	PV local_pv;
 	Move tt_move;
 	int value;
@@ -231,7 +253,7 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 	}
 
 	if (!depth) {
-		return quiescence(search::QDEPTH, alpha, beta, pv_line);
+		return quiescence(root, search::QDEPTH, alpha, beta, pv_line);
 	}
 
 	int alpha_orig = alpha;
@@ -244,7 +266,7 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 				// Re-search under pv node to regenerate complete pv, should be fast as all should hit TT
 				root.make_move(entry->pv_move);
 
-				value = score::parent(-alphabeta(depth - 1, -beta, -alpha, &local_pv));
+				value = score::parent(-alphabeta(root, depth - 1, -beta, -alpha, &local_pv));
 
 				pv_line->moves[0] = entry->pv_move;
 				pv_line->len = local_pv.len + 1;
@@ -279,7 +301,7 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 		if (root.make_move(pl_moves[i])) {
 			num_moves++;
 
-			value = score::parent(-alphabeta(depth - 1, -beta, -alpha, &local_pv));
+			value = score::parent(-alphabeta(root, depth - 1, -beta, -alpha, &local_pv));
 
 			root.unmake_move(pl_moves[i]);
 
@@ -334,7 +356,7 @@ int search::Search::alphabeta(int depth, int alpha, int beta, PV* pv_line) {
 	return alpha;
 }
 
-int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
+int search::Search::quiescence(Position& root, int depth, int alpha, int beta, PV* pv_line) {
 	PV local_pv;
 
 	if (is_time_expired() || should_stop) {
@@ -364,7 +386,7 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 		if (root.make_move(pl_moves[i])) {
 			num_moves++;
 
-			int value = score::parent(-quiescence(depth - 1, -beta, -alpha, &local_pv));
+			int value = score::parent(-quiescence(root, depth - 1, -beta, -alpha, &local_pv));
 
 			root.unmake_move(pl_moves[i]);
 
@@ -400,6 +422,12 @@ int search::Search::quiescence(int depth, int alpha, int beta, PV* pv_line) {
 	}
 
 	return alpha;
+}
+
+void search::Search::set_threads(int num) {
+	num_threads = num;
+
+	neocortex_debug("Using %d threads for searching.\n", num);
 }
 
 int safe_parseint(std::vector<std::string> parts, size_t ind) {

@@ -15,6 +15,7 @@
 #include "search.h"
 
 #include <iostream>
+#include <string>
 
 using namespace neocortex;
 
@@ -23,30 +24,29 @@ int main(int argc, char** argv) {
 	log::set_level(log::DEBUG);
 #endif
 
-	try {
-		neocortex_debug("Starting neocortex %s\n", NEOCORTEX_VERSION);
-		neocortex_debug("Build: %s\n", NEOCORTEX_BUILDTIME);
-		neocortex_debug("Platform: %s\n", NEOCORTEX_PLATFORM);
+	neocortex_info(NEOCORTEX_NAME " " NEOCORTEX_VERSION " " NEOCORTEX_BUILDTIME " " NEOCORTEX_DEBUG_STR "\n");
 
-#ifdef NEOCORTEX_DEBUG
-		neocortex_warn("Compile time debug enabled. Performance will be slower!\n");
+	zobrist::init();
+	attacks::init();
+	tt::init();
+
+	if (argc > 1) {
+		if (std::string("test") == std::string(argv[1])) {
+#ifdef NDEBUG
+			neocortex_error("Tests can only be run on debug builds.\n");
+			return -1;
+#else
+			return Test::run_all();
 #endif
-
-		if (argc > 1 && !strcmp(argv[1], "test")) {
-			neocortex_info("Starting in test mode.\n");
-
-			return test::Test::run_all();
 		} else {
-			neocortex_info("Starting in UCI mode.\n");
-
-			uci::connect(std::cin, std::cout);
-
-			zobrist::init();
-			attacks::init();
-			tt::init();
-
-			uci::begin(std::cin, std::cout);
+			neocortex_error("Unknown argument \"%s\"\n", argv[1]);
+			neocortex_info("Available modes: debug, uci\n");
+			return -1;
 		}
+	}
+
+	try {
+		uci::start(std::cin, std::cout);
 	}
 	catch (std::exception& e) {
 		neocortex_error("Unhandled exception: %s\n", e.what());

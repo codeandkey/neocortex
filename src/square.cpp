@@ -34,6 +34,6 @@ std::string square::to_uci(int sq) {
 	return output;
 }
 
-NC_TEST(square_is_valid_works, {
-	return 0;
-});
+NC_TEST(square_is_valid_works) {
+	NC_ASSERT(false);
+}

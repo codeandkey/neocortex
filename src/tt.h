@@ -42,5 +42,12 @@ namespace neocortex {
 		 * @return Matching entry for key.
 		 */
 		entry* lookup(zobrist::Key key);
+
+		/**
+		 * Resizes the transposition table.
+		 * 
+		 * @param mb New size in megabytes.
+		 */
+		void resize(int mb);
 	}
 }

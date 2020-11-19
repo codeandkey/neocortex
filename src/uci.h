@@ -14,31 +14,15 @@
 namespace neocortex {
 	namespace uci {
 		constexpr const char* AUTHOR = "Justin Stanley";
-		constexpr const char* NAME = NEOCORTEX_NAME " " NEOCORTEX_VERSION;
+		constexpr const char* NAME = NEOCORTEX_NAME " " NEOCORTEX_VERSION " " NEOCORTEX_BUILDTIME;
 
 		/**
-		 * Initializes a UCI connection to a stream.
-		 * Negotiates options and establishes the handshake.
-		 *
-		 * @param in Input stream.
-		 * @param out Output stream.
-		 */
-		void connect(std::istream& in, std::ostream& out);
-
-		/**
-		 * Start listening for UCI commands on a stream.
+		 * Starts the UCI interface.
 		 * Returns only after UCI 'quit' is received or an error occurs.
 		 *
 		 * @param in Input stream.
 		 * @param out Output stream.
 		 */
-		void begin(std::istream& in, std::ostream& out);
-
-		/**
-		 * Gets the uci hash size in MB.
-		 *
-		 * @return UCI_Hash value or default.
-		 */
-		int get_hash_size();
+		void start(std::istream & in, std::ostream & out);
 	}
 }

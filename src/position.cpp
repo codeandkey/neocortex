@@ -150,7 +150,7 @@ bool Position::make_move(Move move) {
 		/* EP, need to remove piece */
 		int adv_dir = (color_to_move == piece::WHITE) ? NORTH : SOUTH;
 		int capture_square = last_state.en_passant_square - adv_dir;
-		int removed = board.remove(capture_square);
+ 		int removed = board.remove(capture_square);
 
 		next_state.captured_piece = removed;
 		next_state.captured_square = capture_square;
@@ -164,7 +164,7 @@ bool Position::make_move(Move move) {
 		int is_ks = move.dst() > move.src();
 		int castle_rank = (color_to_move == piece::WHITE) ? 0 : 7;
 		int rook_file = is_ks ? 7 : 0;
-		int rook_dstfile = is_ks ? 5 : 2;
+		int rook_dstfile = is_ks ? 5 : 3;
 
 		int rook_src = square::at(castle_rank, rook_file);
 		int rook_dst = square::at(castle_rank, rook_dstfile);
@@ -212,8 +212,15 @@ bool Position::make_move(Move move) {
 
 	/* Update en passant */
 	if (piece::type(src_piece) == piece::PAWN && abs(square::rank(move.dst()) - square::rank(move.src())) > 1) {
-		int epsq = (color_to_move == piece::WHITE) ? move.dst() + SOUTH : move.dst() + NORTH;
+		int epsq = move.dst() + ((color_to_move == piece::WHITE) ? SOUTH : NORTH);
 		next_state.en_passant_square = epsq;
+
+		if (color_to_move == piece::WHITE) {
+			assert(epsq >= 16 && epsq <= 23);
+		}
+		else {
+			assert(epsq >= 40 && epsq <= 47);
+		}
 	}
 
 	/* Flip color to move */
@@ -256,7 +263,7 @@ void Position::unmake_move(Move move) {
 	if (piece::type(dst_piece) == piece::KING && abs(square::file(move.src()) - square::file(move.dst())) > 1) {
 		int is_ks = move.dst() > move.src();
 		int castle_rank = (color_to_move == piece::WHITE) ? 0 : 7;
-		int rook_file = is_ks ? 5 : 2;
+		int rook_file = is_ks ? 5 : 3;
 		int rook_dstfile = is_ks ? 7 : 0;
 
 		int rook_src = square::at(castle_rank, rook_file);
@@ -302,7 +309,7 @@ int Position::pseudolegal_moves(Move* out) {
 	bitboard promoting_pawns = pawns & promoting_rank;
 
 	/* Promoting left captures */
-	bitboard promoting_left_cap = bb::shift(promoting_pawns, left_dir) & opp;
+	bitboard promoting_left_cap = bb::shift(promoting_pawns & ~FILE_A, left_dir) & opp;
 
 	while (promoting_left_cap) {
 		int dst = bb::poplsb(promoting_left_cap);
@@ -313,7 +320,7 @@ int Position::pseudolegal_moves(Move* out) {
 	}
 
 	/* Promoting right captures */
-	bitboard promoting_right_cap = bb::shift(promoting_pawns, right_dir) & opp;
+	bitboard promoting_right_cap = bb::shift(promoting_pawns & ~FILE_H, right_dir) & opp;
 
 	while (promoting_right_cap) {
 		int dst = bb::poplsb(promoting_right_cap);
@@ -346,7 +353,7 @@ int Position::pseudolegal_moves(Move* out) {
 	}
 
 	/* Left captures */
-	bitboard npm_left_cap = bb::shift(npm_pawns, left_dir) & (opp | ep_mask);
+	bitboard npm_left_cap = bb::shift(npm_pawns & ~FILE_A, left_dir) & (opp | ep_mask);
 
 	while (npm_left_cap) {
 		int dst = bb::poplsb(npm_left_cap);
@@ -354,7 +361,7 @@ int Position::pseudolegal_moves(Move* out) {
 	}
 
 	/* Right captures */
-	bitboard npm_right_cap = bb::shift(npm_pawns, right_dir) & (opp | ep_mask);
+	bitboard npm_right_cap = bb::shift(npm_pawns & ~FILE_H, right_dir) & (opp | ep_mask);
 
 	while (npm_right_cap) {
 		int dst = bb::poplsb(npm_right_cap);
@@ -532,6 +539,8 @@ int Position::see(int sq, bitboard valid_attackers) {
 	int value = 0;
 	int lva = square::null;
 
+	zobrist::Key starting_bkey = board.get_tt_key();
+
 	/* Find least valuable attacker */
 
 	// Search for pawn attacks
@@ -601,9 +610,11 @@ int Position::see(int sq, bitboard valid_attackers) {
 		board.replace(sq, dst_removed);
 		board.place(lva, removed);
 
+		assert(board.get_tt_key() == starting_bkey);
 		return ret;
 	} else {
 		// No valid attackers, SEE is 0
+		assert(board.get_tt_key() == starting_bkey);
 		return 0;
 	}
 }

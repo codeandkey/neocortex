@@ -26,4 +26,7 @@
 
 #ifndef NDEBUG
 #define NEOCORTEX_DEBUG
+#define NEOCORTEX_DEBUG_STR "DEBUG"
+#else
+#define NEOCORTEX_DEBUG_STR ""
 #endif

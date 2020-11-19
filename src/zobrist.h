@@ -39,10 +39,10 @@ namespace neocortex {
 		/**
 		 * Gets the zobrist key for an en-passant state.
 		 *
-		 * @param file File for en-passant.
+		 * @param file Square for en-passant.
 		 * @return Associated Zobrist key.
 		 */
-		Key en_passant(int file);
+		Key en_passant(int sq);
 
 		/**
 		 * Gets the black-to-move Zobrist key.
