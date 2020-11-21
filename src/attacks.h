@@ -16,6 +16,8 @@ namespace neocortex {
 	namespace attacks {
 		extern bitboard king_attacks[64], knight_attacks[64], pawn_attacks[2][64];
 		extern bitboard* rook_attacks[64], *bishop_attacks[64];
+		extern bitboard pawn_frontspans[2][64];
+		extern bitboard pawn_attackspans[2][64];
 
 		/**
 		 * Initializes the attack lookup tables.
