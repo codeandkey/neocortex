@@ -25,7 +25,7 @@ namespace neocortex {
 			static constexpr int EXACT = 2;
 		};
 
-		constexpr size_t DEFAULT_MIB = 128;
+		constexpr size_t DEFAULT_MIB = 512;
 
 		/**
 		 * Initializes the transposition table.

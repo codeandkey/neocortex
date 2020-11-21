@@ -85,14 +85,14 @@ void uci::start(std::istream & in, std::ostream & out) {
 
 			if (parts[1] != "startpos") {
 				if (parts.size() < 7) {
-					neocortex_warn("Invalid UCI: not enough FEN fields for position\n");
+					neocortex_warn("Invalid UCI: not enough FEN fields for position [need %d, have %d]\n", 6, parts.size());
 					continue;
 				}
 
 				std::string fen = util::join(std::vector<std::string>(parts.begin() + 1, parts.begin() + 7), " ");
 
 				pos = fen;
-				expected_moves = 6;
+				expected_moves = 7;
 			}
 
 			if (expected_moves < (int) parts.size()) {

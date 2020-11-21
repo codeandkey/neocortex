@@ -192,6 +192,21 @@ bitboard Board::attacks_on(int sq) {
 		(attacks::rook(sq, global_occ) & rooks_queens);
 }
 
+int Board::guard_value(int sq) {
+	static const int GUARD_VALUES[] = {
+		9, -9, 5, -5, 6, -6, 2, -2, 1, -1, 1, -1
+	};
+
+	int val = 0;
+	bitboard att = attacks_on(sq);
+
+	while (att) {
+		val += GUARD_VALUES[state[bb::poplsb(att)]];
+	}
+
+	return val;
+}
+
 bool Board::mask_is_attacked(bitboard mask, int col) {
 	bitboard opp = color_occ[col];
 
@@ -200,4 +215,48 @@ bool Board::mask_is_attacked(bitboard mask, int col) {
 	}
 
 	return false;
+}
+
+bitboard Board::all_spans(int col) {
+	bitboard out = 0;
+	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
+
+	while (pawns) {
+		int p = bb::poplsb(pawns);
+
+		out |= attacks::pawn_attackspans[col][p];
+		out |= attacks::pawn_frontspans[col][p];
+	}
+
+	return out;
+}
+
+bitboard Board::front_spans(int col) {
+	bitboard out = 0;
+	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
+
+	while (pawns) {
+		int p = bb::poplsb(pawns);
+
+		out |= attacks::pawn_frontspans[col][p];
+	}
+
+	return out;
+}
+
+bitboard Board::attack_spans(int col) {
+	bitboard out = 0;
+	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
+
+	while (pawns) {
+		int p = bb::poplsb(pawns);
+
+		out |= attacks::pawn_attackspans[col][p];
+	}
+
+	return out;
+}
+
+bitboard Board::passedpawns(int col) {
+	return ~all_spans(!col) & piece_occ[piece::PAWN] & color_occ[col];
 }

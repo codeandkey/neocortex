@@ -621,202 +621,106 @@ int Position::see(int sq, bitboard valid_attackers) {
 
 int Position::evaluate(std::string* dbg) {
 	int phase;
+	int material_mg, material_eg;
+	int center_control;
+	int king_safety;
+	int passed_pawns;
+	int passed_pawn_adv;
 
-	int material_mg[2];
-	int material_eg[2];
-	int attackbonus[2];
-	int mobility_mg[2], mobility_eg[2];
-	int center_control[2];
-	int king_safety[2];
-	int blocking_pawns[2];
-	int passed_pawns[2];
-	int adv_pawn_mg[2], adv_pawn_eg[2];
-	int adv_passedpawn_mg[2], adv_passedpawn_eg[2];
-	int king_adv_mg[2], king_adv_eg[2];
+	/* Start evaluation */
+	int score = 0;
+
+	/* Compute game phase */
+	phase = eval::PHASE_TOTAL;
+
+	for (int t = 0; t < 5; ++t) {
+		phase -= bb::popcount(board.get_piece_occ(t)) * eval::PHASE_VALS[t];
+	}
+
+	phase = (phase * 256) / eval::PHASE_TOTAL;
 
 	/* Compute material values */
-	material_mg[piece::WHITE] = material_mg[piece::BLACK] = 0;
-	material_eg[piece::WHITE] = material_eg[piece::BLACK] = 0;
+	material_mg = material_eg = 0;
 
-	for (int t = 0; t < 6; ++t) {
-		int white = bb::popcount(board.get_color_occ(piece::WHITE) & board.get_piece_occ(t));
-		int black = bb::popcount(board.get_color_occ(piece::BLACK) & board.get_piece_occ(t));
-
-		material_mg[piece::WHITE] += white * eval::MATERIAL_MG[t];
-		material_mg[piece::BLACK] += black * eval::MATERIAL_MG[t];
-		material_eg[piece::WHITE] += white * eval::MATERIAL_EG[t];
-		material_eg[piece::BLACK] += black * eval::MATERIAL_EG[t];
+	for (int i = 0; i < 64; ++i) {
+		material_mg += eval::MATERIAL_MG_LOOKUP[board.get_piece(i)];
+		material_eg += eval::MATERIAL_EG_LOOKUP[board.get_piece(i)];
 	}
 
-	phase = ((material_mg[piece::WHITE] + material_mg[piece::BLACK]) * 256) / eval::MATERIAL_MG_MAX;
-
-	/* Compute attack mobility bonus */
-	attackbonus[piece::WHITE] = 0;// bb::popcount(board.attacks(piece::WHITE))* eval::ATTACK_BONUS;
-	attackbonus[piece::BLACK] = 0;// bb::popcount(board.attacks(piece::BLACK))* eval::ATTACK_BONUS;
-
-	/* Compute safe mobility bonus */
-	for (int c = 0; c < 2; ++c) {
-		mobility_mg[c] = mobility_eg[c] = 0;
-		continue;
-
-		/*int bishop_mobility = 0, knight_mobility = 0, rook_mobility = 0, queen_mobility = 0;
-
-		bitboard bishops = board.get_color_occ(c) & board.get_piece_occ(piece::BISHOP);
-
-		while (bishops) {
-			bishop_mobility += bb::popcount(~board.attacks(!c) & attacks::bishop(bb::poplsb(bishops), board.get_global_occ()));
-		}
-
-		bitboard knights = board.get_color_occ(c) & board.get_piece_occ(piece::KNIGHT);
-
-		while (knights) {
-			knight_mobility += bb::popcount(~board.attacks(!c) & attacks::knight(bb::poplsb(knights)));
-		}
-
-		bitboard rooks = board.get_color_occ(c) & board.get_piece_occ(piece::ROOK);
-
-		while (rooks) {
-			rook_mobility += bb::popcount(~board.attacks(!c) & attacks::rook(bb::poplsb(rooks), board.get_global_occ()));
-		}
-
-		bitboard queens = board.get_color_occ(c) & board.get_piece_occ(piece::QUEEN);
-
-		while (queens) {
-			queen_mobility += bb::popcount(~board.attacks(!c) & attacks::queen(bb::poplsb(queens), board.get_global_occ()));
-		}
-
-		mobility_mg[c] += bishop_mobility * eval::MOBILITY_BISHOP;
-		mobility_mg[c] += knight_mobility * eval::MOBILITY_KNIGHT;
-		mobility_mg[c] += rook_mobility * eval::MOBILITY_ROOK_MG;
-		mobility_mg[c] += queen_mobility * eval::MOBILITY_QUEEN;
-
-		mobility_eg[c] += bishop_mobility * eval::MOBILITY_BISHOP;
-		mobility_eg[c] += knight_mobility * eval::MOBILITY_KNIGHT;
-		mobility_eg[c] += rook_mobility * eval::MOBILITY_ROOK_EG;
-		mobility_eg[c] += queen_mobility * eval::MOBILITY_QUEEN;*/
-	}
-
-	center_control[piece::WHITE] = center_control[piece::BLACK] = 0;
+	score += (material_mg * phase) / 256;
+	score += (material_eg * (256 - phase)) / 256;
 
 	/* Compute center square control */
-	int center_squares[4] = { 27, 28, 35, 36 };
+	static const int center_squares[4] = { 27, 28, 35, 36 };
+	center_control = 0;
 
 	for (int i = 0; i < 4; ++i) {
-		//center_control[piece::WHITE] += board.get_ad(piece::WHITE)[center_squares[i]] * eval::CENTER_CONTROL;
-		//center_control[piece::BLACK] += board.get_ad(piece::BLACK)[center_squares[i]] * eval::CENTER_CONTROL;
+		center_control += board.guard_value(center_squares[i]) * eval::CENTER_CONTROL;
 	}
 
 	/* Compute king safety */
-	king_safety[piece::WHITE] = king_safety[piece::BLACK] = 0;
-	king_adv_mg[piece::WHITE] = king_adv_mg[piece::BLACK] = 0;
-	king_adv_eg[piece::WHITE] = king_adv_eg[piece::BLACK] = 0;
+	king_safety = 0;
 
-	for (int c = 0; c < 2; ++c) {
-		int ksq = bb::getlsb(board.get_color_occ(c) & board.get_piece_occ(piece::KING));
-		bitboard king_squares = attacks::king(ksq);
+	bitboard white_ksq = attacks::king(bb::getlsb(board.get_color_occ(piece::WHITE) & board.get_piece_occ(piece::KING)));
+	bitboard black_ksq = attacks::king(bb::getlsb(board.get_color_occ(piece::BLACK) & board.get_piece_occ(piece::KING)));
 
-		while (king_squares) {
-			int next = bb::poplsb(king_squares);
+	while (white_ksq) {
+		int ksq = bb::poplsb(white_ksq);
+		int gv = board.guard_value(ksq);
 
-			/* this could be better, but could also incentivise severely overprotecting the king */
-			//king_safety[c] += (board.get_ad(c)[next] - board.get_ad(!c)[next]) * eval::KING_SAFETY;
+		/* don't incentivize overprotecting the king */
+		if (gv > 0) {
+			gv = 0;
 		}
 
-		int adv = square::rank(ksq);
-
-		if (c == piece::BLACK) {
-			adv = 7 - adv;
-		}
-
-		king_adv_mg[c] += adv * eval::KING_ADV_MG;
-		king_adv_eg[c] += adv * eval::KING_ADV_EG;
+		king_safety += gv * eval::KING_SAFETY;
 	}
 
-	/* Compute blocking pawn penalties, passed pawn bonus */
-	blocking_pawns[piece::WHITE] = blocking_pawns[piece::BLACK] = 0;
-	passed_pawns[piece::WHITE] = passed_pawns[piece::BLACK] = 0;
-	adv_pawn_mg[piece::WHITE] = adv_pawn_mg[piece::BLACK] = 0;
-	adv_pawn_eg[piece::WHITE] = adv_pawn_eg[piece::BLACK] = 0;
-	adv_passedpawn_mg[piece::WHITE] = adv_passedpawn_mg[piece::BLACK] = 0;
-	adv_passedpawn_eg[piece::WHITE] = adv_passedpawn_eg[piece::BLACK] = 0;
-	passed_pawns[piece::WHITE] = passed_pawns[piece::BLACK] = 0;
+	while (black_ksq) {
+		int ksq = bb::poplsb(black_ksq);
+		int gv = board.guard_value(ksq);
 
-	for (int c = 0; c < 2; ++c) {
-		for (int f = 0; f < 8; ++f) {
-			bitboard pawns = bb::file(f) & board.get_color_occ(c) & board.get_piece_occ(piece::PAWN);
-			int count = bb::popcount(pawns);
-
-			if (count) {
-				if (count > 1) {
-					blocking_pawns[c] += eval::BLOCKING_PAWNS;
-				}
-
-				bool passed = !bb::popcount(bb::file(f) & board.get_color_occ(!c) & board.get_piece_occ(piece::PAWN));
-
-				if (passed) {
-					passed_pawns[c] += eval::PASSED_PAWNS * count;
-				}
-
-				/* Grab pawn ranks and apply bonuses */
-				while (pawns) {
-					int adv = square::rank(bb::poplsb(pawns));
-
-					if (c == piece::BLACK) {
-						adv = 7 - adv;
-					}
-
-					adv_pawn_mg[c] += eval::ADV_PAWN_MG * adv;
-					adv_pawn_eg[c] += eval::ADV_PAWN_EG * adv;
-
-					if (passed) {
-						adv_passedpawn_mg[c] += eval::ADV_PASSEDPAWN_MG * adv;
-						adv_passedpawn_eg[c] += eval::ADV_PASSEDPAWN_EG * adv;
-					}
-				}
-			}
+		/* don't incentivize overprotecting the king */
+		if (gv < 0) {
+			gv = 0;
 		}
+
+		king_safety += gv * eval::KING_SAFETY;
 	}
 
-	/* Compute score */
-	int score = 0;
-	int ctm = color_to_move;
-	int opp = !ctm;
+	score += king_safety;
 
-	int material_score_mg = material_mg[ctm] - material_mg[opp];
-	int material_score_eg = material_eg[ctm] - material_eg[opp];
+	/* Find passed pawns */
+	bitboard passers[2];
 
-	score += (material_score_mg * phase) / 256;
-	score += (material_score_eg * (256 - phase)) / 256;
+	passers[piece::WHITE] = board.passedpawns(piece::WHITE);
+	passers[piece::BLACK] = board.passedpawns(piece::BLACK);
 
-	score += attackbonus[ctm] - attackbonus[opp];
+	/* Apply passed pawn bonus */
+	passed_pawns = 0;
 
-	int mobility_score_mg = mobility_mg[ctm] - mobility_mg[opp];
-	int mobility_score_eg = mobility_eg[ctm] - mobility_eg[opp];
+	passed_pawns += bb::popcount(passers[piece::WHITE]) * eval::PASSED_PAWNS;
+	passed_pawns -= bb::popcount(passers[piece::BLACK]) * eval::PASSED_PAWNS;
 
-	score += (mobility_score_mg * phase) / 256;
-	score += (mobility_score_eg * (256 - phase)) / 256;
+	score += passed_pawns;
 
-	score += (phase * (center_control[ctm] - center_control[opp])) / 256;
+	/* Apply advance bonus for passed pawns */
+	bitboard tmp_passers;
+	passed_pawn_adv = 0;
 
-	score += king_safety[ctm] - king_safety[opp];
+	tmp_passers = passers[piece::WHITE];
+	while (tmp_passers) {
+		int p = bb::poplsb(tmp_passers);
+		passed_pawn_adv += square::rank(p);
+	}
 
-	score += blocking_pawns[ctm] - blocking_pawns[opp];
+	tmp_passers = passers[piece::BLACK];
+	while (tmp_passers) {
+		int p = bb::poplsb(tmp_passers);
+		passed_pawn_adv -= (7 - square::rank(p));
+	}
 
-	int adv_pawn_score_mg = adv_pawn_mg[ctm] - adv_pawn_mg[opp];
-	int adv_pawn_score_eg = adv_pawn_eg[ctm] - adv_pawn_eg[opp];
-	int adv_passedpawn_score_mg = adv_passedpawn_mg[ctm] - adv_passedpawn_mg[opp];
-	int adv_passedpawn_score_eg = adv_passedpawn_eg[ctm] - adv_passedpawn_eg[opp];
-
-	int adv_king_score_mg = king_adv_mg[ctm] - king_adv_mg[opp];
-	int adv_king_score_eg = king_adv_eg[ctm] - king_adv_eg[opp];
-
-	score += (phase * adv_pawn_score_mg) / 256;
-	score += ((256 - phase) * adv_pawn_score_eg) / 256;
-	score += (phase * adv_passedpawn_score_mg) / 256;
-	score += ((256 - phase) * adv_passedpawn_score_eg) / 256;
-
-	score += (phase * adv_king_score_mg) / 256;
-	score += ((256 - phase) * adv_king_score_eg) / 256;
+	score += passed_pawn_adv * eval::ADV_PASSEDPAWN;
 
 	/* Write debug if needed */
 	if (dbg) {
@@ -824,24 +728,20 @@ int Position::evaluate(std::string* dbg) {
 
 		output += "            | white | black |\n";
 		output += "------------|-------|-------|\n";
-		output += util::format("material_mg | %5d | %5d |\n", material_mg[piece::WHITE], material_mg[piece::BLACK]);
-		output += util::format("material_eg | %5d | %5d |\n", material_eg[piece::WHITE], material_eg[piece::BLACK]);
-		output += util::format("attackbonus | %5d | %5d |\n", attackbonus[piece::WHITE], attackbonus[piece::BLACK]);
-		output += util::format("mobility_mg | %5d | %5d |\n", mobility_mg[piece::WHITE], mobility_mg[piece::BLACK]);
-		output += util::format("mobility_eg | %5d | %5d |\n", mobility_eg[piece::WHITE], mobility_eg[piece::BLACK]);
-		output += util::format("ctr_control | %5d | %5d |\n", center_control[piece::WHITE], center_control[piece::BLACK]);
-		output += util::format("king_safety | %5d | %5d |\n", king_safety[piece::WHITE], king_safety[piece::BLACK]);
-		output += util::format("blocked_pns | %5d | %5d |\n", blocking_pawns[piece::WHITE], blocking_pawns[piece::BLACK]);
-		output += util::format("passed_pns  | %5d | %5d |\n", passed_pawns[piece::WHITE], passed_pawns[piece::BLACK]);
-		output += util::format("adv_pawn_mg | %5d | %5d |\n", adv_pawn_mg[piece::WHITE], adv_pawn_mg[piece::BLACK]);
-		output += util::format("adv_pawn_eg | %5d | %5d |\n", adv_pawn_eg[piece::WHITE], adv_pawn_eg[piece::BLACK]);
-		output += util::format("adv_psd_mg  | %5d | %5d |\n", adv_passedpawn_mg[piece::WHITE], adv_passedpawn_mg[piece::BLACK]);
-		output += util::format("adv_psd_eg  | %5d | %5d |\n", adv_passedpawn_eg[piece::WHITE], adv_passedpawn_eg[piece::BLACK]);
-		output += util::format("adv_king_mg | %5d | %5d |\n", king_adv_mg[piece::WHITE], king_adv_mg[piece::BLACK]);
-		output += util::format("adv_king_eg | %5d | %5d |\n", king_adv_eg[piece::WHITE], king_adv_eg[piece::BLACK]);
+		output += util::format("material_mg | %13d |\n", material_mg);
+		output += util::format("material_eg | %13d |\n", material_mg);
+		output += util::format("ctr_control | %13d |\n", center_control);
+		output += util::format("king_safety | %13d |\n", king_safety);
+		output += util::format("adv_passed  | %13d |\n", passed_pawn_adv);
+		output += util::format("passed_pns  | %13d |\n", passed_pawns);
 		output += util::format("phase       | %13d |\n", phase);
 
 		*dbg = output;
+	}
+
+	/* Flip eval if BTM */
+	if (color_to_move == piece::BLACK) {
+		score *= -1;
 	}
 
 	return score + eval::TEMPO_BONUS;

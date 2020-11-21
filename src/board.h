@@ -122,6 +122,14 @@ namespace neocortex {
 		bitboard attacks_on(int sq);
 
 		/**
+		 * Gets guard status of a square.
+		 *
+		 * @param sq Square.
+		 * @return Guard value from white POV.
+		 */
+		int guard_value(int sq);
+
+		/**
 		 * Faster test to see if any square in a mask is attacked.
 		 *
 		 * @param mask Bitboard mask of squares to test.
@@ -129,6 +137,11 @@ namespace neocortex {
 		 * @return true if any squares in <mask> are attacked by <col>, false otherwise
 		 */
 		bool mask_is_attacked(bitboard mask, int col);
+
+		bitboard passedpawns(int col);
+		bitboard all_spans(int col);
+		bitboard front_spans(int col);
+		bitboard attack_spans(int col);
 	private:
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
