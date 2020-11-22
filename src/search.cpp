@@ -171,7 +171,7 @@ void search::Search::control_worker(std::ostream& out, Position root) {
 		ebf = sqrtf((float) ebf_nodes[cur_depth] / (float) ebf_nodes[cur_depth - 1]);
 
 		/* Write depth result to uci */
-		int nps = ((unsigned long) node_count * 1000) / iter_time;
+		int nps = ((unsigned long) node_count * 1000) / (iter_time + 1);
 
 		out << "info depth " << cur_depth << " score " << score::to_uci(score) << " time " << iter_time << " nodes " << node_count << " nps " << nps << " pv " << cur_pv.to_string() << "\n";
 		out.flush();

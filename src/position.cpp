@@ -13,6 +13,7 @@
 #include "log.h"
 
 #include <cassert>
+#include <climits>
 
 using namespace neocortex;
 
@@ -507,9 +508,7 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 
 	/* Pawn moves */
 	bitboard pawns = ctm & board.get_piece_occ(piece::PAWN);
-
 	bitboard promoting_rank = (color_to_move == piece::WHITE) ? RANK_7 : RANK_2;
-	bitboard starting_rank = (color_to_move == piece::WHITE) ? RANK_2 : RANK_7;
 
 	int adv_dir = (color_to_move == piece::WHITE) ? NORTH : SOUTH;
 	int left_dir = (color_to_move == piece::WHITE) ? NORTHWEST : SOUTHWEST;
@@ -745,13 +744,12 @@ int Position::see_capture(Move cap) {
 }
 
 int Position::see(int sq, bitboard valid_attackers) {
-	bitboard mask = bb::mask(sq);
-
 	bitboard ctm = board.get_color_occ(color_to_move);
-	int value = 0;
 	int lva = square::null;
 
+#ifndef NDEBUG
 	zobrist::Key starting_bkey = board.get_tt_key();
+#endif
 
 	/* Find least valuable attacker */
 

@@ -30,10 +30,6 @@ int main(int argc, char** argv) {
 	attacks::init();
 	tt::init();
 
-	for (int sq = 0; sq < 64; ++sq) {
-		neocortex_info("sq %s: \n%s", square::to_uci(sq).c_str(), bb::to_string(attacks::pawn(piece::BLACK, sq)).c_str());
-	}
-
 	if (argc > 1) {
 		if (std::string("test") == std::string(argv[1])) {
 #ifdef NDEBUG
