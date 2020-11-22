@@ -37,3 +37,11 @@ void tt::resize(int mb) {
 
 	neocortex_debug("Transposition table resized to %d mb\n", mb);
 }
+
+void tt::lock() {
+	tt_mutex.lock();
+}
+
+void tt::unlock() {
+	tt_mutex.unlock();
+}

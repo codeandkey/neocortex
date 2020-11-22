@@ -180,6 +180,8 @@ std::string Board::to_pretty() {
 }
 
 bitboard Board::attacks_on(int sq) {
+	assert(square::is_valid(sq));
+
 	bitboard white_pawns = piece_occ[piece::PAWN] & color_occ[piece::WHITE];
 	bitboard black_pawns = piece_occ[piece::PAWN] & color_occ[piece::BLACK];
 	bitboard rooks_queens = piece_occ[piece::ROOK] | piece_occ[piece::QUEEN];

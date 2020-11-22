@@ -49,23 +49,6 @@ void uci::start(std::istream & in, std::ostream & out) {
 		else if (parts[0] == "isready") {
 			out << "readyok\n";
 		}
-		else if (parts[0] == "debug") {
-			if (parts.size() < 2) {
-				neocortex_warn("Invalid UCI: debug expects an argument (\"on\" or \"off\")\n");
-				continue;
-			}
-
-			if (parts[1] == "on") {
-				searcher.set_debug(true);
-			}
-			else if (parts[1] == "off")
-			{
-				searcher.set_debug(false);
-			}
-			else {
-				neocortex_warn("Invalid UCI: debug expects an argument (\"on\" or \"off\")\n");
-			}
-		}
 		else if (parts[0] == "stop") {
 			searcher.stop();
 		}

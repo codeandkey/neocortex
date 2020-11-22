@@ -119,7 +119,15 @@ Board& Position::get_board() {
 }
 
 bool Position::make_move(Move move) {
+	assert(!check(!color_to_move));
 	assert(move.is_valid());
+	assert(piece::color(board.get_piece(move.src())) == color_to_move);
+
+	if (check(!color_to_move)) {
+		neocortex_error("illegal position reached..\n");
+		neocortex_error("current board state: \n%s\n", board.to_pretty().c_str());
+		neocortex_error("error occurred on make move %s", move.to_uci().c_str());
+	}
 
 	State last_state = ply.back();
 	ply.push_back(last_state);
@@ -178,6 +186,9 @@ bool Position::make_move(Move move) {
 		next_state.captured_piece = board.replace(move.dst(), src_piece);
 		next_state.captured_square = move.dst();
 		next_state.halfmove_clock = 0;
+
+		/* no king captures */
+		assert(piece::type(next_state.captured_piece) != piece::KING);
 	} else {
 		/* Quiet */
 		board.place(move.dst(), src_piece);
@@ -230,7 +241,7 @@ bool Position::make_move(Move move) {
 	next_state.key = 0;
 	next_state.key ^= board.get_tt_key();
 	next_state.key ^= zobrist::en_passant(next_state.en_passant_square);
-	next_state.key ^= zobrist::castle(castle_rights());
+	next_state.key ^= zobrist::castle(next_state.castle_rights);
 
 	if (color_to_move == piece::BLACK) {
 		next_state.key ^= zobrist::black_to_move();
@@ -342,7 +353,7 @@ int Position::pseudolegal_moves(Move* out) {
 	}
 
 	/* Nonpromoting pawn moves */
-	bitboard npm_pawns = pawns ^ promoting_pawns;
+	bitboard npm_pawns = pawns & ~promoting_pawns;
 
 	/* Advances */
 	bitboard npm_advances = bb::shift(npm_pawns, adv_dir) & ~board.get_global_occ();
@@ -481,6 +492,152 @@ int Position::pseudolegal_moves(Move* out) {
 	return count;
 }
 
+int Position::pseudolegal_moves_quiescence(Move* out) {
+	int count = 0;
+
+	bitboard ctm = board.get_color_occ(color_to_move);
+	bitboard opp = board.get_color_occ(!color_to_move);
+
+	bitboard ep_mask = 0;
+	int ep_square = ply.back().en_passant_square;
+
+	if (square::is_valid(ep_square)) {
+		ep_mask = bb::mask(ep_square);
+	}
+
+	/* Pawn moves */
+	bitboard pawns = ctm & board.get_piece_occ(piece::PAWN);
+
+	bitboard promoting_rank = (color_to_move == piece::WHITE) ? RANK_7 : RANK_2;
+	bitboard starting_rank = (color_to_move == piece::WHITE) ? RANK_2 : RANK_7;
+
+	int adv_dir = (color_to_move == piece::WHITE) ? NORTH : SOUTH;
+	int left_dir = (color_to_move == piece::WHITE) ? NORTHWEST : SOUTHWEST;
+	int right_dir = (color_to_move == piece::WHITE) ? NORTHEAST : SOUTHEAST;
+
+	bitboard promoting_pawns = pawns & promoting_rank;
+
+	/* Promoting left captures */
+	bitboard promoting_left_cap = bb::shift(promoting_pawns & ~FILE_A, left_dir) & opp;
+
+	while (promoting_left_cap) {
+		int dst = bb::poplsb(promoting_left_cap);
+		out[count++] = Move(dst - left_dir, dst, piece::QUEEN);
+		out[count++] = Move(dst - left_dir, dst, piece::KNIGHT);
+		out[count++] = Move(dst - left_dir, dst, piece::ROOK);
+		out[count++] = Move(dst - left_dir, dst, piece::BISHOP);
+	}
+
+	/* Promoting right captures */
+	bitboard promoting_right_cap = bb::shift(promoting_pawns & ~FILE_H, right_dir) & opp;
+
+	while (promoting_right_cap) {
+		int dst = bb::poplsb(promoting_right_cap);
+		out[count++] = Move(dst - right_dir, dst, piece::QUEEN);
+		out[count++] = Move(dst - right_dir, dst, piece::KNIGHT);
+		out[count++] = Move(dst - right_dir, dst, piece::ROOK);
+		out[count++] = Move(dst - right_dir, dst, piece::BISHOP);
+	}
+
+	/* Promoting advances */
+	bitboard promoting_advances = bb::shift(promoting_pawns, adv_dir) & ~board.get_global_occ();
+
+	while (promoting_advances) {
+		int dst = bb::poplsb(promoting_advances);
+		out[count++] = Move(dst - adv_dir, dst, piece::QUEEN);
+		out[count++] = Move(dst - adv_dir, dst, piece::KNIGHT);
+		out[count++] = Move(dst - adv_dir, dst, piece::ROOK);
+		out[count++] = Move(dst - adv_dir, dst, piece::BISHOP);
+	}
+
+	/* Nonpromoting pawn moves */
+	bitboard npm_pawns = pawns & ~promoting_pawns;
+
+	/* Left captures */
+	bitboard npm_left_cap = bb::shift(npm_pawns & ~FILE_A, left_dir) & (opp | ep_mask);
+
+	while (npm_left_cap) {
+		int dst = bb::poplsb(npm_left_cap);
+		out[count++] = Move(dst - left_dir, dst);
+	}
+
+	/* Right captures */
+	bitboard npm_right_cap = bb::shift(npm_pawns & ~FILE_H, right_dir) & (opp | ep_mask);
+
+	while (npm_right_cap) {
+		int dst = bb::poplsb(npm_right_cap);
+		out[count++] = Move(dst - right_dir, dst);
+	}
+
+	/* Queen captures */
+	bitboard queens = ctm & board.get_piece_occ(piece::QUEEN);
+
+	while (queens) {
+		int src = bb::poplsb(queens);
+		bitboard moves = attacks::queen(src, board.get_global_occ()) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* Rook captures */
+	bitboard rooks = ctm & board.get_piece_occ(piece::ROOK);
+
+	while (rooks) {
+		int src = bb::poplsb(rooks);
+		bitboard moves = attacks::rook(src, board.get_global_occ()) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* Knight captures */
+	bitboard knights = ctm & board.get_piece_occ(piece::KNIGHT);
+
+	while (knights) {
+		int src = bb::poplsb(knights);
+		bitboard moves = attacks::knight(src) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* Bishop captures */
+	bitboard bishops = ctm & board.get_piece_occ(piece::BISHOP);
+
+	while (bishops) {
+		int src = bb::poplsb(bishops);
+		bitboard moves = attacks::bishop(src, board.get_global_occ()) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* King captures */
+	bitboard kings = ctm & board.get_piece_occ(piece::KING);
+
+	while (kings) {
+		int src = bb::poplsb(kings);
+		bitboard moves = attacks::king(src) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	assert(count <= MAX_PL_MOVES);
+	return count;
+}
+
 void Position::order_moves(Move* moves, int num_moves, Move pv_move) {
 	int scores[MAX_PL_MOVES] = { 0 };
 
@@ -521,7 +678,62 @@ void Position::order_moves(Move* moves, int num_moves, Move pv_move) {
 	}
 }
 
+int Position::order_moves_quiescence(Move* moves, int num_moves, Move pv_move) {
+	int scores[MAX_PL_MOVES] = { 0 };
+	int new_num_moves = num_moves;
+
+	for (int i = 0; i < num_moves; ++i) {
+		/* Assign move scores */
+
+		// PV move bonus
+		if (moves[i] == pv_move) scores[i] += eval::ORDER_PV_MOVE;
+
+		if (
+			(board.get_color_occ(!color_to_move) & bb::mask(moves[i].dst()) & ~board.get_piece_occ(piece::KING)) || // Normal captures
+			(piece::type(board.get_piece(moves[i].src())) == piece::PAWN && moves[i].dst() == ply.back().en_passant_square) // EP captures
+			) {
+			int see_val = see_capture(moves[i]);
+
+			if (see_val < 0) {
+				moves[i] = Move::null; /* Drop moves with negative SEE */
+				scores[i] = INT_MIN;
+				--new_num_moves;
+			}
+			else {
+				scores[i] += see_capture(moves[i]);
+			}
+		}
+	}
+
+	/* Perform selection sort */
+	for (int i = 0; i < new_num_moves; ++i) {
+		int m = scores[i];
+		int sind = i;
+
+		for (int j = i + 1; j < num_moves; ++j) {
+			if (!moves[j].is_valid()) continue;
+			if (scores[j] > m) {
+				sind = j;
+				m = scores[j];
+			}
+		}
+
+		if (sind != i) {
+			int tmp = scores[sind];
+			scores[sind] = scores[i];
+			scores[i] = tmp;
+
+			Move tmove = moves[sind];
+			moves[sind] = moves[i];
+			moves[i] = tmove;
+		}
+	}
+
+	return new_num_moves;
+}
+
 int Position::see_capture(Move cap) {
+	return 0;
 	int ret = SEE_ILLEGAL;
 
 	if (make_move(cap)) {
@@ -749,10 +961,6 @@ int Position::evaluate(std::string* dbg) {
 
 zobrist::Key Position::get_tt_key() {
 	return ply.back().key;
-}
-
-int Position::castle_rights() {
-	return ply.back().castle_rights;
 }
 
 int Position::num_repetitions() {

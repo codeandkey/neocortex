@@ -21,8 +21,12 @@
 namespace neocortex {
 	namespace search {
 		constexpr int QDEPTH = 4;
-		constexpr int PV_MAX = 128;
+		constexpr int MAX_DEPTH = 128;
 		constexpr int ALLOC_FRACTION = 10; /* use at most 1/nth of the remaining time */
+
+		struct SearchStats {
+			int num_nodes;
+		};
 
 		class Search {
 		public:
@@ -33,20 +37,6 @@ namespace neocortex {
 			 */
 			Search(Position node = Position());
 			~Search();
-
-			/**
-			 * Test if the alloacted search time has expired, if the search is not infinite.
-			 *
-			 * @return true if allocated time is expired, false otherwise.
-			 */
-			bool is_time_expired();
-
-			/**
-			 * Sets the search debug mode.
-			 *
-			 * @param enabled Enable flag.
-			 */
-			void set_debug(bool enabled);
 
 			/**
 			 * Starts the search in the background.
@@ -91,27 +81,29 @@ namespace neocortex {
 			int elapsed_iter();
 
 			/**
+			 * Returns true if there is an allocated time and it is expired.
+			 *
+			 * @return true if allocated time expired, false otherwise.
+			 */
+			bool allocated_time_expired();
+
+		    /**
+			 * Search control thread entry point.
+			 * Started once for every 'go' command.
+			 *
+			 * @param out UCI output stream.
+			 * @param root Root position for worker.
+			 */
+			void control_worker(std::ostream& out, Position root);
+
+			/**
 			 * Search thread worker function.
 			 *
 			 * @param out UCI output stream.
-			 * @param id Thread id.
+			 * @param s_depth Depth to search.
 			 * @param root Root position for worker.
 			 */
-			void worker(std::ostream& out, int id, Position root);
-
-			/**
-			 * Run a search.
-			 * This function is called once per search and initializes the time control points.
-			 *
-			 * @param root Position to search.
-			 * @param depth Search depth.
-			 * @param alpha Search alpha.
-			 * @param beta Search beta.
-			 * @param pv_line Output PV.
-			 *
-			 * @return Search score.
-			 */
-			int search_sync(Position& root, int depth, int alpha, int beta, PV* pv_line);
+			void smp_worker(std::ostream& out, int s_depth, Position root);
 
 			/**
 			 * Alpha-beta search routine.
@@ -122,10 +114,12 @@ namespace neocortex {
 			 * @param alpha Search alpha.
 			 * @param beta Search beta.
 			 * @param pv_line Output PV.
+			 * @param nodes Optional output for number of nodes searched.
+			 * @param abort_ref Abort flag to watch. Stops the search when set to true.
 			 *
 			 * @return Search score.
 			 */
-			int alphabeta(Position& root, int depth, int alpha, int beta, PV* pv_line);
+			int alphabeta(Position& root, int depth, int alpha, int beta, PV* pv_line, int* nodes_out, std::atomic<bool>& abort_ref);
 
 			/**
 			 * Quiescence search routine.
@@ -136,22 +130,31 @@ namespace neocortex {
 			 * @param alpha Search alpha.
 			 * @param beta Search beta.
 			 * @param pv_line Output PV.
+			 * @param nodes Optional output for number of nodes searched.
 			 *
 			 * @return Search score.
 			 */
-			int quiescence(Position& root, int depth, int alpha, int beta, PV* pv_line);
+			int quiescence(Position& root, int depth, int alpha, int beta, PV* pv_line, int* nodes_out);
+
+			Position root;
 
 			std::atomic<int> num_threads;
 
-			std::vector<std::thread> search_threads;
-			std::vector<std::ostream> null_streams;
-			std::mutex search_mutex;
+			std::vector<std::thread> smp_threads;
+			std::atomic<bool> smp_should_stop;
 
-			Position root;
-			std::atomic<bool> debug, should_stop;
 
-			util::time_point search_starttime, depth_starttime;
-			std::atomic<int> wtime, btime, winc, binc, movetime, allocated_time, nodes, numnodes, depth;
+			std::thread control_thread;
+			std::atomic<bool> control_should_stop;
+
+			std::atomic<util::time_point> depth_starttime;
+
+			/* Per-depth values */
+			std::atomic<int> allocated_time; /* Time allocated to depth */
+			std::atomic<int> num_nodes; /* Number of nodes searched */
+
+			/* Search options */
+			std::atomic<int> wtime, btime, winc, binc, movetime, depth;
 			std::atomic<bool> infinite;
 		};
 	}

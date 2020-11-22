@@ -116,13 +116,6 @@ namespace neocortex {
 		bool capture();
 
 		/**
-		 * Gets the castle rights mask for both colors.
-		 *
-		 * @return Castle rights mask.
-		 */
-		int castle_rights();
-
-		/**
 		 * Gets the number of times the current position has occurred throughout the game.
 		 *
 		 * @return Number of instances. Will always be at least 1.
@@ -169,6 +162,24 @@ namespace neocortex {
 		void order_moves(Move* moves, int num_moves, Move pv_move = Move::null);
 
 		/**
+		 * Gets the pseudolegal moves for the position (quiescence search variant)
+		 *
+		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
+		 * @return Number of moves generated.
+		 */
+		int pseudolegal_moves_quiescence(Move* dst);
+
+		/**
+		 * Performs move ordering on a list of pseudolegal moves (quiescence search variant)
+		 *
+		 * @param moves Move list pointer.
+		 * @param num_moves Number of moves in the list.
+		 * @param pv_move PV move if available.
+		 * @return New size of move list.
+		 */
+		int order_moves_quiescence(Move* moves, int num_moves, Move pv_move = Move::null);
+
+		/**
 		 * Performs static exchange evaluation on a capture.
 		 * 
 		 * @param capture Capturing move.
@@ -197,6 +208,6 @@ namespace neocortex {
 	}
 
 	inline bool Position::check(int col) {
-		return board.attacks_on(bb::getlsb(board.get_piece_occ(piece::KING) & board.get_color_occ(col))) & board.get_color_occ(!col);
+		return (board.attacks_on(bb::getlsb(board.get_piece_occ(piece::KING) & board.get_color_occ(col))) & board.get_color_occ(!col)) != 0;
 	}
 }

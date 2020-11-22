@@ -49,5 +49,15 @@ namespace neocortex {
 		 * @param mb New size in megabytes.
 		 */
 		void resize(int mb);
+
+		/**
+		 * Acquires the TT mutex lock.
+		 */
+		void lock();
+
+		/**
+		 * Releases the TT mutex lock.
+		 */
+		void unlock();
 	}
 }
