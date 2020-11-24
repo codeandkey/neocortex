@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++14 -Wall -Werror -Wno-format-security -O3
+CXXFLAGS = -std=c++14 -Wall -Werror -Wno-format-security
 LDFLAGS = -pthread
 
 SOURCES = $(filter-out src/main.cpp, $(wildcard src/*.cpp))
@@ -14,11 +14,11 @@ OUTPUT = neocortex
 debug: CXXFLAGS+=-g
 debug: clean $(OUTPUT)
 
-test: CXXFLAGS+=-g --coverage -fprofile-arcs -ftest-coverage -fno-inline -fno-inline-small-functions -fno-default-inline
+test: CXXFLAGS+=-g --coverage -fprofile-arcs -ftest-coverage -fno-inline -fno-inline-small-functions -fno-default-inline -O0
 test: LDFLAGS+=-lgtest -lgcov
 test: clean $(TEST_OUTPUT)
 
-release: CXXFLAGS+=-DNDEBUG
+release: CXXFLAGS+=-DNDEBUG -O3
 release: clean $(OUTPUT)
 
 all: release
