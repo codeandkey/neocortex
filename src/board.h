@@ -138,9 +138,32 @@ namespace neocortex {
 		 */
 		bool mask_is_attacked(bitboard mask, int col);
 
+		/**
+		 * Gets a mask of all passed pawns of a color.
+		 * @param col Color to test.
+		 * @return Passed pawn mask.
+		 */
 		bitboard passedpawns(int col);
+
+		/**
+		 * Gets the union of front spans and attack spans for a color.
+		 * @param col Color to test.
+		 * @return Span mask.
+		 */
 		bitboard all_spans(int col);
+
+		/**
+		 * Gets a mask of all pawn front spans for a color.
+		 * @param col Color to test.
+		 * @return Frontspan mask.
+		 */
 		bitboard front_spans(int col);
+
+		/**
+		 * Gets a mask of all pawn attack spans for a color.
+		 * @param col Color to test.
+		 * @return Attack span mask.
+		 */
 		bitboard attack_spans(int col);
 	private:
 		bitboard global_occ, color_occ[2], piece_occ[6];
