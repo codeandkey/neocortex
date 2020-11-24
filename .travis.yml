@@ -5,10 +5,10 @@ install: make
 addons:
   apt:
     sources: ubuntu-toolchain-r-test
-    packages: g++-7 libgtest-dev cmake
+    packages: g++-7 libgtest-dev cmake curl
 
 before_install:
-  - pip install --user cpp-coveralls
+  - pip install git+https://github.com/gcovr/gcovr.git
   - cd /usr/src/gtest
   - sudo cmake CMakeLists.txt
   - sudo make
@@ -19,4 +19,7 @@ script:
   - make CXX=g++-7
   - make CXX=g++-7 test
   - ./neocortex_test
-  - coveralls --exclude test --gcov-options '\-r'
+  - gcovr --coveralls coveralls.json
+  - echo -n "{\"service_name\": \"travis-ci\", \"service_job_id\":\"$TRAVIS_JOB_ID\", " > coveralls2.json
+  - tail -c+2 coveralls.json >> coveralls.json
+  - curl -X POST -H "Content-Type: application/json" -d @coveralls2.json https://coveralls.io/api/v1/jobs
