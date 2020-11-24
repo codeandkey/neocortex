@@ -4,6 +4,7 @@ install: make
 
 addons:
   apt:
+    sources: ubuntu-toolchain-r-test
     packages: g++-6 libgtest-dev cmake
 
 before_install:
