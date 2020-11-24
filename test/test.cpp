@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "../src/attacks.h"
 #include "../src/bitboard.h"
@@ -9,8 +9,8 @@
 using namespace neocortex;
 
 /**
- * AttacksTest: tests for attack lookups in attacks.cpp
- */
+		 * AttacksTest: tests for attack lookups in attacks.cpp
+		 */
 TEST(AttacksTest, PawnAttacks) {
 	EXPECT_EQ(attacks::pawn(piece::WHITE, 0), 1ULL << 9);
 	EXPECT_EQ(attacks::pawn(piece::WHITE, 5), (1ULL << 12) | (1ULL << 14));
@@ -50,6 +50,59 @@ TEST(AttacksTest, RookAttacks) {
 
 TEST(AttacksTest, QueenAttacks) {
 	EXPECT_EQ(attacks::queen(0, 0), (0x8040201008040200 | RANK_1 | FILE_A) & ~1);
+}
+
+/**
+ * BitboardTest: tests for bitboard operations in bitboard.cpp
+ */
+
+TEST(BitboardTest, ToString) {
+	EXPECT_EQ(
+		bb::to_string(0xFF),
+		std::string("........\n........\n........\n........\n........\n........\n........\n11111111\n")
+	);
+}
+
+TEST(BitboardTest, GetLsb) {
+	EXPECT_EQ(bb::getlsb(0x100), 8);
+	EXPECT_EQ(bb::getlsb(0x200), 9);
+	EXPECT_EQ(bb::getlsb(0x400), 10);
+}
+
+TEST(BitboardTest, PopLsb) {
+	bitboard b = 0x400;
+
+	EXPECT_EQ(bb::poplsb(b), 10);
+	EXPECT_EQ(b, 0ULL);
+}
+
+TEST(BitboardTest, Shift) {
+	EXPECT_EQ(bb::shift(1, NORTH), (1ULL << 8));
+	EXPECT_EQ(bb::shift(1, EAST), (1ULL << 1));
+	EXPECT_EQ(bb::shift(1ULL << 8, SOUTH), 1ULL);
+}
+
+TEST(BitboardTest, Mask) {
+	EXPECT_EQ(bb::mask(6), 1ULL << 6);
+	EXPECT_EQ(bb::mask(12), 1ULL << 12);
+	EXPECT_EQ(bb::mask(24), 1ULL << 24);
+}
+
+TEST(BitboardTest, Popcount) {
+	EXPECT_EQ(bb::popcount(0xF), 4);
+	EXPECT_EQ(bb::popcount(0xFFF), 12);
+}
+
+TEST(BitboardTest, Rank) {
+	EXPECT_EQ(bb::rank(0), RANK_1);
+	EXPECT_EQ(bb::rank(4), RANK_5);
+	EXPECT_EQ(bb::rank(7), RANK_8);
+}
+
+TEST(BitboardTest, File) {
+	EXPECT_EQ(bb::file(0), FILE_A);
+	EXPECT_EQ(bb::file(4), FILE_E);
+	EXPECT_EQ(bb::file(7), FILE_H);
 }
 
 /* Testing entry point */
