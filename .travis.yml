@@ -21,7 +21,7 @@ script:
   - gcovr
   - gcovr --coveralls coveralls.json
   - echo "{" > coveralls2.json
-  - echo "\"service_name\": \"travis-ci\"," >> coveralls2.json
-  - echo "\"service_job_id\": \"$TRAVIS_JOB_ID\"," >> coveralls2.json
+  - "echo \"\\\"service_name\\\": \\\"travis-ci\\\",\" >> coveralls2.json"
+  - "echo \"\\\"service_job_id\\\": \\\"$TRAVIS_JOB_ID\\\",\" >> coveralls2.json"
   - tail -c+2 coveralls.json >> coveralls.json
   - curl -X POST -H "Content-Type: application/json" -d @coveralls2.json https://coveralls.io/api/v1/jobs
