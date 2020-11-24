@@ -112,8 +112,6 @@ namespace neocortex {
 					"\e[0;36m",
 				};
 
-				/* Ignore GCC warnings on format security-- this is still safe. */
-#pragma GCC diagnostic ignored "-Wformat-security"
 				fprintf(stderr, colors[level]);
 #endif
 			}

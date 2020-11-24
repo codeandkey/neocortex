@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++14 -Wall -Werror -O3
+CXXFLAGS = -std=c++14 -Wall -Werror -Wno-format-security -O3
 LDFLAGS = -pthread
 
 SOURCES = $(filter-out src/main.cpp, $(wildcard src/*.cpp))
