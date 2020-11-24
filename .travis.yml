@@ -5,10 +5,10 @@ install: make
 addons:
   apt:
     sources: ubuntu-toolchain-r-test
-    packages: g++-7 libgtest-dev cmake curl
+    packages: g++-7 libgtest-dev cmake curl python3 python3-pip
 
 before_install:
-  - pip install git+https://github.com/gcovr/gcovr.git
+  - pip3 install git+https://github.com/gcovr/gcovr.git
   - cd /usr/src/gtest
   - sudo cmake CMakeLists.txt
   - sudo make
