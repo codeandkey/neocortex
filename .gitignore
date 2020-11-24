@@ -1,3 +1,5 @@
 src/*.o
 x64
 neocortex
+packages
+*.vcxproj.user

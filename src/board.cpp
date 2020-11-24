@@ -226,8 +226,8 @@ bitboard Board::all_spans(int col) {
 	while (pawns) {
 		int p = bb::poplsb(pawns);
 
-		out |= attacks::pawn_attackspans[col][p];
-		out |= attacks::pawn_frontspans[col][p];
+		out |= attacks::pawn_attackspans(col, p);
+		out |= attacks::pawn_frontspans(col, p);
 	}
 
 	return out;
@@ -240,7 +240,7 @@ bitboard Board::front_spans(int col) {
 	while (pawns) {
 		int p = bb::poplsb(pawns);
 
-		out |= attacks::pawn_frontspans[col][p];
+		out |= attacks::pawn_frontspans(col, p);
 	}
 
 	return out;
@@ -253,7 +253,7 @@ bitboard Board::attack_spans(int col) {
 	while (pawns) {
 		int p = bb::poplsb(pawns);
 
-		out |= attacks::pawn_attackspans[col][p];
+		out |= attacks::pawn_attackspans(col, p);
 	}
 
 	return out;

@@ -15,8 +15,8 @@ using namespace neocortex;
 bitboard attacks::king_attacks[64] = { 0 };
 bitboard attacks::knight_attacks[64] = { 0 };
 bitboard attacks::pawn_attacks[2][64] = { {0} };
-bitboard attacks::pawn_frontspans[2][64] = { {0} };
-bitboard attacks::pawn_attackspans[2][64] = { {0} };
+bitboard attacks::pawn_frontspans_list[2][64] = { {0} };
+bitboard attacks::pawn_attackspans_list[2][64] = { {0} };
 bitboard* attacks::rook_attacks[64] = { nullptr };
 bitboard* attacks::bishop_attacks[64] = { nullptr };
 
@@ -28,27 +28,27 @@ void attacks::init() {
 
 		/* white pawn spans */
 		for (int rr = src_r + 1; rr < 8; ++rr) {
-			pawn_frontspans[piece::WHITE][sq] |= bb::mask(square::at(rr, src_f));
+			pawn_frontspans_list[piece::WHITE][sq] |= bb::mask(square::at(rr, src_f));
 
 			if (src_f > 0) {
-				pawn_attackspans[piece::WHITE][sq] |= bb::mask(square::at(rr, src_f - 1));
+				pawn_attackspans_list[piece::WHITE][sq] |= bb::mask(square::at(rr, src_f - 1));
 			}
 
 			if (src_f < 7) {
-				pawn_attackspans[piece::WHITE][sq] |= bb::mask(square::at(rr, src_f + 1));
+				pawn_attackspans_list[piece::WHITE][sq] |= bb::mask(square::at(rr, src_f + 1));
 			}
 		}
 
 		/* black pawn spans */
 		for (int rr = src_r - 1; rr >= 0; --rr) {
-			pawn_frontspans[piece::BLACK][sq] |= bb::mask(square::at(rr, src_f));
+			pawn_frontspans_list[piece::BLACK][sq] |= bb::mask(square::at(rr, src_f));
 
 			if (src_f > 0) {
-				pawn_attackspans[piece::BLACK][sq] |= bb::mask(square::at(rr, src_f - 1));
+				pawn_attackspans_list[piece::BLACK][sq] |= bb::mask(square::at(rr, src_f - 1));
 			}
 
 			if (src_f < 7) {
-				pawn_attackspans[piece::BLACK][sq] |= bb::mask(square::at(rr, src_f + 1));
+				pawn_attackspans_list[piece::BLACK][sq] |= bb::mask(square::at(rr, src_f + 1));
 			}
 		}
 

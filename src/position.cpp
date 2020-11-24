@@ -124,12 +124,6 @@ bool Position::make_move(Move move) {
 	assert(move.is_valid());
 	assert(piece::color(board.get_piece(move.src())) == color_to_move);
 
-	if (check(!color_to_move)) {
-		neocortex_error("illegal position reached..\n");
-		neocortex_error("current board state: \n%s\n", board.to_pretty().c_str());
-		neocortex_error("error occurred on make move %s", move.to_uci().c_str());
-	}
-
 	State last_state = ply.back();
 	ply.push_back(last_state);
 

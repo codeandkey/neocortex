@@ -6,7 +6,6 @@
  */
 
 #include "square.h"
-#include "test.h"
 
 #include <cassert>
 
@@ -32,8 +31,4 @@ std::string square::to_uci(int sq) {
 	output += '1' + rank(sq);
 
 	return output;
-}
-
-NC_TEST(square_is_valid_works) {
-	NC_ASSERT(false);
 }
