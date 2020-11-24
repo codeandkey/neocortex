@@ -87,13 +87,20 @@ void search::Search::control_worker(std::ostream& out, Position root) {
 
 	/* Search depth 1 with 1 thread */
 
-	depth_starttime = util::time_now();
+	{
+		std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
+		depth_starttime = util::time_now();
+	}
 
 	node_count = 0;
 	allocated_time = -1;
 
 	score = alphabeta(root, 1, score::CHECKMATED, score::CHECKMATE, &cur_pv, &node_count, control_should_stop);
-	iter_time = util::time_elapsed_ms(depth_starttime);
+	
+	{
+		std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
+		iter_time = util::time_elapsed_ms(depth_starttime);
+	}
 
 	out << "info depth 1 score " << score::to_uci(score) << " nodes " << node_count << " time " << iter_time << " pv " << cur_pv.to_string() << "\n";
 	out.flush();
@@ -134,7 +141,10 @@ void search::Search::control_worker(std::ostream& out, Position root) {
 
 		/* Perform search (TODO: aspiration) */
 
-		depth_starttime = util::time_now();
+		{
+			std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
+			depth_starttime = util::time_now();
+		}
 
 		/* Start n-1 SMP threads */
 		smp_should_stop = false;
@@ -163,7 +173,11 @@ void search::Search::control_worker(std::ostream& out, Position root) {
 
 		/* Search complete, store best move */
 		best_move = cur_pv.moves[0];
-		iter_time = util::time_elapsed_ms(depth_starttime);
+
+		{
+			std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
+			iter_time = util::time_elapsed_ms(depth_starttime);
+		}
 
 		/* Set EBF for next depth */
 		ebf_nodes[cur_depth] = node_count;
@@ -203,6 +217,7 @@ void search::Search::smp_worker(std::ostream& out, int s_depth, Position root) {
 }
 
 bool search::Search::allocated_time_expired() {
+	std::lock_guard<std::mutex> lock(depth_starttime_mutex);
 	return (allocated_time > 0 && util::time_elapsed_ms(depth_starttime) >= allocated_time);
 }
 

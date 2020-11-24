@@ -143,11 +143,11 @@ namespace neocortex {
 			std::vector<std::thread> smp_threads;
 			std::atomic<bool> smp_should_stop;
 
-
 			std::thread control_thread;
 			std::atomic<bool> control_should_stop;
 
-			std::atomic<util::time_point> depth_starttime;
+			std::mutex depth_starttime_mutex;
+			util::time_point depth_starttime;
 
 			/* Per-depth values */
 			std::atomic<int> allocated_time; /* Time allocated to depth */
