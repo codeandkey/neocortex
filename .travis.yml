@@ -25,4 +25,4 @@ script:
   - "echo \"\\\"service_job_id\\\": \\\"$TRAVIS_JOB_ID\\\",\" >> coveralls2.json"
   - tail -c+2 coveralls.json >> coveralls2.json
   - cat coveralls2.json
-  - "curl -X POST -H \"Content-Type: application/json\" -F \"json_file=@coveralls2.json\" https://coveralls.io/api/v1/jobs"
+  - "curl -H \"Content-Type: application/json\" -F \"json_file=@coveralls2.json\" https://coveralls.io/api/v1/jobs"
