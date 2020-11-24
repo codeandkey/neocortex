@@ -33,16 +33,11 @@ int score::parent(int value) {
 
 std::string score::to_string(int value) {
 	if (is_mate(value)) {
-		int dist = 0;
-
 		if (value > 0) {
-			dist = CHECKMATE - value;
+			return util::format("#%d", CHECKMATE - value);
+		} else {
+			return util::format("#-%d", value - CHECKMATED);
 		}
-		else {
-			dist = -(value - CHECKMATED);
-		}
-
-		return util::format("#%d", dist);
 	} else {
 		return util::format("%+.2f", value / 100.0f);
 	}
@@ -50,16 +45,11 @@ std::string score::to_string(int value) {
 
 std::string score::to_uci(int value) {
 	if (is_mate(value)) {
-		int dist = 0;
-
 		if (value > 0) {
-			dist = CHECKMATE - value;
+			return util::format("mate %d", CHECKMATE - value);
+		} else {
+			return util::format("mate -%d", value - CHECKMATED);
 		}
-		else {
-			dist = -(value - CHECKMATED);
-		}
-
-		return util::format("mate %d", dist);
 	} else {
 		return util::format("cp %d", value);
 	}
