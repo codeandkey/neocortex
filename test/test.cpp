@@ -3,6 +3,7 @@
 #include "../src/attacks.h"
 #include "../src/bitboard.h"
 #include "../src/board.h"
+#include "../src/eval.h"
 #include "../src/eval_consts.h"
 #include "../src/piece.h"
 #include "../src/tt.h"
@@ -241,6 +242,39 @@ TEST(BoardTest, AllSpans) {
 
 	EXPECT_EQ(b.all_spans(piece::WHITE), (FILE_B | FILE_C | FILE_D | FILE_E) & ~(RANK_1 | RANK_2 | RANK_3));
 	EXPECT_EQ(b.all_spans(piece::BLACK), (FILE_E | FILE_F | FILE_G | FILE_H) & ~(RANK_7 | RANK_8));
+}
+
+/**
+ * EvalTest: tests for evaluation helpers in eval.cpp
+ */
+
+TEST(EvalTest, IsMate) {
+	EXPECT_TRUE(score::is_mate(score::CHECKMATE));
+	EXPECT_TRUE(score::is_mate(score::CHECKMATED));
+	EXPECT_FALSE(score::is_mate(0));
+}
+
+TEST(EvalTest, Parent) {
+	EXPECT_EQ(score::parent(score::CHECKMATE), score::CHECKMATE - 1);
+	EXPECT_EQ(score::parent(score::CHECKMATED), score::CHECKMATED + 1);
+	EXPECT_EQ(score::parent(score::INCOMPLETE), score::INCOMPLETE);
+	EXPECT_EQ(score::parent(0), 0);
+}
+
+TEST(EvalTest, ToString) {
+	EXPECT_EQ(score::to_string(score::CHECKMATE), "#0");
+	EXPECT_EQ(score::to_string(score::CHECKMATED), "#-0");
+	EXPECT_EQ(score::to_string(score::CHECKMATE - 1), "#1");
+	EXPECT_EQ(score::to_string(score::CHECKMATED + 1), "#-1");
+	EXPECT_EQ(score::to_string(0), "+0.00");
+}
+
+TEST(EvalTest, ToUci) {
+	EXPECT_EQ(score::to_uci(score::CHECKMATE), "mate 0");
+	EXPECT_EQ(score::to_uci(score::CHECKMATE - 1), "mate 1");
+	EXPECT_EQ(score::to_uci(score::CHECKMATED), "mate -0");
+	EXPECT_EQ(score::to_uci(score::CHECKMATED + 1), "mate -1");
+	EXPECT_EQ(score::to_uci(0), "cp 0");
 }
 
 /* Testing entry point */
