@@ -213,6 +213,36 @@ TEST(BoardTest, MaskIsAttacked) {
 	EXPECT_EQ(Board::standard().mask_is_attacked(RANK_8, piece::WHITE), false);
 }
 
+TEST(BoardTest, FrontSpans) {
+	EXPECT_EQ(Board::standard().front_spans(piece::WHITE), ~(RANK_1 | RANK_2));
+	EXPECT_EQ(Board::standard().front_spans(piece::BLACK), ~(RANK_7 | RANK_8));
+
+	Board b("k7/5pp1/8/8/8/2PP4/8/K7");
+
+	EXPECT_EQ(b.front_spans(piece::WHITE), (FILE_C | FILE_D) & ~(RANK_1 | RANK_2 | RANK_3));
+	EXPECT_EQ(b.front_spans(piece::BLACK), (FILE_F | FILE_G) & ~(RANK_7 | RANK_8));
+}
+
+TEST(BoardTest, AttackSpans) {
+	EXPECT_EQ(Board::standard().attack_spans(piece::WHITE), ~(RANK_1 | RANK_2));
+	EXPECT_EQ(Board::standard().attack_spans(piece::BLACK), ~(RANK_7 | RANK_8));
+
+	Board b("k7/5pp1/8/8/8/2PP4/8/K7");
+
+	EXPECT_EQ(b.attack_spans(piece::WHITE), (FILE_B | FILE_C | FILE_D | FILE_E) & ~(RANK_1 | RANK_2 | RANK_3));
+	EXPECT_EQ(b.attack_spans(piece::BLACK), (FILE_E | FILE_F | FILE_G | FILE_H) & ~(RANK_7 | RANK_8));
+}
+
+TEST(BoardTest, AllSpans) {
+	EXPECT_EQ(Board::standard().all_spans(piece::WHITE), ~(RANK_1 | RANK_2));
+	EXPECT_EQ(Board::standard().all_spans(piece::BLACK), ~(RANK_7 | RANK_8));
+
+	Board b("k7/5pp1/8/8/8/2PP4/8/K7");
+
+	EXPECT_EQ(b.all_spans(piece::WHITE), (FILE_B | FILE_C | FILE_D | FILE_E) & ~(RANK_1 | RANK_2 | RANK_3));
+	EXPECT_EQ(b.all_spans(piece::BLACK), (FILE_E | FILE_F | FILE_G | FILE_H) & ~(RANK_7 | RANK_8));
+}
+
 /* Testing entry point */
 
 int main(int argc, char** argv) {
