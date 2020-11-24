@@ -11,8 +11,6 @@ before_install:
 
 script:
   - CXX=g++-6 make
-
-after_install:
   - CXX=g++-6 make test
   - ./neocortex_test
   - coveralls --exclude test
