@@ -10,6 +10,8 @@
 #include "piece.h"
 #include "square.h"
 
+#include <cassert>
+
 using namespace neocortex;
 
 bitboard attacks::king_attacks[64] = { 0 };
@@ -95,9 +97,7 @@ void attacks::init() {
 			bitboard rocc = make_rocc(i, magic::rook_masks[sq], magic::rook_bits[sq]);
 			int mindex = magic_index(rocc, magic::rook_magics[sq], magic::rook_bits[sq]);
 
-			if (rook_attacks[sq][mindex]) {
-				throw util::fmterr("Rook magic collision on %s", square::to_uci(sq));
-			}
+			assert(!rook_attacks[sq][mindex]);
 
 			bitboard* dst = &rook_attacks[sq][mindex];
 
@@ -142,9 +142,7 @@ void attacks::init() {
 			bitboard rocc = make_rocc(i, magic::bishop_masks[sq], magic::bishop_bits[sq]);
 			int mindex = magic_index(rocc, magic::bishop_magics[sq], magic::bishop_bits[sq]);
 
-			if (bishop_attacks[sq][mindex]) {
-				throw util::fmterr("Bishop magic collision on %s", square::to_uci(sq));
-			}
+			assert(!bishop_attacks[sq][mindex]);
 
 			bitboard* dst = &bishop_attacks[sq][mindex];
 
