@@ -18,6 +18,7 @@ script:
   - make CXX=g++-7
   - make CXX=g++-7 test
   - ./neocortex_test
+  - gcovr
   - gcovr --coveralls coveralls.json
   - echo "{" > coveralls2.json
   - echo "\"service_name\": \"travis-ci\"," >> coveralls2.json
