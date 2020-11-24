@@ -19,4 +19,4 @@ script:
   - make CXX=g++-7
   - make CXX=g++-7 test
   - ./neocortex_test
-  - coveralls --exclude test
+  - coveralls --exclude test --gcov-options '\-r'
