@@ -2,6 +2,8 @@
 
 #include "../src/attacks.h"
 #include "../src/bitboard.h"
+#include "../src/board.h"
+#include "../src/eval_consts.h"
 #include "../src/piece.h"
 #include "../src/tt.h"
 #include "../src/zobrist.h"
@@ -105,13 +107,119 @@ TEST(BitboardTest, File) {
 	EXPECT_EQ(bb::file(7), FILE_H);
 }
 
+/**
+ * BoardTest: tests for board data type in board.cpp
+ */
+
+TEST(BoardTest, Place) {
+	Board b = Board::standard();
+
+	b.place(16, piece::make_piece(piece::WHITE, piece::PAWN));
+
+	EXPECT_EQ(b.to_uci(), "rnbqkbnr/pppppppp/8/8/8/P7/PPPPPPPP/RNBQKBNR");
+}
+
+TEST(BoardTest, Remove) {
+	Board b = Board::standard();
+
+	EXPECT_EQ(b.remove(0), piece::make_piece(piece::WHITE, piece::ROOK));
+	EXPECT_EQ(b.to_uci(), "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/1NBQKBNR");
+}
+
+TEST(BoardTest, Replace) {
+	Board b = Board::standard();
+
+	EXPECT_EQ(b.replace(0, piece::make_piece(piece::BLACK, piece::ROOK)), piece::make_piece(piece::WHITE, piece::ROOK));
+	EXPECT_EQ(b.to_uci(), "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/rNBQKBNR");
+}
+
+TEST(BoardTest, ToUci) {
+	EXPECT_EQ(Board::standard().to_uci(), std::string("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"));
+}
+
+TEST(BoardTest, ParseUci) {
+	std::vector<std::string> uci_list;
+
+	uci_list.push_back("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8");
+	uci_list.push_back("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1");
+	uci_list.push_back("r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R");
+	uci_list.push_back("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R");
+
+	for (auto i : uci_list) {
+		EXPECT_EQ(Board(i).to_uci(), i);
+	}
+}
+
+TEST(BoardTest, ToPretty) {
+	EXPECT_EQ(Board::standard().to_pretty(), "rnbqkbnr\npppppppp\n........\n........\n........\n........\nPPPPPPPP\nRNBQKBNR\n");
+}
+
+TEST(BoardTest, GlobalOcc) {
+	EXPECT_EQ(Board::standard().get_global_occ(), 0xFFFF00000000FFFF);
+}
+
+TEST(BoardTest, ColorOcc) {
+	EXPECT_EQ(Board::standard().get_color_occ(piece::WHITE), 0x000000000000FFFF);
+	EXPECT_EQ(Board::standard().get_color_occ(piece::BLACK), 0xFFFF000000000000);
+}
+
+TEST(BoardTest, PieceOcc) {
+	EXPECT_EQ(Board::standard().get_piece_occ(piece::PAWN), RANK_2 | RANK_7);
+	EXPECT_EQ(Board::standard().get_piece_occ(piece::ROOK), (RANK_1 | RANK_8) & (FILE_A | FILE_H));
+	EXPECT_EQ(Board::standard().get_piece_occ(piece::KNIGHT), (RANK_1 | RANK_8) & (FILE_B | FILE_G));
+	EXPECT_EQ(Board::standard().get_piece_occ(piece::BISHOP), (RANK_1 | RANK_8) & (FILE_C | FILE_F));
+	EXPECT_EQ(Board::standard().get_piece_occ(piece::QUEEN), (RANK_1 | RANK_8) & FILE_D);
+	EXPECT_EQ(Board::standard().get_piece_occ(piece::KING), (RANK_1 | RANK_8) & FILE_E);
+}
+
+TEST(BoardTest, GetPiece) {
+	EXPECT_EQ(Board::standard().get_piece(0), piece::make_piece(piece::WHITE, piece::ROOK));
+	EXPECT_EQ(Board::standard().get_piece(4), piece::make_piece(piece::WHITE, piece::KING));
+}
+
+TEST(BoardTest, GetTTKey) {
+	Board b = Board::standard();
+	zobrist::Key k = b.get_tt_key();
+	int p = piece::make_piece(piece::BLACK, piece::KNIGHT);
+
+	b.place(32, p);
+
+	EXPECT_EQ(b.get_tt_key(), k ^ zobrist::piece(32, p));
+}
+
+TEST(BoardTest, AttacksOn) {
+	EXPECT_EQ(Board::standard().attacks_on(16), (1ULL << 9) | (1ULL << 1));
+	EXPECT_EQ(Board::standard().attacks_on(18), (1ULL << 9) | (1ULL << 1) | (1ULL << 11));
+}
+
+TEST(BoardTest, GuardValue) {
+	EXPECT_EQ(Board::standard().guard_value(0), 0);
+	EXPECT_EQ(Board::standard().guard_value(32), 0);
+
+	EXPECT_EQ(
+		Board::standard().guard_value(16),
+		eval::GUARD_VALUES[piece::make_piece(piece::WHITE, piece::PAWN)] + eval::GUARD_VALUES[piece::make_piece(piece::WHITE, piece::KNIGHT)]
+	);
+}
+
+TEST(BoardTest, MaskIsAttacked) {
+	EXPECT_EQ(Board::standard().mask_is_attacked(RANK_4, piece::WHITE), false);
+	EXPECT_EQ(Board::standard().mask_is_attacked(RANK_4, piece::BLACK), false);
+
+	EXPECT_EQ(Board::standard().mask_is_attacked(RANK_1, piece::WHITE), true);
+	EXPECT_EQ(Board::standard().mask_is_attacked(RANK_1, piece::BLACK), false);
+
+	EXPECT_EQ(Board::standard().mask_is_attacked(RANK_8, piece::BLACK), true);
+	EXPECT_EQ(Board::standard().mask_is_attacked(RANK_8, piece::WHITE), false);
+}
+
 /* Testing entry point */
 
 int main(int argc, char** argv) {
 	::testing::InitGoogleTest(&argc, argv);
 
 	attacks::init();
-	tt::init(16); /* Keep small TT for testing. */
+	tt::init(16); /* Keep small TT (16mb) for testing. */
 	zobrist::init();
 
 	return RUN_ALL_TESTS();
