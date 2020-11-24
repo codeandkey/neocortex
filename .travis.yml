@@ -4,10 +4,14 @@ install: make
 
 addons:
   apt:
-    packages: g++-6 libgtest-dev
+    packages: g++-6 libgtest-dev cmake
 
 before_install:
   - pip install --user cpp-coveralls
+  - cd /usr/src/gtest
+  - sudo cmake CMakeLists.txt
+  - sudo make
+  - sudo cp *.a /usr/lib
 
 script:
   - CXX=g++-6 make
