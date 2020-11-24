@@ -14,7 +14,8 @@ OUTPUT = neocortex
 debug: CXXFLAGS+=-g
 debug: clean $(OUTPUT)
 
-test: CXXFLAGS+=-g
+test: CXXFLAGS+=-g -fprofile-arcs -ftest-coverage
+test: LDFLAGS+=-lgtest -lgcov
 test: clean $(TEST_OUTPUT)
 
 release: CXXFLAGS+=-DNDEBUG
@@ -26,10 +27,10 @@ $(OUTPUT): $(OBJECTS) src/main.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 $(TEST_OUTPUT): $(OBJECTS) test/test.o
-	$(CXX) $^ $(LDFLAGS) -lgtest -o $@
+	$(CXX) $^ $(LDFLAGS) -o $@
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OUTPUT) $(TEST_OUTPUT) src/*.o test/*.o
+	rm -f $(OUTPUT) $(TEST_OUTPUT) src/*.o test/*.o src/*.gcda src/*.gcno src/*.gcov test/*.gcda test/*.gcno test/*.gcov
