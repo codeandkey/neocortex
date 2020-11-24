@@ -72,4 +72,8 @@ const int eval::PHASE_VALS[6] = {
 	0,
 };
 
+const int eval::GUARD_VALUES[12] = {
+	9, -9, 5, -5, 6, -6, 2, -2, 1, -1, 1, -1
+};
+
 const int eval::PHASE_TOTAL = 16 * eval::PHASE_VALS[0] + 4 * (eval::PHASE_VALS[1] + eval::PHASE_VALS[2] + eval::PHASE_VALS[3]) + 2 * eval::PHASE_VALS[4];

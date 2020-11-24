@@ -6,6 +6,7 @@
  */
 
 #include "board.h"
+#include "eval_consts.h"
 #include "util.h"
 
 #include "log.h"
@@ -195,15 +196,11 @@ bitboard Board::attacks_on(int sq) {
 }
 
 int Board::guard_value(int sq) {
-	static const int GUARD_VALUES[] = {
-		9, -9, 5, -5, 6, -6, 2, -2, 1, -1, 1, -1
-	};
-
 	int val = 0;
 	bitboard att = attacks_on(sq);
 
 	while (att) {
-		val += GUARD_VALUES[state[bb::poplsb(att)]];
+		val += eval::GUARD_VALUES[state[bb::poplsb(att)]];
 	}
 
 	return val;

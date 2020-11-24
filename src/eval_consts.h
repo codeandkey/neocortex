@@ -36,5 +36,7 @@ namespace neocortex {
 		constexpr int KING_ADV_EG = 10;
 
 		constexpr int ORDER_PV_MOVE = 40000;
+
+		extern const int GUARD_VALUES[12];
 	}
 }
