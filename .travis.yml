@@ -5,7 +5,7 @@ install: make
 addons:
   apt:
     sources: ubuntu-toolchain-r-test
-    packages: g++-6 libgtest-dev cmake
+    packages: g++-7 libgtest-dev cmake
 
 before_install:
   - pip install --user cpp-coveralls
@@ -16,7 +16,7 @@ before_install:
 
 script:
   - cd $TRAVIS_BUILD_DIR
-  - make CXX=g++-6
-  - make CXX=g++-6 test
+  - make CXX=g++-7
+  - make CXX=g++-7 test
   - ./neocortex_test
   - coveralls --exclude test
