@@ -14,7 +14,7 @@ OUTPUT = neocortex
 debug: CXXFLAGS+=-g
 debug: clean $(OUTPUT)
 
-test: CXXFLAGS+=-g --coverage -fprofile-arcs -ftest-coverage -fno-inline -fno-inline-small-functions -fno-default-inline -O0
+test: CXXFLAGS+=-g --coverage -fprofile-arcs -ftest-coverage -fno-inline -fno-inline-small-functions -fno-default-inline -fkeep-inline-functions -O0
 test: LDFLAGS+=-lgtest -lgcov
 test: clean $(TEST_OUTPUT)
 
