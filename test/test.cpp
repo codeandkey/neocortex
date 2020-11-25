@@ -277,6 +277,140 @@ TEST(EvalTest, ToUci) {
 	EXPECT_EQ(score::to_uci(0), "cp 0");
 }
 
+/**
+ * MoveTest: Testing for move functions in move.cpp
+ */
+
+TEST(MoveTest, ConstructNull) {
+	EXPECT_EQ(Move(), Move::null);
+}
+
+TEST(MoveTest, Construct) {
+	Move m(2, 4, piece::QUEEN);
+
+	EXPECT_EQ(m.src(), 2);
+	EXPECT_EQ(m.dst(), 4);
+	EXPECT_EQ(m.ptype(), piece::QUEEN);
+}
+
+TEST(MoveTest, ConstructUci) {
+	EXPECT_EQ(Move("a1b1q"), Move(0, 1, piece::QUEEN));
+	EXPECT_EQ(Move("a1h8n"), Move(0, 63, piece::KNIGHT));
+}
+
+TEST(MoveTest, IsValid) {
+	EXPECT_FALSE(Move().is_valid());
+	EXPECT_TRUE(Move("a1b1q").is_valid());
+}
+
+TEST(MoveTest, MatchUci) {
+	EXPECT_TRUE(Move("a1b1q").match_uci("a1b1q"));
+	EXPECT_TRUE(Move("a1b1").match_uci("a1b1"));
+
+	EXPECT_FALSE(Move("a1b1q").match_uci("a1b1n"));
+	EXPECT_FALSE(Move("a1b1").match_uci("a1b2"));
+	EXPECT_FALSE(Move("a1b1").match_uci("a2b1"));
+	EXPECT_FALSE(Move("a1b1").match_uci("a1b1n"));
+	EXPECT_FALSE(Move("a1b1n").match_uci("a1b1"));
+}
+
+TEST(MoveTest, PVConstruct) {
+	PV p;
+}
+
+TEST(MoveTest, PVToString) {
+	PV p;
+
+	p.moves[0] = Move("a1b2");
+	p.moves[1] = Move("a2b3");
+	p.moves[2] = Move("a3b4");
+
+	p.len = 3;
+
+	EXPECT_EQ(p.to_string(), "a1b2 a2b3 a3b4");
+}
+
+/**
+ * PieceTest: tests for piece types in piece.cpp
+ */
+
+TEST(PieceTest, MakePiece) {
+	EXPECT_EQ(piece::make_piece(piece::WHITE, piece::PAWN), 0);
+	EXPECT_EQ(piece::make_piece(piece::BLACK, piece::PAWN), 1);
+	EXPECT_EQ(piece::make_piece(piece::WHITE, piece::BISHOP), 2);
+	EXPECT_EQ(piece::make_piece(piece::BLACK, piece::BISHOP), 3);
+	EXPECT_EQ(piece::make_piece(piece::WHITE, piece::KNIGHT), 4);
+	EXPECT_EQ(piece::make_piece(piece::BLACK, piece::KNIGHT), 5);
+	EXPECT_EQ(piece::make_piece(piece::WHITE, piece::ROOK), 6);
+	EXPECT_EQ(piece::make_piece(piece::BLACK, piece::ROOK), 7);
+	EXPECT_EQ(piece::make_piece(piece::WHITE, piece::QUEEN), 8);
+	EXPECT_EQ(piece::make_piece(piece::BLACK, piece::QUEEN), 9);
+	EXPECT_EQ(piece::make_piece(piece::WHITE, piece::KING), 10);
+	EXPECT_EQ(piece::make_piece(piece::BLACK, piece::KING), 11);
+}
+
+TEST(PieceTest, GetColor) {
+	EXPECT_EQ(piece::color(piece::make_piece(piece::WHITE, piece::QUEEN)), piece::WHITE);
+	EXPECT_EQ(piece::color(piece::make_piece(piece::BLACK, piece::KNIGHT)), piece::BLACK);
+}
+
+TEST(PieceTest, GetType) {
+	EXPECT_EQ(piece::type(piece::make_piece(piece::WHITE, piece::QUEEN)), piece::QUEEN);
+	EXPECT_EQ(piece::type(piece::make_piece(piece::BLACK, piece::KNIGHT)), piece::KNIGHT);
+}
+
+TEST(PieceTest, IsValid) {
+	EXPECT_TRUE(piece::is_valid(piece::make_piece(piece::WHITE, piece::QUEEN)));
+	EXPECT_FALSE(piece::is_valid(piece::null));
+}
+
+TEST(PieceTest, IsType) {
+	EXPECT_TRUE(piece::is_type(piece::QUEEN));
+	EXPECT_FALSE(piece::is_type(piece::null));
+}
+
+TEST(PieceTest, GetUci) {
+	EXPECT_EQ(piece::get_uci(piece::make_piece(piece::WHITE, piece::QUEEN)), 'Q');
+	EXPECT_EQ(piece::get_uci(piece::make_piece(piece::BLACK, piece::PAWN)), 'p');
+	EXPECT_EQ(piece::get_uci(piece::make_piece(piece::WHITE, piece::KNIGHT)), 'N');
+	EXPECT_EQ(piece::get_uci(piece::make_piece(piece::BLACK, piece::BISHOP)), 'b');
+}
+
+TEST(PieceTest, FromUci) {
+	EXPECT_EQ(piece::from_uci('B'), piece::make_piece(piece::WHITE, piece::BISHOP));
+	EXPECT_EQ(piece::from_uci('k'), piece::make_piece(piece::BLACK, piece::KING));
+	EXPECT_EQ(piece::from_uci('P'), piece::make_piece(piece::WHITE, piece::PAWN));
+	EXPECT_EQ(piece::from_uci('q'), piece::make_piece(piece::BLACK, piece::QUEEN));
+}
+
+TEST(PieceTest, ColorFromUci) {
+	EXPECT_EQ(piece::color_from_uci('w'), piece::WHITE);
+	EXPECT_EQ(piece::color_from_uci('b'), piece::BLACK);
+}
+
+TEST(PieceTest, ColorToUci) {
+	EXPECT_EQ(piece::color_to_uci(piece::WHITE), 'w');
+	EXPECT_EQ(piece::color_to_uci(piece::BLACK), 'b');
+}
+
+TEST(PieceTest, TypeToUci) {
+	EXPECT_EQ(piece::type_to_uci(piece::PAWN), 'p');
+	EXPECT_EQ(piece::type_to_uci(piece::BISHOP), 'b');
+	EXPECT_EQ(piece::type_to_uci(piece::KNIGHT), 'n');
+	EXPECT_EQ(piece::type_to_uci(piece::ROOK), 'r');
+	EXPECT_EQ(piece::type_to_uci(piece::QUEEN), 'q');
+	EXPECT_EQ(piece::type_to_uci(piece::KING), 'k');
+}
+
+TEST(PieceTest, TypeFromUci) {
+	EXPECT_EQ(piece::type_from_uci('p'), piece::PAWN);
+	EXPECT_EQ(piece::type_from_uci('b'), piece::BISHOP);
+	EXPECT_EQ(piece::type_from_uci('n'), piece::KNIGHT);
+	EXPECT_EQ(piece::type_from_uci('r'), piece::ROOK);
+	EXPECT_EQ(piece::type_from_uci('q'), piece::QUEEN);
+	EXPECT_EQ(piece::type_from_uci('k'), piece::KING);
+}
+
 /* Testing entry point */
 
 int main(int argc, char** argv) {
