@@ -381,11 +381,15 @@ TEST(PieceTest, FromUci) {
 	EXPECT_EQ(piece::from_uci('k'), piece::make_piece(piece::BLACK, piece::KING));
 	EXPECT_EQ(piece::from_uci('P'), piece::make_piece(piece::WHITE, piece::PAWN));
 	EXPECT_EQ(piece::from_uci('q'), piece::make_piece(piece::BLACK, piece::QUEEN));
+
+	EXPECT_THROW(piece::from_uci('A'), std::exception);
 }
 
 TEST(PieceTest, ColorFromUci) {
 	EXPECT_EQ(piece::color_from_uci('w'), piece::WHITE);
 	EXPECT_EQ(piece::color_from_uci('b'), piece::BLACK);
+
+	EXPECT_THROW(piece::color_from_uci('g'), std::exception);
 }
 
 TEST(PieceTest, ColorToUci) {
@@ -409,6 +413,8 @@ TEST(PieceTest, TypeFromUci) {
 	EXPECT_EQ(piece::type_from_uci('r'), piece::ROOK);
 	EXPECT_EQ(piece::type_from_uci('q'), piece::QUEEN);
 	EXPECT_EQ(piece::type_from_uci('k'), piece::KING);
+
+	EXPECT_THROW(piece::type_from_uci('G'), std::exception);
 }
 
 /* Testing entry point */
