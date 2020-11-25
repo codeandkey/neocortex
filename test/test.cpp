@@ -417,6 +417,90 @@ TEST(PieceTest, TypeFromUci) {
 	EXPECT_THROW(piece::type_from_uci('G'), std::exception);
 }
 
+/**
+ * PositionTest: tests for position data type in position.cpp
+ */
+
+TEST(PositionTest, CanConstruct) {
+	Position();
+}
+
+TEST(PositionTest, FromFen) {
+	EXPECT_NO_THROW(Position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")); /* standard FEN */
+
+	EXPECT_THROW(Position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 2"), std::exception); /* too many fields */
+	EXPECT_THROW(Position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0"), std::exception); /* too few fields */
+}
+
+TEST(PositionTest, ToFen) {
+	EXPECT_EQ(Position().to_fen(), "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+}
+
+TEST(PositionTest, GetCTM) {
+	EXPECT_EQ(Position().get_color_to_move(), piece::WHITE);
+}
+
+TEST(PositionTest, MakeMove) {
+	Position p1("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+
+	EXPECT_TRUE(p1.make_move(Move("a2a4"))); // jump
+	EXPECT_TRUE(p1.make_move(Move("b4c3"))); // capture
+	EXPECT_TRUE(p1.make_move(Move("e1c1"))); // qs castle
+	EXPECT_TRUE(p1.make_move(Move("c3b2"))); // check
+	EXPECT_FALSE(p1.make_move(Move("a4a5"))); // illegal push
+
+	Position p2("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+
+	EXPECT_TRUE(p2.make_move(Move("e1g1"))); // ks castle
+	EXPECT_TRUE(p2.make_move(Move("c7c5"))); // jump
+	EXPECT_TRUE(p2.make_move(Move("d5c6"))); // ep capture
+	EXPECT_TRUE(p2.make_move(Move("e7c5"))); // quiet
+	EXPECT_TRUE(p2.make_move(Move("c6c7"))); // push
+	EXPECT_TRUE(p2.make_move(Move("a6e2"))); // capture
+	EXPECT_TRUE(p2.make_move(Move("c7c8q"))); // promotion
+	EXPECT_FALSE(p2.make_move(Move("c5f2"))); // illegal capture
+}
+
+TEST(PositionTest, UnmakeMove) {
+	Position p1("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+
+	EXPECT_TRUE(p1.make_move(Move("a2a4"))); // jump
+	EXPECT_TRUE(p1.make_move(Move("b4c3"))); // capture
+	EXPECT_TRUE(p1.make_move(Move("e1c1"))); // qs castle
+	EXPECT_TRUE(p1.make_move(Move("c3b2"))); // check
+	EXPECT_FALSE(p1.make_move(Move("a4a5"))); // illegal push
+
+	EXPECT_NO_THROW(p1.unmake_move(Move("a4a5")));
+	EXPECT_NO_THROW(p1.unmake_move(Move("c3b2")));
+	EXPECT_NO_THROW(p1.unmake_move(Move("e1c1")));
+	EXPECT_NO_THROW(p1.unmake_move(Move("b4c3")));
+	EXPECT_NO_THROW(p1.unmake_move(Move("a2a4")));
+
+	EXPECT_EQ(p1.to_fen(), "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+
+	Position p2("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+
+	EXPECT_TRUE(p2.make_move(Move("e1g1"))); // ks castle
+	EXPECT_TRUE(p2.make_move(Move("c7c5"))); // jump
+	EXPECT_TRUE(p2.make_move(Move("d5c6"))); // ep capture
+	EXPECT_TRUE(p2.make_move(Move("e7c5"))); // quiet
+	EXPECT_TRUE(p2.make_move(Move("c6c7"))); // push
+	EXPECT_TRUE(p2.make_move(Move("a6e2"))); // capture
+	EXPECT_TRUE(p2.make_move(Move("c7c8q"))); // promotion
+	EXPECT_FALSE(p2.make_move(Move("c5f2"))); // illegal capture
+
+	EXPECT_NO_THROW(p2.unmake_move(Move("c5f2")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("c7c8q")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("a6e2")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("c6c7")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("e7c5")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("d5c6")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("c7c5")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("e1g1")));
+
+	EXPECT_EQ(p2.to_fen(), "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+}
+
 /* Testing entry point */
 
 int main(int argc, char** argv) {
