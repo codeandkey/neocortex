@@ -59,7 +59,7 @@ namespace neocortex {
 		 *
 		 * @return true if this move is not null.
 		 */
-		bool is_valid();
+		bool is_valid() const;
 
 		/**
 		 * Tests if this move matches with a UCI string.
@@ -75,21 +75,21 @@ namespace neocortex {
 		 *
 		 * @return Source square.
 		 */
-		int src();
+		int src() const;
 
 		/**
 		 * Gets the move destination square.
 		 *
 		 * @return Destination square.
 		 */
-		int dst();
+		int dst() const;
 
 		/**
 		 * Gets the move promotion type, or null if there is none set.
 		 *
 		 * @return Promotion type, or null.
 		 */
-		int ptype();
+		int ptype() const;
 
 		/**
 		 * Shorthand for to_uci().

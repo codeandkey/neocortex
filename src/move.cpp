@@ -50,7 +50,7 @@ std::string Move::to_uci() {
 	return output;
 }
 
-bool Move::is_valid() {
+bool Move::is_valid() const {
 	if (!square::is_valid(m_src)) return false;
 	if (!square::is_valid(m_dst)) return false;
 
@@ -61,19 +61,19 @@ bool Move::match_uci(std::string uci) {
 	return *this == Move(uci);
 }
 
-int Move::src() {
+int Move::src() const {
 	assert(is_valid());
 
 	return m_src;
 }
 
-int Move::dst() {
+int Move::dst() const {
 	assert(is_valid());
 
 	return m_dst;
 }
 
-int Move::ptype() {
+int Move::ptype() const {
 	assert(is_valid());
 
 	return m_ptype;
