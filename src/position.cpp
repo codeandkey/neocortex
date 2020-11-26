@@ -979,13 +979,3 @@ int Position::num_repetitions() {
 int Position::halfmove_clock() {
 	return ply.back().halfmove_clock;
 }
-
-std::string Position::game_string() {
-	std::string output;
-
-	for (int i = (int) ply.size() - 1; i > 0; --i) {
-		output = ply[i].last_move.to_uci() + " " + output;
-	}
-
-	return output;
-}

@@ -130,13 +130,6 @@ namespace neocortex {
 		int halfmove_clock();
 
 		/**
-		 * Gets the game as a PGN string.
-		 *
-		 * @return PGN string.
-		 */
-		std::string game_string();
-
-		/**
 		 * Evaluates the current position.
 		 *
 		 * @param dbg String output pointer for debug information.
