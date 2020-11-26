@@ -905,7 +905,7 @@ int Position::evaluate(std::string* dbg) {
 			gv = 0;
 		}
 
-		king_safety += gv * eval::KING_SAFETY;
+		king_safety += gv;
 	}
 
 	while (black_ksq) {
@@ -917,10 +917,10 @@ int Position::evaluate(std::string* dbg) {
 			gv = 0;
 		}
 
-		king_safety += gv * eval::KING_SAFETY;
+		king_safety += gv;
 	}
 
-	score += king_safety;
+	score += king_safety * eval::KING_SAFETY;
 
 	/* Find passed pawns */
 	bitboard passers[2];
