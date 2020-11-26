@@ -16,7 +16,7 @@ const int eval::MATERIAL_MG[6] = {
 	300,
 	500,
 	900,
-	0
+	2000,
 };
 
 const int eval::MATERIAL_EG[6] = {
@@ -25,7 +25,7 @@ const int eval::MATERIAL_EG[6] = {
 	300,
 	500,
 	900,
-	0
+	2000,
 };
 
 const int eval::MATERIAL_MG_MAX = \
