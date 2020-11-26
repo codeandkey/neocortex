@@ -492,6 +492,13 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 
 	bitboard ctm = board.get_color_occ(color_to_move);
 	bitboard opp = board.get_color_occ(!color_to_move);
+	
+	int oppking = bb::getlsb(opp & board.get_piece_occ(piece::KING));
+
+	bitboard bchecks = attacks::bishop(oppking, board.get_global_occ()) & ~ctm;
+	bitboard rchecks = attacks::rook(oppking, board.get_global_occ()) & ~ctm;
+	bitboard nchecks = attacks::knight(oppking) & ~ctm;
+	bitboard pchecks = attacks::pawn(!color_to_move, oppking);
 
 	bitboard ep_mask = 0;
 	int ep_square = ply.back().en_passant_square;
@@ -517,8 +524,6 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 		int dst = bb::poplsb(promoting_left_cap);
 		out[count++] = Move(dst - left_dir, dst, piece::QUEEN);
 		out[count++] = Move(dst - left_dir, dst, piece::KNIGHT);
-		out[count++] = Move(dst - left_dir, dst, piece::ROOK);
-		out[count++] = Move(dst - left_dir, dst, piece::BISHOP);
 	}
 
 	/* Promoting right captures */
@@ -528,8 +533,6 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 		int dst = bb::poplsb(promoting_right_cap);
 		out[count++] = Move(dst - right_dir, dst, piece::QUEEN);
 		out[count++] = Move(dst - right_dir, dst, piece::KNIGHT);
-		out[count++] = Move(dst - right_dir, dst, piece::ROOK);
-		out[count++] = Move(dst - right_dir, dst, piece::BISHOP);
 	}
 
 	/* Promoting advances */
@@ -539,8 +542,6 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 		int dst = bb::poplsb(promoting_advances);
 		out[count++] = Move(dst - adv_dir, dst, piece::QUEEN);
 		out[count++] = Move(dst - adv_dir, dst, piece::KNIGHT);
-		out[count++] = Move(dst - adv_dir, dst, piece::ROOK);
-		out[count++] = Move(dst - adv_dir, dst, piece::BISHOP);
 	}
 
 	/* Nonpromoting pawn moves */
@@ -562,12 +563,20 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 		out[count++] = Move(dst - right_dir, dst);
 	}
 
-	/* Queen captures */
+	/* Pawn checks */
+	bitboard npm_checks = bb::shift(npm_pawns, adv_dir) & ~board.get_global_occ() & pchecks;
+
+	while (npm_checks) {
+		int dst = bb::poplsb(npm_checks);
+		out[count++] = Move(dst - adv_dir, dst);
+	}
+
+	/* Queen captures / checks */
 	bitboard queens = ctm & board.get_piece_occ(piece::QUEEN);
 
 	while (queens) {
 		int src = bb::poplsb(queens);
-		bitboard moves = attacks::queen(src, board.get_global_occ()) & opp;
+		bitboard moves = attacks::queen(src, board.get_global_occ()) & (opp | bchecks | rchecks);
 
 		while (moves) {
 			int dst = bb::poplsb(moves);
@@ -575,12 +584,12 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 		}
 	}
 
-	/* Rook captures */
+	/* Rook captures / checks */
 	bitboard rooks = ctm & board.get_piece_occ(piece::ROOK);
 
 	while (rooks) {
 		int src = bb::poplsb(rooks);
-		bitboard moves = attacks::rook(src, board.get_global_occ()) & opp;
+		bitboard moves = attacks::rook(src, board.get_global_occ()) & (opp | rchecks);
 
 		while (moves) {
 			int dst = bb::poplsb(moves);
@@ -588,12 +597,12 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 		}
 	}
 
-	/* Knight captures */
+	/* Knight captures / checks */
 	bitboard knights = ctm & board.get_piece_occ(piece::KNIGHT);
 
 	while (knights) {
 		int src = bb::poplsb(knights);
-		bitboard moves = attacks::knight(src) & opp;
+		bitboard moves = attacks::knight(src) & (opp | nchecks);
 
 		while (moves) {
 			int dst = bb::poplsb(moves);
@@ -601,12 +610,12 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 		}
 	}
 
-	/* Bishop captures */
+	/* Bishop captures / checks */
 	bitboard bishops = ctm & board.get_piece_occ(piece::BISHOP);
 
 	while (bishops) {
 		int src = bb::poplsb(bishops);
-		bitboard moves = attacks::bishop(src, board.get_global_occ()) & opp;
+		bitboard moves = attacks::bishop(src, board.get_global_occ()) & (opp | bchecks);
 
 		while (moves) {
 			int dst = bb::poplsb(moves);
