@@ -501,6 +501,201 @@ TEST(PositionTest, UnmakeMove) {
 	EXPECT_EQ(p2.to_fen(), "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
 }
 
+TEST(PositionTest, EnPassantMask) {
+	Position p;
+	
+	EXPECT_TRUE(p.make_move(Move("a2a4")));
+	EXPECT_EQ(p.en_passant_mask(), 1ULL << 16);
+}
+
+TEST(PositionTest, GetTTKey) {
+	/* Make and unmake some moves, check TT key is unchanged */
+	Position p2("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+	zobrist::Key init_key = p2.get_tt_key();
+
+	EXPECT_TRUE(p2.make_move(Move("e1g1"))); // ks castle
+	EXPECT_TRUE(p2.make_move(Move("c7c5"))); // jump
+	EXPECT_TRUE(p2.make_move(Move("d5c6"))); // ep capture
+	EXPECT_TRUE(p2.make_move(Move("e7c5"))); // quiet
+	EXPECT_TRUE(p2.make_move(Move("c6c7"))); // push
+	EXPECT_TRUE(p2.make_move(Move("a6e2"))); // capture
+	EXPECT_TRUE(p2.make_move(Move("c7c8q"))); // promotion
+	EXPECT_FALSE(p2.make_move(Move("c5f2"))); // illegal capture
+
+	EXPECT_NO_THROW(p2.unmake_move(Move("c5f2")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("c7c8q")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("a6e2")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("c6c7")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("e7c5")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("d5c6")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("c7c5")));
+	EXPECT_NO_THROW(p2.unmake_move(Move("e1g1")));
+
+	EXPECT_EQ(p2.get_tt_key(), init_key);
+}
+
+TEST(PositionTest, Check) {
+	Position p1("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+
+	EXPECT_TRUE(p1.make_move(Move("a2a4"))); // jump
+	EXPECT_TRUE(p1.make_move(Move("b4c3"))); // capture
+	EXPECT_TRUE(p1.make_move(Move("e1c1"))); // qs castle
+	EXPECT_TRUE(p1.make_move(Move("c3b2"))); // check
+
+	EXPECT_TRUE(p1.check(piece::WHITE));
+}
+
+TEST(PositionTest, NumRepetitions) {
+	Position p1("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+
+	EXPECT_TRUE(p1.make_move(Move("c3a4")));
+	EXPECT_TRUE(p1.make_move(Move("b6c8")));
+	EXPECT_TRUE(p1.make_move(Move("a4c3")));
+	EXPECT_TRUE(p1.make_move(Move("c8b6")));
+
+	EXPECT_EQ(p1.num_repetitions(), 2);
+}
+
+TEST(PositionTest, HalfmoveClock) {
+	/* Start with nonzero HM clock */
+	Position p1("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 3 1");
+
+	EXPECT_TRUE(p1.make_move(Move("c3a4")));
+	EXPECT_TRUE(p1.make_move(Move("b6c8")));
+	EXPECT_TRUE(p1.make_move(Move("a4c3")));
+	EXPECT_TRUE(p1.make_move(Move("c8b6")));
+
+	EXPECT_EQ(p1.halfmove_clock(), 7);
+
+	EXPECT_TRUE(p1.make_move(Move("e5f7"))); // capture, reset clock
+
+	EXPECT_EQ(p1.halfmove_clock(), 0);
+}
+
+TEST(PositionTest, Evaluate) {
+	/* Evaluation is a rapidly changing function, difficult to test on its own. */
+	/* TODO: add more tests for specific evaluation components (eg. passed pawns) */
+	EXPECT_NO_THROW(Position().evaluate());
+}
+
+TEST(PositionTest, PseudolegalMoves) {
+	/* Test a position with every type of move available! */
+	Position p("rnbqkbr1/1P2ppp1/5n1p/p1pP4/p1B5/N4N2/1BPPQPPP/R3K2R w KQq c6 0 13");
+
+	Move moves[MAX_PL_MOVES];
+	int move_count;
+
+	move_count = p.pseudolegal_moves(moves);
+
+	EXPECT_EQ(move_count, 52);
+
+	auto contains = [&](Move m) -> bool {
+		for (int i = 0; i < move_count; ++i) {
+			if (moves[i] == m) {
+				return true;
+			}
+		}
+
+		return false;
+	};
+
+	EXPECT_TRUE(contains(Move("d2d4"))); // pawn jumps
+	EXPECT_TRUE(contains(Move("g2g4")));
+	EXPECT_TRUE(contains(Move("h2h4")));
+
+	EXPECT_TRUE(contains(Move("d5d6"))); // pushes
+	EXPECT_TRUE(contains(Move("c2c3")));
+	EXPECT_TRUE(contains(Move("d2d3")));
+	EXPECT_TRUE(contains(Move("g2g3")));
+	EXPECT_TRUE(contains(Move("h2h3")));
+
+	EXPECT_TRUE(contains(Move("b2c1"))); // bishop quiets
+	EXPECT_TRUE(contains(Move("b2c3")));
+	EXPECT_TRUE(contains(Move("b2d4")));
+	EXPECT_TRUE(contains(Move("b2e5")));
+	EXPECT_TRUE(contains(Move("c4b3")));
+	EXPECT_TRUE(contains(Move("c4a2")));
+	EXPECT_TRUE(contains(Move("c4b5")));
+	EXPECT_TRUE(contains(Move("c4a6")));
+	EXPECT_TRUE(contains(Move("c4d3")));
+
+	EXPECT_TRUE(contains(Move("a3b5"))); // knight quiets
+	EXPECT_TRUE(contains(Move("a3b1")));
+	EXPECT_TRUE(contains(Move("f3d4")));
+	EXPECT_TRUE(contains(Move("f3e5")));
+	EXPECT_TRUE(contains(Move("f3g5")));
+	EXPECT_TRUE(contains(Move("f3h4")));
+	EXPECT_TRUE(contains(Move("f3g1")));
+
+	EXPECT_TRUE(contains(Move("a1b1"))); // rook quiets
+	EXPECT_TRUE(contains(Move("a1c1")));
+	EXPECT_TRUE(contains(Move("a1d1")));
+	EXPECT_TRUE(contains(Move("a1a2")));
+	EXPECT_TRUE(contains(Move("h1g1")));
+	EXPECT_TRUE(contains(Move("h1f1")));
+
+	EXPECT_TRUE(contains(Move("e2d1"))); // queen quiets
+	EXPECT_TRUE(contains(Move("e2f1")));
+	EXPECT_TRUE(contains(Move("e2d3")));
+	EXPECT_TRUE(contains(Move("e2e3")));
+	EXPECT_TRUE(contains(Move("e2e4")));
+	EXPECT_TRUE(contains(Move("e2e5")));
+	EXPECT_TRUE(contains(Move("e2e6")));
+
+	EXPECT_TRUE(contains(Move("e2e7"))); // queen captures
+	EXPECT_TRUE(contains(Move("b2f6"))); // bishop captures
+
+	EXPECT_TRUE(contains(Move("b7a8q"))); // promoting left captures
+	EXPECT_TRUE(contains(Move("b7a8n")));
+	EXPECT_TRUE(contains(Move("b7a8b")));
+	EXPECT_TRUE(contains(Move("b7a8r")));
+
+	EXPECT_TRUE(contains(Move("b7c8q"))); // promoting right captures
+	EXPECT_TRUE(contains(Move("b7c8n")));
+	EXPECT_TRUE(contains(Move("b7c8b")));
+	EXPECT_TRUE(contains(Move("b7c8r")));
+
+	EXPECT_TRUE(contains(Move("d5c6"))); // en-passant
+
+	EXPECT_TRUE(contains(Move("e1g1"))); // KS castle
+	EXPECT_TRUE(contains(Move("e1c1"))); // QS castle
+}
+
+TEST(PositionTest, PseudolegalMovesQuiescence) {
+	/* Test a position with every type of move available! */
+	Position p("rnbqkbr1/1P2ppp1/5n1p/p1pP4/p1B5/N4N2/1BPPQPPP/R3K2R w KQq c6 0 13");
+
+	Move moves[MAX_PL_MOVES];
+	int move_count;
+
+	move_count = p.pseudolegal_moves_quiescence(moves);
+
+	EXPECT_EQ(move_count, 8);
+
+	auto contains = [&](Move m) -> bool {
+		for (int i = 0; i < move_count; ++i) {
+			if (moves[i] == m) {
+				return true;
+			}
+		}
+
+		return false;
+	};
+
+	EXPECT_TRUE(contains(Move("c4b5"))); // bishop checks
+
+	EXPECT_TRUE(contains(Move("e2e7"))); // queen captures
+	EXPECT_TRUE(contains(Move("b2f6"))); // bishop captures
+
+	EXPECT_TRUE(contains(Move("b7a8q"))); // promoting left captures
+	EXPECT_TRUE(contains(Move("b7a8n")));
+
+	EXPECT_TRUE(contains(Move("b7c8q"))); // promoting right captures
+	EXPECT_TRUE(contains(Move("b7c8n")));
+
+	EXPECT_TRUE(contains(Move("d5c6"))); // en-passant
+}
+
 /* Testing entry point */
 
 int main(int argc, char** argv) {
