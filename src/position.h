@@ -183,9 +183,9 @@ namespace neocortex {
 		 * Performs static exchange evaluation on a square.
 		 *
 		 * @param sq Destination square.
-		 * @param valid_attackers Mask of allowed attackers.
+		 * @param col Attacking color.
 		 */
-		int see(int sq, bitboard valid_attackers = ~0);
+		int see(int sq, int col);
 	private:
 		Board board;
 		std::vector<State> ply;

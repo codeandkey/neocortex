@@ -696,6 +696,91 @@ TEST(PositionTest, PseudolegalMovesQuiescence) {
 	EXPECT_TRUE(contains(Move("d5c6"))); // en-passant
 }
 
+TEST(PositionTest, OrderMoves) {
+	Position p("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"); // kiwipete position
+
+	Move moves[MAX_PL_MOVES];
+	int move_count = p.pseudolegal_moves(moves);
+
+	p.order_moves(moves, move_count);
+
+	auto before = [&](Move a, Move b) {
+		bool found_a = false, found_b = false;
+		for (int i = 0; i < move_count; ++i) {
+			if (moves[i] == a) {
+				found_a = true;
+			}
+
+			if (moves[i] == b) {
+				if (!found_a) return false;
+				found_b = true;
+				break;
+			}
+		}
+
+		EXPECT_TRUE(found_a && found_b);
+		return (found_a && found_b);
+	};
+
+	EXPECT_TRUE(before(Move("e2a6"), Move("f3f6")));
+	EXPECT_TRUE(before(Move("g2h3"), Move("f3f6")));
+	EXPECT_TRUE(before(Move("d5e6"), Move("f3f6")));
+}
+
+TEST(PositionTest, OrderMovesQuiescence) {
+	Position p("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"); // kiwipete position
+
+	Move moves[MAX_PL_MOVES];
+	int move_count = p.pseudolegal_moves_quiescence(moves);
+
+	move_count = p.order_moves_quiescence(moves, move_count);
+
+	auto contains = [&](Move m) -> bool {
+		for (int i = 0; i < move_count; ++i) {
+			if (moves[i] == m) {
+				return true;
+			}
+		}
+
+		return false;
+	};
+
+	// no losing captures should be in the move list
+	EXPECT_FALSE(contains(Move("f3f6")));
+	EXPECT_FALSE(contains(Move("e5g6")));
+	EXPECT_FALSE(contains(Move("f3h3")));
+	EXPECT_FALSE(contains(Move("e5d7")));
+	EXPECT_FALSE(contains(Move("e5f7")));
+}
+TEST(PositionTest, SeeCapture) {
+	Position p("rnbqkbr1/1P2ppp1/5n1p/p1pP4/p1B5/N4N2/1BPPQPPP/R3K2R w KQq c6 0 13");
+	zobrist::Key tt_key = p.get_tt_key();
+
+	// queen takes pawn, bishop takes queen: SEE is (pawn - queen)
+	EXPECT_EQ(p.see_capture(Move("e2e7")), eval::MATERIAL_MG[piece::PAWN] - eval::MATERIAL_MG[piece::QUEEN]);
+
+	// position should be unchanged after SEE
+	EXPECT_EQ(p.get_tt_key(), tt_key);
+	EXPECT_EQ(p.to_fen(), std::string("rnbqkbr1/1P2ppp1/5n1p/p1pP4/p1B5/N4N2/1BPPQPPP/R3K2R w KQq c6 0 13"));
+
+	// SEE on en passant, PxP, NxP -> SEE = 0
+	EXPECT_EQ(p.see_capture(Move("d5c6")), 0);
+
+	EXPECT_EQ(p.get_tt_key(), tt_key);
+	EXPECT_EQ(p.to_fen(), std::string("rnbqkbr1/1P2ppp1/5n1p/p1pP4/p1B5/N4N2/1BPPQPPP/R3K2R w KQq c6 0 13"));
+
+	// massive SEE position for d5
+	Position p2("2kr1b1r/pp2pppp/2pqbn2/n2p3Q/2B1P3/2N2N2/PPP2PPP/R1BR2K1 w - - 0 11");
+	tt_key = p2.get_tt_key();
+
+	// wPxP, bPxP, wBxP, bBxB, wNxB, bNxN, wRxN, bQxR, wQxQ, bRxQ
+	// final SEE: (P + P + B + N + Q) - (P + B + N + R + Q) = P - R
+	EXPECT_EQ(p2.see_capture(Move("e4d5")), eval::MATERIAL_MG[piece::PAWN] - eval::MATERIAL_MG[piece::ROOK]);
+
+	EXPECT_EQ(p2.get_tt_key(), tt_key);
+	EXPECT_EQ(p2.to_fen(), std::string("2kr1b1r/pp2pppp/2pqbn2/n2p3Q/2B1P3/2N2N2/PPP2PPP/R1BR2K1 w - - 0 11"));
+}
+
 /* Testing entry point */
 
 int main(int argc, char** argv) {

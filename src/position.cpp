@@ -735,19 +735,42 @@ int Position::order_moves_quiescence(Move* moves, int num_moves, Move pv_move) {
 }
 
 int Position::see_capture(Move cap) {
-	return 0;
-	int ret = SEE_ILLEGAL;
+	assert(!(bb::mask(cap.dst()) & board.get_piece_occ(piece::KING)));
 
-	if (make_move(cap)) {
-		ret = see(cap.dst());
+	bool ep = false;
+	int csq = cap.dst();
+
+	if (piece::type(board.get_piece(cap.src())) == piece::PAWN && bb::mask(cap.dst()) == en_passant_mask()) {
+		ep = true;
+		csq = cap.dst() + ((color_to_move == piece::WHITE) ? SOUTH : NORTH);
 	}
 
-	unmake_move(cap);
+	int capped = piece::null;
+
+	/* Make capture */
+	if (ep) {
+		capped = board.remove(csq);
+		board.place(cap.dst(), board.remove(cap.src()));
+	} else {
+		capped = board.replace(cap.dst(), board.remove(cap.src()));
+	}
+
+	int ret = eval::MATERIAL_MG[piece::type(capped)] - see(cap.dst(), !color_to_move);
+
+	/* Undo capture */
+	if (ep) {
+		board.place(csq, capped);
+		board.place(cap.src(), board.remove(cap.dst()));
+	}
+	else {
+		board.place(cap.src(), board.replace(cap.dst(), capped));
+	}
+
 	return ret;
 }
 
-int Position::see(int sq, bitboard valid_attackers) {
-	bitboard ctm = board.get_color_occ(color_to_move);
+int Position::see(int sq, int attacking_col) {
+	bitboard ctm = board.get_color_occ(attacking_col);
 	int lva = square::null;
 
 #ifndef NDEBUG
@@ -757,7 +780,7 @@ int Position::see(int sq, bitboard valid_attackers) {
 	/* Find least valuable attacker */
 
 	// Search for pawn attacks
-	bitboard pawn_attackers = attacks::pawn(!color_to_move, sq) & board.get_piece_occ(piece::PAWN) & ctm & valid_attackers;
+	bitboard pawn_attackers = attacks::pawn(!attacking_col, sq) & board.get_piece_occ(piece::PAWN) & ctm;
 
 	if (pawn_attackers) {
 		lva = bb::poplsb(pawn_attackers);
@@ -765,14 +788,14 @@ int Position::see(int sq, bitboard valid_attackers) {
 	else {
 		// Find bishop attackers
 		bitboard bishop_attacks = attacks::bishop(sq, board.get_global_occ());
-		bitboard bishop_attackers = bishop_attacks & ctm & board.get_piece_occ(piece::BISHOP) & valid_attackers;
+		bitboard bishop_attackers = bishop_attacks & ctm & board.get_piece_occ(piece::BISHOP);
 
 		if (bishop_attackers) {
 			lva = bb::poplsb(bishop_attackers);
 		}
 		else {
 			// Find knight attackers
-			bitboard knight_attackers = attacks::knight(sq) & ctm & board.get_piece_occ(piece::KNIGHT) & valid_attackers;
+			bitboard knight_attackers = attacks::knight(sq) & ctm & board.get_piece_occ(piece::KNIGHT);
 
 			if (knight_attackers) {
 				lva = bb::poplsb(knight_attackers);
@@ -780,21 +803,21 @@ int Position::see(int sq, bitboard valid_attackers) {
 			else {
 				// Find rook attackers
 				bitboard rook_attacks = attacks::rook(sq, board.get_global_occ());
-				bitboard rook_attackers = rook_attacks & ctm & board.get_piece_occ(piece::ROOK) & valid_attackers;
+				bitboard rook_attackers = rook_attacks & ctm & board.get_piece_occ(piece::ROOK);
 
 				if (rook_attackers) {
 					lva = bb::poplsb(rook_attackers);
 				}
 				else {
 					// Find queen attackers
-					bitboard queen_attackers = (bishop_attacks | rook_attacks) & ctm & board.get_piece_occ(piece::QUEEN) & valid_attackers;
+					bitboard queen_attackers = (bishop_attacks | rook_attacks) & ctm & board.get_piece_occ(piece::QUEEN);
 
 					if (queen_attackers) {
 						lva = bb::poplsb(queen_attackers);
 					}
 					else {
 						// Find king attackers
-						bitboard king_attackers = attacks::king(sq) & ctm & board.get_piece_occ(piece::KING) & valid_attackers;
+						bitboard king_attackers = attacks::king(sq) & ctm & board.get_piece_occ(piece::KING);
 
 						if (king_attackers) {
 							lva = bb::poplsb(king_attackers);
@@ -813,13 +836,9 @@ int Position::see(int sq, bitboard valid_attackers) {
 		int dst_removed = board.replace(sq, removed);
 		int dst_value = eval::MATERIAL_MG[piece::type(dst_removed)];
 
-		color_to_move = !color_to_move;
+		int ret = dst_value - see(sq, !attacking_col);
 
-		int ret = dst_value - see(sq);
-
-		/* Undo capture, reset color to move */
-		color_to_move = !color_to_move;
-
+		/* Undo capture */
 		board.replace(sq, dst_removed);
 		board.place(lva, removed);
 
