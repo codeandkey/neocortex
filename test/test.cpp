@@ -856,8 +856,72 @@ TEST(SearchTest, MateInOne) {
 	EXPECT_TRUE(got_score);
 	EXPECT_TRUE(got_bestmove);
 
-	EXPECT_EQ(s_score, score::parent(score::CHECKMATE));
+	EXPECT_EQ(s_score, score::CHECKMATE - 1);
 	EXPECT_EQ(best_move, Move("f3f7"));
+}
+
+TEST(SearchTest, MateInTwo) {
+	search::Search s(Position("5Kbk/6pp/6P1/8/8/8/8/7R w - - 0 1"));
+
+	bool got_score = false, got_bestmove = false;
+	int s_score;
+	PV s_pv;
+	Move best_move;
+
+	auto info = [&](search::SearchInfo i) {
+		if (i.depth == 3) {
+			got_score = true;
+			s_pv = i.pv;
+			s_score = i.score;
+		}
+	};
+
+	auto bestmove = [&](Move m) {
+		got_bestmove = true;
+		best_move = m;
+	};
+
+	s.set_threads(1);
+	s.go(info, bestmove, -1, -1, -1, -1, 3);
+	s.wait(); /* wait for search to end */
+
+	EXPECT_TRUE(got_score);
+	EXPECT_TRUE(got_bestmove);
+
+	EXPECT_EQ(s_score, score::CHECKMATE - 3); /* 3 ply - mate in 2 */
+	EXPECT_EQ(best_move, Move("h1h6"));
+}
+
+TEST(SearchTest, MateInThree) {
+	search::Search s(Position("r5rk/5p1p/5R2/4B3/8/8/7P/7K w - - 0 1"));
+
+	bool got_score = false, got_bestmove = false;
+	int s_score;
+	PV s_pv;
+	Move best_move;
+
+	auto info = [&](search::SearchInfo i) {
+		if (i.depth == 5) {
+			got_score = true;
+			s_pv = i.pv;
+			s_score = i.score;
+		}
+	};
+
+	auto bestmove = [&](Move m) {
+		got_bestmove = true;
+		best_move = m;
+	};
+
+	s.set_threads(1);
+	s.go(info, bestmove, -1, -1, -1, -1, 5);
+	s.wait(); /* wait for search to end */
+
+	EXPECT_TRUE(got_score);
+	EXPECT_TRUE(got_bestmove);
+
+	EXPECT_EQ(s_score, score::CHECKMATE - 5); /* 5 ply - mate in 3 */
+	EXPECT_EQ(best_move, Move("f6a6"));
 }
 
 /* Testing entry point */

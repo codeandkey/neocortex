@@ -50,7 +50,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 	int score;
 	int cur_depth;
 	int ourtime, ourinc;
-	int node_count, iter_time;	PV cur_pv;
+	int node_count, iter_time;
 	Move best_move;
 
 	/* EBF variables, for depth time prediction */
@@ -87,7 +87,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 
 	SearchInfo d1;
 
-	score = alphabeta(root, 1, score::CHECKMATED, score::CHECKMATE, &d1.pv, &node_count, control_should_stop);
+	score = alphabeta(root, 1, score::CHECKMATED, score::CHECKMATE, 0, &d1.pv, &node_count, control_should_stop);
 	
 	{
 		std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
@@ -154,7 +154,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 		SearchInfo cur;
 		cur.depth = cur_depth;
 
-		cur.score = alphabeta(root, cur_depth, score::CHECKMATED, score::CHECKMATE, &cur.pv, &cur.nodes, control_should_stop);
+		cur.score = alphabeta(root, cur_depth, score::CHECKMATED, score::CHECKMATE, 0, &cur.pv, &cur.nodes, control_should_stop);
 
 		/* Join SMP threads */
 		smp_should_stop = true;
@@ -170,7 +170,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 		if (cur.score == score::INCOMPLETE) break;
 
 		/* Search complete, store best move */
-		best_move = cur_pv.moves[0];
+		best_move = cur.pv.moves[0];
 
 		{
 			std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
@@ -211,7 +211,7 @@ void search::Search::load(Position p) {
 
 void search::Search::smp_worker(int s_depth, Position root) {
 	PV local_pv;
-	alphabeta(root, s_depth, score::CHECKMATED, score::CHECKMATE, &local_pv, NULL, smp_should_stop);
+	alphabeta(root, s_depth, score::CHECKMATED, score::CHECKMATE, 0, &local_pv, NULL, smp_should_stop);
 }
 
 bool search::Search::allocated_time_expired() {
@@ -219,7 +219,7 @@ bool search::Search::allocated_time_expired() {
 	return (allocated_time > 0 && util::time_elapsed_ms(depth_starttime) >= allocated_time);
 }
 
-int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, PV* pv_line, int* node_count, std::atomic<bool>& abort_watch) {
+int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, int* node_count, std::atomic<bool>& abort_watch) {
 	PV local_pv;
 	Move tt_move, tt_exact_move;
 	int value;
@@ -234,7 +234,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, PV
 	}
 
 	if (!depth) {
-		return quiescence(root, search::QDEPTH, alpha, beta, pv_line, node_count);
+		return quiescence(root, search::QDEPTH, alpha, beta, ply_dist, pv_line, node_count);
 	}
 
 	int alpha_orig = alpha;
@@ -272,7 +272,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, PV
 		// Re-search under pv node to regenerate complete pv, should be fast as all should hit TT
 		root.make_move(tt_exact_move);
 
-		value = score::parent(-alphabeta(root, depth - 1, -beta, -alpha, &local_pv, node_count, abort_watch));
+		value = -alphabeta(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, node_count, abort_watch);
 
 		pv_line->moves[0] = entry->pv_move;
 		pv_line->len = local_pv.len + 1;
@@ -293,7 +293,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, PV
 		if (root.make_move(pl_moves[i])) {
 			num_moves++;
 
-			value = score::parent(-alphabeta(root, depth - 1, -beta, -alpha, &local_pv, node_count, abort_watch));
+			value = -alphabeta(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, node_count, abort_watch);
 
 			root.unmake_move(pl_moves[i]);
 
@@ -320,7 +320,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, PV
 	if (!num_moves) {
 		if (root.check()) {
 			pv_line->len = 0;
-			return score::CHECKMATED;
+			return score::CHECKMATED + ply_dist;
 		}
 		else {
 			pv_line->len = 0;
@@ -351,7 +351,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, PV
 	return alpha;
 }
 
-int search::Search::quiescence(Position& root, int depth, int alpha, int beta, PV* pv_line, int* node_count) {
+int search::Search::quiescence(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, int* node_count) {
 	PV local_pv;
 
 	/* Check for threefold repetition or 50-move-rule */
@@ -379,7 +379,7 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, P
 		if (root.make_move(pl_moves[i])) {
 			num_moves++;
 
-			int value = score::parent(-quiescence(root, depth - 1, -beta, -alpha, &local_pv, node_count));
+			int value = -quiescence(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, node_count);
 
 			root.unmake_move(pl_moves[i]);
 
@@ -406,7 +406,7 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, P
 	if (!num_moves) {
 		if (root.check()) {
 			pv_line->len = 0;
-			return score::CHECKMATED;
+			return score::CHECKMATED + ply_dist;
 		}
 		else {
 			pv_line->len = 0;

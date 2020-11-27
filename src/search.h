@@ -162,7 +162,7 @@ namespace neocortex {
 			 *
 			 * @return Search score.
 			 */
-			int alphabeta(Position& root, int depth, int alpha, int beta, PV* pv_line, int* nodes_out, std::atomic<bool>& abort_ref);
+			int alphabeta(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, int* nodes_out, std::atomic<bool>& abort_ref);
 
 			/**
 			 * Quiescence search routine.
@@ -177,7 +177,7 @@ namespace neocortex {
 			 *
 			 * @return Search score.
 			 */
-			int quiescence(Position& root, int depth, int alpha, int beta, PV* pv_line, int* nodes_out);
+			int quiescence(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, int* nodes_out);
 
 			Position root;
 
