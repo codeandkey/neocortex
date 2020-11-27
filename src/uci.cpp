@@ -71,7 +71,7 @@ void uci::start() {
 			searcher.stop();
 		}
 		else if (parts[0] == "go") {
-			int wtime = -1, btime = -1, winc = -1, binc = -1, depth = -1, movetime = -1, movestogo = -1;
+			int wtime = -1, btime = -1, winc = -1, binc = -1, depth = -1, movetime = -1;
 			bool infinite = false;
 
 			/* Parse UCI options. */
