@@ -19,10 +19,12 @@ using namespace neocortex;
 
 static void write_info(search::SearchInfo inf) {
 	std::cout << inf.to_string() << "\n";
+	std::cout.flush();
 }
 
 static void write_bestmove(Move m) {
 	std::cout << "bestmove " << m.to_uci() << "\n";
+	std::cout.flush();
 }
 
 static std::string read_command() {
@@ -44,6 +46,7 @@ static int safe_parseint(std::vector<std::string> parts, size_t ind) {
 
 void uci::start() {
 	std::string handshake  = read_command();
+	search::Search searcher;
 
 	if (handshake != "uci") {
 		throw std::runtime_error(util::format("Invalid UCI: expected 'uci', read '%s'", handshake.c_str()));
@@ -52,8 +55,7 @@ void uci::start() {
 	std::cout << "uciok\n";
 	std::cout << "id name " << uci::NAME << "\n";
 	std::cout << "id author " << uci::AUTHOR << "\n";
-
-	search::Search searcher;
+	std::cout << "option name Threads type spin default " << searcher.max_threads() << " min 1 max " << searcher.max_threads() << "\n";
 
 	while (true) {
 		std::string command = read_command();
@@ -69,6 +71,26 @@ void uci::start() {
 		}
 		else if (parts[0] == "stop") {
 			searcher.stop();
+		}
+		else if (parts[0] == "setoption") {
+			if (parts.size() > 1) {
+				if (parts[1] == "Threads") {
+					if (parts.size() < 4) {
+						neocortex_warn("setoption: not enough parameters\n");
+					}
+					else {
+						if (parts[2] == "value") {
+							searcher.set_threads(std::stoi(parts[3]));
+						}
+						else {
+							neocortex_warn("setoption: expected 'value', read '%s'\n", parts[2].c_str());
+						}
+					}
+				}
+			}
+			else {
+				neocortex_warn("setoption: argument required\n");
+			}
 		}
 		else if (parts[0] == "go") {
 			int wtime = -1, btime = -1, winc = -1, binc = -1, depth = -1, movetime = -1;

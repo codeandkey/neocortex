@@ -40,7 +40,7 @@ namespace neocortex {
 				out += "nodes " + std::to_string(nodes) + " ";
 
 				if (time) {
-					out += "nps " + std::to_string((long) nodes * 1000 / time) + " ";
+					out += "nps " + std::to_string((long long) nodes * 1000 / time) + " ";
 				}
 
 				if (pv.len > 0) {
@@ -94,6 +94,12 @@ namespace neocortex {
 			 * @param count Number of search threads.
 			 */
 			void set_threads(int count);
+
+			/**
+			 * Maximum threads that can be used for searching
+			 * @return Maximum search threads.
+			 */
+			int max_threads();
 
 			/**
 			 * Loads a new position into the search.

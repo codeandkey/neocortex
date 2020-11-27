@@ -39,8 +39,6 @@ void search::Search::go(std::function<void(SearchInfo)> info, std::function<void
 	this->movetime = movetime;
 	this->infinite = infinite;
 
-	info(search::SearchInfo());
-
 	/* Start main search thread. */
 	control_should_stop = false;
 	control_thread = std::thread([=] { control_worker(root, info, bestmove); });
@@ -418,9 +416,16 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, i
 }
 
 void search::Search::set_threads(int num) {
+	if (num < 1) num = 1;
+	if (num > max_threads()) num = max_threads();
+
 	num_threads = num;
 
-	neocortex_debug("Using %d threads for searching.\n", num);
+	neocortex_info("Using %d search threads.\n", num);
+}
+
+int search::Search::max_threads() {
+	return std::thread::hardware_concurrency();
 }
 
 bool search::Search::is_running() {
