@@ -203,7 +203,8 @@ bitboard Board::attacks_on(int sq) {
 		(attacks::pawn(piece::BLACK, sq) & white_pawns) |
 		(attacks::knight(sq) & piece_occ[piece::KNIGHT]) |
 		(attacks::bishop(sq, global_occ) & bishops_queens) |
-		(attacks::rook(sq, global_occ) & rooks_queens);
+		(attacks::rook(sq, global_occ) & rooks_queens) |
+		(attacks::king(sq) & piece_occ[piece::KING]);
 }
 
 int Board::guard_value(int sq) {
