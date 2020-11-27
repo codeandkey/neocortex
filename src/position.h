@@ -146,6 +146,14 @@ namespace neocortex {
 		int pseudolegal_moves(Move* dst);
 
 		/**
+		 * Gets evasion moves for a position.
+		 *
+		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
+		 * @return Number of moves generated.
+		 */
+		int pseudolegal_moves_evasions(Move* dst);
+
+		/**
 		 * Performs move ordering on a list of pseudolegal moves.
 		 *
 		 * @param moves Move list pointer.

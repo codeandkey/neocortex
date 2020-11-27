@@ -54,6 +54,24 @@ namespace neocortex {
 	constexpr int SOUTHWEST = -9;
 
 	namespace bb {
+		extern bitboard BETWEEN[64][64];
+
+		/**
+		 * Initializes static bitboard constants.
+		 */
+		void init();
+
+		/**
+		 * Gets a mask of all squares between two squares.
+		 * 
+		 * @param a First square.
+		 * @param b Second square.
+		 * @return Mask of squares between a and b.
+		 */
+		inline bitboard between(int a, int b) {
+			return BETWEEN[a][b];
+		}
+
 		/**
 		 * Builds a readable string from a bitboard.
 		 * Output will consist of 8 rows of 8 characters, with '.' and 'X' indicating 0 and 1 bits respectively.

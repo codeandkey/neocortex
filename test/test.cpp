@@ -6,14 +6,15 @@
 #include "../src/eval.h"
 #include "../src/eval_consts.h"
 #include "../src/piece.h"
+#include "../src/search.h"
 #include "../src/tt.h"
 #include "../src/zobrist.h"
 
 using namespace neocortex;
 
 /**
-		 * AttacksTest: tests for attack lookups in attacks.cpp
-		 */
+ * AttacksTest: tests for attack lookups in attacks.cpp
+ */
 TEST(AttacksTest, PawnAttacks) {
 	EXPECT_EQ(attacks::pawn(piece::WHITE, 0), 1ULL << 9);
 	EXPECT_EQ(attacks::pawn(piece::WHITE, 5), (1ULL << 12) | (1ULL << 14));
@@ -106,6 +107,19 @@ TEST(BitboardTest, File) {
 	EXPECT_EQ(bb::file(0), FILE_A);
 	EXPECT_EQ(bb::file(4), FILE_E);
 	EXPECT_EQ(bb::file(7), FILE_H);
+}
+
+TEST(BitboardTest, Between) {
+	EXPECT_EQ(bb::between(42, 60), 1ULL << 51);
+	EXPECT_EQ(bb::between(0, 56), FILE_A & ~(RANK_1 | RANK_8));
+	EXPECT_EQ(bb::between(0, 7), RANK_1 & ~(FILE_A | FILE_H));
+
+	/* Test symmetry in between lookup */
+	for (int src = 0; src < 64; ++src) {
+		for (int dst = 0; dst < 64; ++dst) {
+			EXPECT_EQ(bb::between(src, dst), bb::between(dst, src));
+		}
+	}
 }
 
 /**
@@ -696,6 +710,35 @@ TEST(PositionTest, PseudolegalMovesQuiescence) {
 	EXPECT_TRUE(contains(Move("d5c6"))); // en-passant
 }
 
+TEST(PositionTest, PseudolegalMovesEvasions) {
+	/* Test a position with every type of move available! */
+	Position p("r1b1kbnr/ppp1ppp1/2B4p/q7/8/2N2N2/PPPP1PPP/R1BQK2R b KQkq - 0 6");
+
+	Move moves[MAX_PL_MOVES];
+	int move_count;
+
+	move_count = p.pseudolegal_moves_evasions(moves);
+
+	EXPECT_EQ(move_count, 4);
+
+	auto contains = [&](Move m) -> bool {
+		for (int i = 0; i < move_count; ++i) {
+			if (moves[i] == m) {
+				return true;
+			}
+		}
+
+		return false;
+	};
+
+	EXPECT_TRUE(contains(Move("c8d7"))); // bishop blocks
+	EXPECT_TRUE(contains(Move("b7c6"))); // pawn captures attacker
+
+	EXPECT_TRUE(contains(Move("e8d8"))); // quiet king moves
+
+	EXPECT_TRUE(contains(Move("e8d7"))); // another quiet king move-- this is illegal, but OK in the qmovegen
+}
+
 TEST(PositionTest, OrderMoves) {
 	Position p("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"); // kiwipete position
 
@@ -781,11 +824,48 @@ TEST(PositionTest, SeeCapture) {
 	EXPECT_EQ(p2.to_fen(), std::string("2kr1b1r/pp2pppp/2pqbn2/n2p3Q/2B1P3/2N2N2/PPP2PPP/R1BR2K1 w - - 0 11"));
 }
 
+/**
+ * SearchTest: tests for search routines in search.cpp
+ */
+
+TEST(SearchTest, MateInOne) {
+	search::Search s(Position("r1bqkbnr/1ppp1ppp/p1n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4"));
+
+	bool got_score = false, got_bestmove = false;
+	int s_score;
+	PV s_pv;
+	Move best_move;
+
+	auto info = [&](search::SearchInfo i) {
+		if (i.depth == 1) {
+			got_score = true;
+			s_pv = i.pv;
+			s_score = i.score;
+		}
+	};
+
+	auto bestmove = [&](Move m) {
+		got_bestmove = true;
+		best_move = m;
+	};
+
+	s.set_threads(1);
+	s.go(info, bestmove, -1, -1, -1, -1, 1);
+	s.wait(); /* wait for search to end */
+
+	EXPECT_TRUE(got_score);
+	EXPECT_TRUE(got_bestmove);
+
+	EXPECT_EQ(s_score, score::parent(score::CHECKMATE));
+	EXPECT_EQ(best_move, Move("f3f7"));
+}
+
 /* Testing entry point */
 
 int main(int argc, char** argv) {
 	::testing::InitGoogleTest(&argc, argv);
 
+	bb::init();
 	attacks::init();
 	tt::init(16); /* Keep small TT (16mb) for testing. */
 	zobrist::init();

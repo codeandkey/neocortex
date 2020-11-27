@@ -165,9 +165,22 @@ namespace neocortex {
 		 * @return Attack span mask.
 		 */
 		bitboard attack_spans(int col);
+
+		/**
+		 * Gets the middlegame material imbalance.
+		 * @return MG material score
+		 */
+		int material_mg();
+
+		/**
+		 * Gets the endgame material imbalance.
+		 * @return EG material score
+		 */
+		int material_eg();
 	private:
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
+		int mat_mg, mat_eg;
 		zobrist::Key key;
 	};
 
@@ -189,5 +202,13 @@ namespace neocortex {
 
 	inline zobrist::Key Board::get_tt_key() {
 		return key;
+	}
+
+	inline int Board::material_mg() {
+		return mat_mg;
+	}
+
+	inline int Board::material_eg() {
+		return mat_eg;
 	}
 }

@@ -17,12 +17,9 @@ namespace neocortex {
 		constexpr const char* NAME = NEOCORTEX_NAME " " NEOCORTEX_VERSION " " NEOCORTEX_BUILDTIME;
 
 		/**
-		 * Starts the UCI interface.
+		 * Starts the UCI interface on standard input and output.
 		 * Returns only after UCI 'quit' is received or an error occurs.
-		 *
-		 * @param in Input stream.
-		 * @param out Output stream.
 		 */
-		void start(std::istream & in, std::ostream & out);
+		void start();
 	}
 }

@@ -13,7 +13,7 @@
 #include "util.h"
 
 #include <atomic>
-#include <list>
+#include <functional>
 #include <mutex>
 #include <iostream>
 #include <thread>
@@ -24,8 +24,31 @@ namespace neocortex {
 		constexpr int MAX_DEPTH = 128;
 		constexpr int ALLOC_FRACTION = 10; /* use at most 1/nth of the remaining time */
 
-		struct SearchStats {
-			int num_nodes;
+		struct SearchInfo {
+			int nodes = 0;
+			int depth = 0;
+			int score = 0;
+			int time = 0;
+			PV pv;
+
+			std::string to_string() {
+				std::string out;
+
+				out += "info depth " + std::to_string(depth) + " ";
+				out += "score " + score::to_uci(score) + " ";
+				out += "time " + std::to_string(time) + " ";
+				out += "nodes " + std::to_string(nodes) + " ";
+
+				if (time) {
+					out += "nps " + std::to_string((long) nodes * 1000 / time) + " ";
+				}
+
+				if (pv.len > 0) {
+					out += "pv " + pv.to_string();
+				}
+
+				return out;
+			}
 		};
 
 		class Search {
@@ -39,17 +62,30 @@ namespace neocortex {
 			~Search();
 
 			/**
-			 * Starts the search in the background.
+			 * Starts searching in the background.
 			 *
 			 * @param parts List of arguments to UCI 'go'
-			 * @param out UCI output stream for 'info' and 'bestmove' messages
+			 * @param info Callback for search depth info. (optional)
+			 * @param bestmove Callback for search bestmove. (optional)
+			 * @param wtime White move time (ms)
+			 * @param btime Black move time (ms)
+			 * @param winc White increment (ms)
+			 * @param binc Black increment (ms)
+			 * @param depth Search depth
+			 * @param movetime Move time (ms)
+			 * @param infinite Infinite search
 			 */
-			void go(std::vector<std::string> parts, std::ostream& out);
+			void go(std::function<void(SearchInfo)> info, std::function<void(Move)> bestmove, int wtime = -1, int btime = -1, int winc = -1, int binc = -1, int depth = -1, int movetime = -1, bool infinite = false);
 
 			/**
 			 * Stops the running search.
 			 */
 			void stop();
+
+			/**
+			 * Waits for a running search to stop.
+			 */
+			void wait();
 
 			/**
 			 * Sets the number of threads in the search.
@@ -65,6 +101,12 @@ namespace neocortex {
 			 * @param p Position to load.
 			 */
 			void load(Position p);
+
+			/**
+			 * Returns true if a search is active.
+			 * @return true if search running, false otherwise
+			 */
+			bool is_running();
 		private:
 			/**
 			 * Gets the elapsed time since the beginning of the whole search.
@@ -92,9 +134,10 @@ namespace neocortex {
 			 * Started once for every 'go' command.
 			 *
 			 * @param out UCI output stream.
-			 * @param root Root position for worker.
+			 * @param info Callback for search depth info. (optional)
+			 * @param bestmove Callback for search bestmove. (optional)
 			 */
-			void control_worker(std::ostream& out, Position root);
+			void control_worker(Position root, std::function<void(SearchInfo)> info, std::function<void(Move)> bestmove);
 
 			/**
 			 * Search thread worker function.
@@ -103,7 +146,7 @@ namespace neocortex {
 			 * @param s_depth Depth to search.
 			 * @param root Root position for worker.
 			 */
-			void smp_worker(std::ostream& out, int s_depth, Position root);
+			void smp_worker(int s_depth, Position root);
 
 			/**
 			 * Alpha-beta search routine.

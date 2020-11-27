@@ -55,12 +55,12 @@ const int eval::MATERIAL_MG_LOOKUP[12] = {
 };
 
 const int eval::MATERIAL_EG_LOOKUP[12] = {
-	eval::MATERIAL_MG[piece::PAWN], -eval::MATERIAL_MG[piece::PAWN],
-	eval::MATERIAL_MG[piece::BISHOP], -eval::MATERIAL_MG[piece::BISHOP],
-	eval::MATERIAL_MG[piece::KNIGHT], -eval::MATERIAL_MG[piece::KNIGHT],
-	eval::MATERIAL_MG[piece::ROOK], -eval::MATERIAL_MG[piece::ROOK],
-	eval::MATERIAL_MG[piece::QUEEN], -eval::MATERIAL_MG[piece::QUEEN],
-	eval::MATERIAL_MG[piece::KING], -eval::MATERIAL_MG[piece::KING],
+	eval::MATERIAL_EG[piece::PAWN], -eval::MATERIAL_EG[piece::PAWN],
+	eval::MATERIAL_EG[piece::BISHOP], -eval::MATERIAL_EG[piece::BISHOP],
+	eval::MATERIAL_EG[piece::KNIGHT], -eval::MATERIAL_EG[piece::KNIGHT],
+	eval::MATERIAL_EG[piece::ROOK], -eval::MATERIAL_EG[piece::ROOK],
+	eval::MATERIAL_EG[piece::QUEEN], -eval::MATERIAL_EG[piece::QUEEN],
+	eval::MATERIAL_EG[piece::KING], -eval::MATERIAL_EG[piece::KING],
 };
 
 const int eval::PHASE_VALS[6] = {

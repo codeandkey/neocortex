@@ -32,6 +32,7 @@ Board::Board() {
 
 	key = 0;
 	global_occ = 0;
+	mat_mg = mat_eg = 0;
 }
 
 Board::Board(std::string uci) : Board() {
@@ -87,6 +88,8 @@ void Board::place(int sq, int p) {
 	piece_occ[piece::type(p)] ^= mask;
 	color_occ[piece::color(p)] ^= mask;
 	key ^= zobrist::piece(sq, p);
+	mat_mg += eval::MATERIAL_MG_LOOKUP[p];
+	mat_eg += eval::MATERIAL_EG_LOOKUP[p];
 }
 
 int Board::remove(int sq) {
@@ -103,6 +106,9 @@ int Board::remove(int sq) {
 	key ^= zobrist::piece(sq, res);
 
 	state[sq] = piece::null;
+
+	mat_mg -= eval::MATERIAL_MG_LOOKUP[res];
+	mat_eg -= eval::MATERIAL_EG_LOOKUP[res];
 
 	return res;
 }
@@ -122,6 +128,11 @@ int Board::replace(int sq, int p) {
 
 	key ^= zobrist::piece(sq, res);
 	key ^= zobrist::piece(sq, p);
+
+	mat_mg -= eval::MATERIAL_MG_LOOKUP[res];
+	mat_eg -= eval::MATERIAL_EG_LOOKUP[res];
+	mat_mg += eval::MATERIAL_MG_LOOKUP[p];
+	mat_eg += eval::MATERIAL_EG_LOOKUP[p];
 
 	state[sq] = p;
 

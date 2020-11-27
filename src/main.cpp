@@ -25,12 +25,13 @@ int main(int argc, char** argv) {
 
 	neocortex_info(NEOCORTEX_NAME " " NEOCORTEX_VERSION " " NEOCORTEX_BUILDTIME " " NEOCORTEX_DEBUG_STR "\n");
 
+	bb::init();
 	zobrist::init();
 	attacks::init();
 	tt::init();
 
 	try {
-		uci::start(std::cin, std::cout);
+		uci::start();
 	}
 	catch (std::exception& e) {
 		neocortex_error("Unhandled exception: %s\n", e.what());

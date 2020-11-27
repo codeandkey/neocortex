@@ -16,10 +16,9 @@
 #include <cassert>
 #include <cmath>
 #include <thread>
+#include <sstream>
 
 using namespace neocortex;
-
-static int safe_parseint(std::vector<std::string> parts, size_t ind);
 
 search::Search::Search(Position root) : root(root) {
 	set_threads(std::thread::hardware_concurrency());
@@ -29,42 +28,29 @@ search::Search::~Search() {
 	stop();
 }
 
-void search::Search::go(std::vector<std::string> args, std::ostream& out) {
+void search::Search::go(std::function<void(SearchInfo)> info, std::function<void(Move)> bestmove, int wtime, int btime, int winc, int binc, int depth, int movetime, bool infinite) {
 	stop();
 
-	wtime = btime = winc = binc = movetime = depth = -1;
-	infinite = false;
+	this->wtime = wtime;
+	this->btime = btime;
+	this->winc = winc;
+	this->binc = binc;
+	this->depth = depth;
+	this->movetime = movetime;
+	this->infinite = infinite;
 
-	/* Parse UCI options. */
-	for (size_t i = 1; i < args.size(); ++i) {
-		if (isdigit(args[i][0])) continue;
-
-		if (args[i] == "wtime") wtime = safe_parseint(args, i + 1);
-		else if (args[i] == "btime") btime = safe_parseint(args, i + 1);
-		else if (args[i] == "winc") winc = safe_parseint(args, i + 1);
-		else if (args[i] == "binc") binc = safe_parseint(args, i + 1);
-		else if (args[i] == "depth") depth = safe_parseint(args, i + 1);
-		else if (args[i] == "movetime") movetime = safe_parseint(args, i + 1);
-		else if (args[i] == "infinite") infinite = true;
-		else if (args[i] == "movestogo") {} /* ignore movestogo */
-		else {
-			throw util::fmterr("Invalid argument: %s", args[i].c_str());
-		}
-	}
-
-	neocortex_debug("Parsed all arguments.\n");
+	info(search::SearchInfo());
 
 	/* Start main search thread. */
 	control_should_stop = false;
-	control_thread = std::thread([&] { control_worker(out, root); });
+	control_thread = std::thread([=] { control_worker(root, info, bestmove); });
 }
 
-void search::Search::control_worker(std::ostream& out, Position root) {
+void search::Search::control_worker(Position root, std::function<void(SearchInfo)> info, std::function<void(Move)> bestmove) {
 	int score;
 	int cur_depth;
 	int ourtime, ourinc;
-	int node_count, iter_time;
-	PV cur_pv;
+	int node_count, iter_time;	PV cur_pv;
 	Move best_move;
 
 	/* EBF variables, for depth time prediction */
@@ -82,11 +68,15 @@ void search::Search::control_worker(std::ostream& out, Position root) {
 	}
 
 	/* Write depth 0 information */
-	out << "info depth 0 score " << score::to_uci(root.evaluate()) << "\n";
-	out.flush();
+	SearchInfo d0;
+
+	d0.depth = 0;
+	d0.nodes = 1;
+	d0.score = root.evaluate();
+
+	info(d0);
 
 	/* Search depth 1 with 1 thread */
-
 	{
 		std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
 		depth_starttime = util::time_now();
@@ -95,15 +85,22 @@ void search::Search::control_worker(std::ostream& out, Position root) {
 	node_count = 0;
 	allocated_time = -1;
 
-	score = alphabeta(root, 1, score::CHECKMATED, score::CHECKMATE, &cur_pv, &node_count, control_should_stop);
+	SearchInfo d1;
+
+	score = alphabeta(root, 1, score::CHECKMATED, score::CHECKMATE, &d1.pv, &node_count, control_should_stop);
 	
 	{
 		std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
 		iter_time = util::time_elapsed_ms(depth_starttime);
 	}
 
-	out << "info depth 1 score " << score::to_uci(score) << " nodes " << node_count << " time " << iter_time << " pv " << cur_pv.to_string() << "\n";
-	out.flush();
+	d1.depth = 1;
+	d1.nodes = node_count;
+	d1.time = iter_time;
+	d1.score = score;
+	best_move = d1.pv.moves[0];
+
+	info(d1);
 
 	/* Set search start time */
 	util::time_point search_starttime = util::time_now();
@@ -140,7 +137,6 @@ void search::Search::control_worker(std::ostream& out, Position root) {
 		}
 
 		/* Perform search (TODO: aspiration) */
-
 		{
 			std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
 			depth_starttime = util::time_now();
@@ -150,13 +146,15 @@ void search::Search::control_worker(std::ostream& out, Position root) {
 		smp_should_stop = false;
 
 		for (int i = 0; i < num_threads - 1; ++i) {
-			smp_threads.push_back(std::thread([&] { smp_worker(out, cur_depth + (i % 2), root); }));
+			smp_threads.push_back(std::thread([&] { smp_worker(cur_depth + (i % 2), root); }));
 		}
 
 		/* Search on control thread */
-		node_count = 0;
 
-		score = alphabeta(root, cur_depth, score::CHECKMATED, score::CHECKMATE, &cur_pv, &node_count, control_should_stop);
+		SearchInfo cur;
+		cur.depth = cur_depth;
+
+		cur.score = alphabeta(root, cur_depth, score::CHECKMATED, score::CHECKMATE, &cur.pv, &cur.nodes, control_should_stop);
 
 		/* Join SMP threads */
 		smp_should_stop = true;
@@ -169,33 +167,29 @@ void search::Search::control_worker(std::ostream& out, Position root) {
 
 		smp_threads.clear();
 
-		if (score == score::INCOMPLETE) break;
+		if (cur.score == score::INCOMPLETE) break;
 
 		/* Search complete, store best move */
 		best_move = cur_pv.moves[0];
 
 		{
 			std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
-			iter_time = util::time_elapsed_ms(depth_starttime);
+			cur.time = util::time_elapsed_ms(depth_starttime);
 		}
 
 		/* Set EBF for next depth */
-		ebf_nodes[cur_depth] = node_count;
-		ebf_times[cur_depth] = iter_time;
+		ebf_nodes[cur_depth] = cur.nodes;
+		ebf_times[cur_depth] = cur.time;
 		ebf = sqrtf((float) ebf_nodes[cur_depth] / (float) ebf_nodes[cur_depth - 1]);
 
 		/* Write depth result to uci */
-		int nps = ((unsigned long) node_count * 1000) / (iter_time + 1);
 
-		out << "info depth " << cur_depth << " score " << score::to_uci(score) << " time " << iter_time << " nodes " << node_count << " nps " << nps << " pv " << cur_pv.to_string() << "\n";
-		out.flush();
-
+		info(cur);
 		++cur_depth;
 	}
 
 	/* Write bestmove */
-	out << "bestmove " << best_move.to_uci() << "\n";
-	out.flush();
+	bestmove(best_move);
 }
 
 void search::Search::stop() {
@@ -206,12 +200,16 @@ void search::Search::stop() {
 	}
 }
 
+void search::Search::wait() {
+	control_thread.join();
+}
+
 void search::Search::load(Position p) {
 	stop();
 	root = p;
 }
 
-void search::Search::smp_worker(std::ostream& out, int s_depth, Position root) {
+void search::Search::smp_worker(int s_depth, Position root) {
 	PV local_pv;
 	alphabeta(root, s_depth, score::CHECKMATED, score::CHECKMATE, &local_pv, NULL, smp_should_stop);
 }
@@ -425,12 +423,6 @@ void search::Search::set_threads(int num) {
 	neocortex_debug("Using %d threads for searching.\n", num);
 }
 
-int safe_parseint(std::vector<std::string> parts, size_t ind) {
-	if (ind >= parts.size()) {
-		throw std::runtime_error("Expected argument!");
-	}
-
-	neocortex_debug("Parsing %s\n", parts[ind].c_str());
-
-	return std::stoi(parts[ind]);
+bool search::Search::is_running() {
+	return control_thread.joinable();
 }
