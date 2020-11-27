@@ -32,6 +32,7 @@ Position::Position() {
 	first_state.key = 0;
 	first_state.key ^= board.get_tt_key();
 	first_state.key ^= zobrist::castle(first_state.castle_rights);
+	first_state.in_check = 0;
 
 	ply.push_back(first_state);
 	color_to_move = piece::WHITE;
@@ -81,6 +82,8 @@ Position::Position(std::string fen) {
 	first_state.key ^= zobrist::en_passant(first_state.en_passant_square);
 	first_state.key ^= zobrist::castle(first_state.castle_rights);
 
+	first_state.in_check = test_check(color_to_move);
+
 	if (color_to_move == piece::BLACK) {
 		first_state.key ^= zobrist::black_to_move();
 	}
@@ -120,7 +123,7 @@ Board& Position::get_board() {
 }
 
 bool Position::make_move(Move move) {
-	assert(!check(!color_to_move));
+	assert(!test_check(!color_to_move));
 	assert(move.is_valid());
 	assert(piece::color(board.get_piece(move.src())) == color_to_move);
 
@@ -238,12 +241,14 @@ bool Position::make_move(Move move) {
 	next_state.key ^= zobrist::en_passant(next_state.en_passant_square);
 	next_state.key ^= zobrist::castle(next_state.castle_rights);
 
+	next_state.in_check = test_check(color_to_move);
+
 	if (color_to_move == piece::BLACK) {
 		next_state.key ^= zobrist::black_to_move();
 	}
 
 	/* Check that king is not in attack */
-	return !check(!color_to_move);
+	return !test_check(!color_to_move);
 }
 
 void Position::unmake_move(Move move) {
@@ -290,7 +295,7 @@ bitboard Position::en_passant_mask() {
 }
 
 int Position::pseudolegal_moves(Move* out) {
-	if (check(color_to_move)) {
+	if (check()) {
 		return pseudolegal_moves_evasions(out);
 	}
 
@@ -494,7 +499,7 @@ int Position::pseudolegal_moves(Move* out) {
 int Position::pseudolegal_moves_evasions(Move* out) {
 	int count = 0;
 
-	assert(check(color_to_move));
+	assert(check());
 
 	bitboard ctm = board.get_color_occ(color_to_move);
 	bitboard opp = board.get_color_occ(!color_to_move);
@@ -674,7 +679,7 @@ int Position::pseudolegal_moves_evasions(Move* out) {
 }
 
 int Position::pseudolegal_moves_quiescence(Move* out) {
-	if (check(color_to_move)) {
+	if (check()) {
 		return pseudolegal_moves_evasions(out);
 	}
 

@@ -556,7 +556,7 @@ TEST(PositionTest, Check) {
 	EXPECT_TRUE(p1.make_move(Move("e1c1"))); // qs castle
 	EXPECT_TRUE(p1.make_move(Move("c3b2"))); // check
 
-	EXPECT_TRUE(p1.check(piece::WHITE));
+	EXPECT_TRUE(p1.check());
 }
 
 TEST(PositionTest, NumRepetitions) {

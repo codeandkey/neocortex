@@ -35,6 +35,7 @@ namespace neocortex {
 			int captured_square = square::null;
 			int halfmove_clock = 0;
 			int fullmove_number = 1;
+			int in_check = 0;
 			zobrist::Key key = 0;
 		};
 
@@ -103,10 +104,9 @@ namespace neocortex {
 		/**
 		 * Test if the position is a check.
 		 *
-		 * @param col Color to test.
-		 * @return true if col is in check, false otherwise.
+		 * @return true if color to move is in check, false otherwise.
 		 */
-		bool check(int col);
+		bool check();
 
 		/**
 		 * Test if the last move made was a capture.
@@ -198,6 +198,10 @@ namespace neocortex {
 		Board board;
 		std::vector<State> ply;
 		int color_to_move;
+
+		bool test_check(int col) {
+			return (board.attacks_on(bb::getlsb(board.get_piece_occ(piece::KING) & board.get_color_occ(col))) & board.get_color_occ(!col)) != 0;
+		}
 	};
 
 	inline int Position::get_color_to_move() {
@@ -208,7 +212,8 @@ namespace neocortex {
 		return ply.back().captured_piece != piece::null;
 	}
 
-	inline bool Position::check(int col) {
-		return (board.attacks_on(bb::getlsb(board.get_piece_occ(piece::KING) & board.get_color_occ(col))) & board.get_color_occ(!col)) != 0;
+	inline bool Position::check() {
+		return ply.back().in_check;
 	}
+
 }

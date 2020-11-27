@@ -318,7 +318,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, PV
 	}
 
 	if (!num_moves) {
-		if (root.check(root.get_color_to_move())) {
+		if (root.check()) {
 			pv_line->len = 0;
 			return score::CHECKMATED;
 		}
@@ -359,7 +359,7 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, P
 		return eval::CONTEMPT;
 	}
 
-	if (!depth || (!root.check(root.get_color_to_move()) && !root.capture())) {
+	if (!depth || (!root.check() && !root.capture())) {
 		pv_line->len = 0;
 	
 		if (node_count) {
@@ -404,7 +404,7 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, P
 	}
 
 	if (!num_moves) {
-		if (root.check(root.get_color_to_move())) {
+		if (root.check()) {
 			pv_line->len = 0;
 			return score::CHECKMATED;
 		}
