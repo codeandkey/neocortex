@@ -1,22 +1,33 @@
 # Neocortex
 
-Neocortex is a UCI chess engine designed from the ground up.
+[![Build Status](https://travis-ci.com/codeandkey/neocortex.svg?branch=master)](https://travis-ci.com/codeandkey/neocortex) [![Coverage Status](https://coveralls.io/repos/github/codeandkey/neocortex/badge.svg?branch=master)](https://coveralls.io/github/codeandkey/neocortex?branch=master)
 
-You can play against it [here!](https://lichess.org/?user=cortexbot#friend)
+A UCI chess engine.
 
-## Architecture
+## architecture
+
+- UCI interface
+- Bitboard representation
 - Negamax alpha-beta search with iterative deepening
-- Magic bitboard staged move generation
+- Lazy SMP multithreading
 - Transposition table with Zobrist hashing
 - Time control management
-- *almost* complete UCI support
 
-## Dependencies
+## methods
 
-Neocortex builds on any system with a compiler supporting C++14 or above.
+The methods used in this engine are inspired by the fantastic resources available at the [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page):
 
-## Building
+- Guard heuristic
+- Static exchange evaluation
 
-To build Neocortex, execute `make` in the project root.
+## dependencies
 
-To build Neocortex in debugging mode, execute `make debug` instead.
+Neocortex builds on GCC 7.3+ or MSVC 2015+. To run the test suite [GoogleTest](https://github.com/google/googletest) must be available on the host.
+
+## building
+
+**Linux**<br>
+Execute `make` in the project root to build in release mode.<br>
+Execute `make debug` to build in debug mode, and `make test` to build the test suite.<br>
+
+*(Note: test suite builds require GoogleTest to be installed in the gcc include and lib paths.)*
