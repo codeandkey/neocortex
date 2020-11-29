@@ -203,20 +203,27 @@ bool Position::make_move(Move move) {
 		next_state.castle_rights &= ~rights;
 	}
 
-	if (move.src() == 0) {
-		next_state.castle_rights &= ~CASTLE_WHITE_Q;
-	}
+	static const bitboard white_ks_revoke = bb::mask(square::at(0, 4)) | bb::mask(square::at(0, 7));
+	static const bitboard white_qs_revoke = bb::mask(square::at(0, 4)) | bb::mask(square::at(0, 0));
+	static const bitboard black_ks_revoke = bb::mask(square::at(7, 4)) | bb::mask(square::at(7, 7));
+	static const bitboard black_qs_revoke = bb::mask(square::at(7, 4)) | bb::mask(square::at(7, 0));
 
-	if (move.src() == 7) {
+	bitboard src_dst_mask = bb::mask(move.src()) | bb::mask(move.dst());
+
+	if (src_dst_mask & white_ks_revoke) {
 		next_state.castle_rights &= ~CASTLE_WHITE_K;
 	}
 
-	if (move.src() == 56) {
-		next_state.castle_rights &= ~CASTLE_BLACK_Q;
+	if (src_dst_mask & white_qs_revoke) {
+		next_state.castle_rights &= ~CASTLE_WHITE_Q;
 	}
 
-	if (move.src() == 63) {
+	if (src_dst_mask & black_ks_revoke) {
 		next_state.castle_rights &= ~CASTLE_BLACK_K;
+	}
+
+	if (src_dst_mask & black_qs_revoke) {
+		next_state.castle_rights &= ~CASTLE_BLACK_Q;
 	}
 
 	/* Update en passant */
