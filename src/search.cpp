@@ -144,7 +144,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 		smp_should_stop = false;
 
 		for (int i = 0; i < num_threads - 1; ++i) {
-			smp_threads.push_back(std::thread([&] { smp_worker(cur_depth + (i % 2), root); }));
+			smp_threads.push_back(std::thread([=] { smp_worker(cur_depth + (i % 2), root); }));
 		}
 
 		/* Search on control thread */
