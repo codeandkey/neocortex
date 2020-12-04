@@ -36,6 +36,10 @@ namespace neocortex {
 			int halfmove_clock = 0;
 			int fullmove_number = 1;
 			int in_check = 0;
+
+			bool was_en_passant = false;
+			bool was_castle = false;
+
 			zobrist::Key key = 0;
 		};
 
@@ -114,6 +118,27 @@ namespace neocortex {
 		 * @return true if a capture was made, false otherwise.
 		 */
 		bool capture();
+
+		/**
+		 * Test if the last move made was an en passant capture.
+		 *
+		 * @return true if last move was en passant, false otherwise.
+		 */
+		bool en_passant();
+
+		/**
+		 * Test if the last move made was a promotion.
+		 *
+		 * @return true if last move was a promotion, false otherwise.
+		 */
+		bool promotion();
+
+		/**
+		 * Test if the last move made was a castle.
+		 *
+		 * @return true if last move was a castle, false otherwise.
+		 */
+		bool castle();
 
 		/**
 		 * Gets the number of times the current position has occurred throughout the game.
@@ -216,4 +241,15 @@ namespace neocortex {
 		return ply.back().in_check;
 	}
 
+	inline bool Position::en_passant() {
+		return ply.back().was_en_passant;
+	}
+
+	inline bool Position::castle() {
+		return ply.back().was_castle;
+	}
+
+	inline bool Position::promotion() {
+		return piece::is_type(ply.back().last_move.ptype());
+	}
 }

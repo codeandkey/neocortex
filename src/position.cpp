@@ -33,6 +33,8 @@ Position::Position() {
 	first_state.key ^= board.get_tt_key();
 	first_state.key ^= zobrist::castle(first_state.castle_rights);
 	first_state.in_check = 0;
+	first_state.was_castle = false;
+	first_state.was_en_passant = false;
 
 	ply.push_back(first_state);
 	color_to_move = piece::WHITE;
@@ -81,6 +83,8 @@ Position::Position(std::string fen) {
 	first_state.key ^= board.get_tt_key();
 	first_state.key ^= zobrist::en_passant(first_state.en_passant_square);
 	first_state.key ^= zobrist::castle(first_state.castle_rights);
+	first_state.was_castle = false;
+	first_state.was_en_passant = false;
 
 	first_state.in_check = test_check(color_to_move);
 
@@ -150,6 +154,8 @@ bool Position::make_move(Move move) {
 	next_state.en_passant_square = square::null;
 	next_state.captured_piece = piece::null;
 	next_state.captured_square = square::null;
+	next_state.was_en_passant = false;
+	next_state.was_castle = false;
 
 	/* Check for EP capture */
 	if (piece::type(src_piece) == piece::PAWN && move.dst() == last_state.en_passant_square) {
@@ -161,6 +167,7 @@ bool Position::make_move(Move move) {
 		next_state.captured_piece = removed;
 		next_state.captured_square = capture_square;
 		next_state.halfmove_clock = 0;
+		next_state.was_en_passant = true;
 
 		assert(piece::type(removed) == piece::PAWN);
 	}
@@ -176,6 +183,8 @@ bool Position::make_move(Move move) {
 		int rook_dst = square::at(castle_rank, rook_dstfile);
 
 		board.place(rook_dst, board.remove(rook_src));
+
+		next_state.was_castle = true;
 	}
 
 	/* Test if destination is occupied */
@@ -544,8 +553,7 @@ int Position::pseudolegal_moves_evasions(Move* out) {
 	int ep_square = ply.back().en_passant_square;
 
 	if (square::is_valid(ep_square)) {
-		/* Only consider ep captures if they can block the check */
-		ep_mask = bb::mask(ep_square) & block_dsts;
+		ep_mask = bb::mask(ep_square);
 	}
 
 	/* Pawn moves */
