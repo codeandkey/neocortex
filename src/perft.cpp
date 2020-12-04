@@ -30,10 +30,7 @@ perft::results perft::run(Position& p, int depth) {
 		throw util::fmterr("Invalid perft depth %d", depth);
 	}
 
-	current_results.nodes = 0;
-	current_results.captures = 0;
-	current_results.castles = 0;
-	current_results.checks = 0;
+	current_results = perft::results();
 
 	util::time_point now = util::time_now();
 
@@ -59,6 +56,9 @@ void perft_movegen(Position& p, int depth) {
 
 		if (p.capture()) current_results.captures++;
 		if (p.check()) current_results.checks++;
+		if (p.castle()) current_results.castles++;
+		if (p.en_passant()) current_results.en_passant++;
+		if (p.promotion()) current_results.promotions++;
 	
 		return;
 	}

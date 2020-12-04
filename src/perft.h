@@ -12,13 +12,15 @@
 namespace neocortex {
 	namespace perft {
 		struct results {
-			unsigned long nodes;
-			unsigned long checks;
-			unsigned long captures;
-			unsigned long castles;
-			unsigned long nps;
+			unsigned long nodes = 0;
+			unsigned long checks = 0;
+			unsigned long captures = 0;
+			unsigned long castles = 0;
+			unsigned long promotions = 0;
+			unsigned long en_passant = 0;
+			unsigned long nps = 0;
 
-			double totaltime;
+			double totaltime = 0.0;
 
 			/**
 			 * Converts the result to a table row for the output.
