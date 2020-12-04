@@ -6,16 +6,15 @@ A UCI chess engine.
 
 ## architecture
 
-- UCI interface
-- Bitboard representation
 - Negamax alpha-beta search with iterative deepening
-- Lazy SMP multithreading
+- Lazy SMP parallel search
 - Transposition table with Zobrist hashing
 - Time control management
+- UCI support
 
 ## methods
 
-The methods used in this engine are inspired by the fantastic resources available at the [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page):
+The methods used in this engine are inspired by the awesome resources available at the [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page):
 
 - Guard heuristic
 - Static exchange evaluation
@@ -31,3 +30,6 @@ Execute `make` in the project root to build in release mode.<br>
 Execute `make debug` to build in debug mode, and `make test` to build the test suite.<br>
 
 *(Note: test suite builds require GoogleTest to be installed in the gcc include and lib paths.)*
+
+**Windows**<br>
+Open `neocortex.vcxproj` in Visual Studio 2015 or newer. Build the solution in either Debug or Release mode.
