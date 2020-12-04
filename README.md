@@ -1,6 +1,6 @@
 # Neocortex
 
-[![Build Status](https://travis-ci.com/codeandkey/neocortex.svg?branch=master)](https://travis-ci.com/codeandkey/neocortex) [![Coverage Status](https://coveralls.io/repos/github/codeandkey/neocortex/badge.svg?branch=master)](https://coveralls.io/github/codeandkey/neocortex?branch=master)
+[![Build Status](https://travis-ci.com/codeandkey/neocortex.svg?branch=master)](https://travis-ci.com/codeandkey/neocortex) [![Coverage Status](https://coveralls.io/repos/github/codeandkey/neocortex/badge.svg?branch=master&kill_cache=1)](https://coveralls.io/github/codeandkey/neocortex?branch=master)
 
 A homemade C++ chess engine.
 
