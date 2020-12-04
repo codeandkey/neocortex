@@ -62,20 +62,14 @@ bool Move::match_uci(std::string uci) {
 }
 
 int Move::src() const {
-	assert(is_valid());
-
 	return m_src;
 }
 
 int Move::dst() const {
-	assert(is_valid());
-
 	return m_dst;
 }
 
 int Move::ptype() const {
-	assert(is_valid());
-
 	return m_ptype;
 }
 
