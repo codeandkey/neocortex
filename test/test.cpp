@@ -5,6 +5,7 @@
 #include "../src/board.h"
 #include "../src/eval.h"
 #include "../src/eval_consts.h"
+#include "../src/perft.h"
 #include "../src/piece.h"
 #include "../src/search.h"
 #include "../src/tt.h"
@@ -922,6 +923,237 @@ TEST(SearchTest, MateInThree) {
 
 	EXPECT_EQ(s_score, score::CHECKMATE - 5); /* 5 ply - mate in 3 */
 	EXPECT_EQ(best_move, Move("f6a6"));
+}
+
+/**
+ * PerftTest: movegen perft testing
+ */
+TEST(PerftTest, StandardPerft) {
+	Position p;
+	perft::results res;
+
+	res = perft::run(p, 0);
+
+	EXPECT_EQ(res.nodes, 1);
+	EXPECT_EQ(res.captures, 0);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles , 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 0);
+
+	res = perft::run(p, 1);
+
+	EXPECT_EQ(res.nodes, 20);
+	EXPECT_EQ(res.captures, 0);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 0);
+
+	res = perft::run(p, 2);
+
+	EXPECT_EQ(res.nodes, 400);
+	EXPECT_EQ(res.captures, 0);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 0);
+
+	res = perft::run(p, 3);
+
+	EXPECT_EQ(res.nodes, 8902);
+	EXPECT_EQ(res.captures, 34);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 12);
+
+	res = perft::run(p, 4);
+
+	EXPECT_EQ(res.nodes, 197281);
+	EXPECT_EQ(res.captures, 1576);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 469);
+
+	res = perft::run(p, 5);
+
+	EXPECT_EQ(res.nodes, 4865609);
+	EXPECT_EQ(res.captures, 82719);
+	EXPECT_EQ(res.en_passant, 258);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 27351);
+}
+
+TEST(PerftTest, PerftKiwipete) {
+	Position p("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+	perft::results res;
+
+	res = perft::run(p, 1);
+
+	EXPECT_EQ(res.nodes, 48);
+	EXPECT_EQ(res.captures, 8);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 2);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 0);
+
+	res = perft::run(p, 2);
+
+	EXPECT_EQ(res.nodes, 2039);
+	EXPECT_EQ(res.captures, 351);
+	EXPECT_EQ(res.en_passant, 1);
+	EXPECT_EQ(res.castles, 91);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 3);
+
+	res = perft::run(p, 3);
+
+	EXPECT_EQ(res.nodes, 97862);
+	EXPECT_EQ(res.captures, 17102);
+	EXPECT_EQ(res.en_passant, 45);
+	EXPECT_EQ(res.castles, 3162);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 993);
+
+	res = perft::run(p, 4);
+
+	EXPECT_EQ(res.nodes, 4085603);
+	EXPECT_EQ(res.captures, 757163);
+	EXPECT_EQ(res.en_passant, 1929);
+	EXPECT_EQ(res.castles, 128013);
+	EXPECT_EQ(res.promotions, 15172);
+	EXPECT_EQ(res.checks, 25523);
+}
+
+TEST(PerftTest, PerftThree) {
+	Position p("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
+	perft::results res;
+
+	res = perft::run(p, 1);
+
+	EXPECT_EQ(res.nodes, 14);
+	EXPECT_EQ(res.captures, 1);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 2);
+
+	res = perft::run(p, 2);
+
+	EXPECT_EQ(res.nodes, 191);
+	EXPECT_EQ(res.captures, 14);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 10);
+
+	res = perft::run(p, 3);
+
+	EXPECT_EQ(res.nodes, 2812);
+	EXPECT_EQ(res.captures, 209);
+	EXPECT_EQ(res.en_passant, 2);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 267);
+
+	res = perft::run(p, 4);
+
+	EXPECT_EQ(res.nodes, 43238);
+	EXPECT_EQ(res.captures, 3348);
+	EXPECT_EQ(res.en_passant, 123);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 1680);
+
+	res = perft::run(p, 5);
+
+	EXPECT_EQ(res.nodes, 674624);
+	EXPECT_EQ(res.captures, 52051);
+	EXPECT_EQ(res.en_passant, 1165);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 52950);
+}
+
+TEST(PerftTest, PerftFour) {
+	Position p("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
+	perft::results res;
+
+	res = perft::run(p, 1);
+
+	EXPECT_EQ(res.nodes, 6);
+	EXPECT_EQ(res.captures, 0);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 0);
+	EXPECT_EQ(res.checks, 0);
+
+	res = perft::run(p, 2);
+
+	EXPECT_EQ(res.nodes, 264);
+	EXPECT_EQ(res.captures, 87);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 6);
+	EXPECT_EQ(res.promotions, 48);
+	EXPECT_EQ(res.checks, 10);
+
+	res = perft::run(p, 3);
+
+	EXPECT_EQ(res.nodes, 9467);
+	EXPECT_EQ(res.captures, 1021);
+	EXPECT_EQ(res.en_passant, 4);
+	EXPECT_EQ(res.castles, 0);
+	EXPECT_EQ(res.promotions, 120);
+	EXPECT_EQ(res.checks, 38);
+
+	res = perft::run(p, 4);
+
+	EXPECT_EQ(res.nodes, 422333);
+	EXPECT_EQ(res.captures, 131393);
+	EXPECT_EQ(res.en_passant, 0);
+	EXPECT_EQ(res.castles, 7795);
+	EXPECT_EQ(res.promotions, 60032);
+	EXPECT_EQ(res.checks, 15492);
+}
+
+TEST(PerftTest, PerftFive) {
+	Position p("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8");
+
+	perft::results res = perft::run(p, 1);
+
+	EXPECT_EQ(res.nodes, 44);
+
+	res = perft::run(p, 2);
+
+	EXPECT_EQ(res.nodes, 1486);
+
+	res = perft::run(p, 3);
+
+	EXPECT_EQ(res.nodes, 62379);
+
+	res = perft::run(p, 4);
+
+	EXPECT_EQ(res.nodes, 2103487);
+}
+
+TEST(PerftTest, PerftSix) {
+	Position p("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
+	perft::results res;
+
+	res = perft::run(p, 1);
+	EXPECT_EQ(res.nodes, 46);
+
+	res = perft::run(p, 2);
+	EXPECT_EQ(res.nodes, 2079);
+
+	res = perft::run(p, 3);
+	EXPECT_EQ(res.nodes, 89890);
+
+	res = perft::run(p, 4);
+	EXPECT_EQ(res.nodes, 3894594);
 }
 
 /* Testing entry point */
