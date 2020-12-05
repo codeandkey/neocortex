@@ -61,18 +61,6 @@ bool Move::match_uci(std::string uci) {
 	return *this == Move(uci);
 }
 
-int Move::src() const {
-	return m_src;
-}
-
-int Move::dst() const {
-	return m_dst;
-}
-
-int Move::ptype() const {
-	return m_ptype;
-}
-
 Move::operator std::string() {
 	return to_uci();
 }

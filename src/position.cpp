@@ -1063,7 +1063,10 @@ int Position::see(int sq, int attacking_col) {
 
 int Position::evaluate(std::string* dbg) {
 	int phase;
+	int development;
 	int center_control;
+	int material_mg;
+	int material_eg;
 	int king_safety;
 	int passed_pawns;
 	int passed_pawn_adv;
@@ -1081,16 +1084,22 @@ int Position::evaluate(std::string* dbg) {
 	phase = (phase * 256) / eval::PHASE_TOTAL;
 
 	/* Compute material values */
-	score += (board.material_mg() * (256 - phase)) / 256;
-	score += (board.material_eg() * phase) / 256;
+	material_mg = (board.material_mg() * (256 - phase)) / 256;
+	material_eg = (board.material_eg() * phase) / 256;
+
+	score += material_mg;
+	score += material_eg;
 
 	/* Compute center square control */
 	static const int center_squares[4] = { 27, 28, 35, 36 };
 	center_control = 0;
 
 	for (int i = 0; i < 4; ++i) {
-		center_control += board.guard_value(center_squares[i]) * eval::CENTER_CONTROL;
+		center_control += board.guard_value(center_squares[i]);
 	}
+
+	center_control *= eval::CENTER_CONTROL;
+	score += center_control;
 
 	/* Compute king safety */
 	king_safety = 0;
@@ -1122,7 +1131,22 @@ int Position::evaluate(std::string* dbg) {
 		king_safety += gv;
 	}
 
-	score += king_safety * eval::KING_SAFETY;
+	king_safety *= eval::KING_SAFETY;
+	score += king_safety;
+
+	/* Evaluate development */
+	development = 0;
+
+	bitboard minor_pieces = board.get_piece_occ(piece::KNIGHT) | board.get_piece_occ(piece::BISHOP);
+
+	static const bitboard white_dev_ranks = RANK_3 | RANK_4 | RANK_5;
+	static const bitboard black_dev_ranks = RANK_4 | RANK_5 | RANK_6;
+
+	development += bb::popcount(minor_pieces & board.get_color_occ(piece::WHITE) & white_dev_ranks);
+	development -= bb::popcount(minor_pieces & board.get_color_occ(piece::BLACK) & black_dev_ranks);
+
+	development *= eval::DEVELOPMENT;
+	score += development;
 
 	/* Find passed pawns */
 	bitboard passers[2];
@@ -1133,9 +1157,10 @@ int Position::evaluate(std::string* dbg) {
 	/* Apply passed pawn bonus */
 	passed_pawns = 0;
 
-	passed_pawns += bb::popcount(passers[piece::WHITE]) * eval::PASSED_PAWNS;
-	passed_pawns -= bb::popcount(passers[piece::BLACK]) * eval::PASSED_PAWNS;
+	passed_pawns += bb::popcount(passers[piece::WHITE]);
+	passed_pawns -= bb::popcount(passers[piece::BLACK]);
 
+	passed_pawns *= eval::PASSED_PAWNS;
 	score += passed_pawns;
 
 	/* Apply advance bonus for passed pawns */
@@ -1154,21 +1179,26 @@ int Position::evaluate(std::string* dbg) {
 		passed_pawn_adv -= (7 - square::rank(p));
 	}
 
-	score += passed_pawn_adv * eval::ADV_PASSEDPAWN;
+	passed_pawn_adv *= eval::ADV_PASSEDPAWN;
+	score += passed_pawn_adv;
 
 	/* Write debug if needed */
 	if (dbg) {
 		std::string output;
 
-		output += "            | white | black |\n";
-		output += "------------|-------|-------|\n";
-		output += util::format("material_mg | %13d |\n", board.material_mg());
-		output += util::format("material_eg | %13d |\n", board.material_eg());
-		output += util::format("ctr_control | %13d |\n", center_control);
-		output += util::format("king_safety | %13d |\n", king_safety);
-		output += util::format("adv_passed  | %13d |\n", passed_pawn_adv);
-		output += util::format("passed_pns  | %13d |\n", passed_pawns);
-		output += util::format("phase       | %13d |\n", phase);
+		output +=              "+-----------------------------+\n";
+		output +=              "|   evaluation debug (WPOV)   |\n";
+		output +=              "|-------------+------+--------|\n";
+		output += util::format("| material_mg | %13d |\n", material_mg);
+		output += util::format("| material_eg | %13d |\n", material_eg);
+		output += util::format("| ctr_control | %13d |\n", center_control);
+		output += util::format("| development | %13d |\n", development);
+		output += util::format("| king_safety | %13d |\n", king_safety);
+		output += util::format("| adv_passed  | %13d |\n", passed_pawn_adv);
+		output += util::format("| passed_pns  | %13d |\n", passed_pawns);
+		output += util::format("| phase       | %13d |\n", phase);
+		output += util::format("| (total)     | %13d |\n", score);
+		output +=              "+-------------+------+--------+\n";
 
 		*dbg = output;
 	}

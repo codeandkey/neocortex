@@ -431,3 +431,7 @@ int search::Search::max_threads() {
 bool search::Search::is_running() {
 	return control_thread.joinable();
 }
+
+Position search::Search::get_position() {
+	return root;
+}

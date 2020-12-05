@@ -13,8 +13,6 @@
 
 #include <string>
 
-/* [0-5] src, [6-11] dst, [12-14] ptype, [15+] flags */
-
 namespace neocortex {
 	class Move {
 	public:
@@ -75,21 +73,27 @@ namespace neocortex {
 		 *
 		 * @return Source square.
 		 */
-		int src() const;
+		int src() const {
+			return m_src;
+		}
 
 		/**
 		 * Gets the move destination square.
 		 *
 		 * @return Destination square.
 		 */
-		int dst() const;
+		int dst() const {
+			return m_dst;
+		}
 
 		/**
 		 * Gets the move promotion type, or null if there is none set.
 		 *
 		 * @return Promotion type, or null.
 		 */
-		int ptype() const;
+		int ptype() const {
+			return m_ptype;
+		}
 
 		/**
 		 * Shorthand for to_uci().

@@ -113,6 +113,12 @@ namespace neocortex {
 			 * @return true if search running, false otherwise
 			 */
 			bool is_running();
+
+			/**
+			 * Gets the current root position. Must not be called while the search is running.
+			 * @return Current search root.
+			 */
+			Position get_position();
 		private:
 			/**
 			 * Gets the elapsed time since the beginning of the whole search.

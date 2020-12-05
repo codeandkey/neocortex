@@ -113,6 +113,13 @@ void uci::start() {
 				}
 			}
 
+#ifndef NDEBUG
+			std::string dbg, fen;
+			searcher.get_position().evaluate(&dbg);
+			fen = searcher.get_position().to_fen();
+			neocortex_info("position [%s]:\n%s\n", fen.c_str(), dbg.c_str());
+#endif
+
 			searcher.go(write_info, write_bestmove, wtime, btime, winc, binc, depth, movetime, infinite);
 		}
 		else if (parts[0] == "position") {
