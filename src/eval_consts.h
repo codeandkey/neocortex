@@ -27,14 +27,15 @@ namespace neocortex {
 		extern const int PHASE_VALS[6];
 		extern const int PHASE_TOTAL;
 
-		constexpr int TEMPO_BONUS = 10;
+		constexpr int TEMPO_BONUS = 9;
 		constexpr int CENTER_CONTROL = 1;
-		constexpr int KING_SAFETY = 10;
-		constexpr int PASSED_PAWNS = 30;
-		constexpr int ADV_PASSEDPAWN = 15;
-		constexpr int DEVELOPMENT = 20;
-		constexpr int KING_ADV_MG = -35;
-		constexpr int KING_ADV_EG = 10;
+		constexpr int KING_SAFETY = 7;
+		constexpr int PASSED_PAWNS = 11;
+		constexpr int ADV_PASSEDPAWN = 8;
+		constexpr int DEVELOPMENT = 15;
+		constexpr int FIRST_RANK_KING_MG = 7;
+		constexpr int PAWNS_PROT_KING_MG = 2;
+		constexpr int EDGE_KNIGHTS = -3;
 
 		constexpr int ORDER_PV_MOVE = 40000;
 

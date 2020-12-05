@@ -1068,8 +1068,17 @@ int Position::evaluate(std::string* dbg) {
 	int material_mg;
 	int material_eg;
 	int king_safety;
+	int king_first_rank;
+	int pawns_protecting_king;
 	int passed_pawns;
 	int passed_pawn_adv;
+	int edge_knights;
+
+	int white_king_sq = bb::getlsb(board.get_color_occ(piece::WHITE) & board.get_piece_occ(piece::KING));
+	int black_king_sq = bb::getlsb(board.get_color_occ(piece::BLACK) & board.get_piece_occ(piece::KING));
+
+	bitboard wkattacks = attacks::king(white_king_sq);
+	bitboard bkattacks = attacks::king(black_king_sq);
 
 	/* Start evaluation */
 	int score = 0;
@@ -1104,8 +1113,8 @@ int Position::evaluate(std::string* dbg) {
 	/* Compute king safety */
 	king_safety = 0;
 
-	bitboard white_ksq = attacks::king(bb::getlsb(board.get_color_occ(piece::WHITE) & board.get_piece_occ(piece::KING)));
-	bitboard black_ksq = attacks::king(bb::getlsb(board.get_color_occ(piece::BLACK) & board.get_piece_occ(piece::KING)));
+	bitboard white_ksq = wkattacks;
+	bitboard black_ksq = bkattacks;
 
 	while (white_ksq) {
 		int ksq = bb::poplsb(white_ksq);
@@ -1148,6 +1157,17 @@ int Position::evaluate(std::string* dbg) {
 	development *= eval::DEVELOPMENT;
 	score += development;
 
+	/* Penalty for edge knights */
+	edge_knights = 0;
+
+	bitboard edge_knights_mask = board.get_piece_occ(piece::KNIGHT) & (FILE_A | FILE_H);
+
+	edge_knights += bb::popcount(edge_knights_mask & board.get_color_occ(piece::WHITE));
+	edge_knights -= bb::popcount(edge_knights_mask & board.get_color_occ(piece::BLACK));
+
+	edge_knights *= eval::EDGE_KNIGHTS;
+	score += edge_knights;
+
 	/* Find passed pawns */
 	bitboard passers[2];
 
@@ -1162,6 +1182,34 @@ int Position::evaluate(std::string* dbg) {
 
 	passed_pawns *= eval::PASSED_PAWNS;
 	score += passed_pawns;
+
+	/* Apply bonus for king on first rank in MG */
+	king_first_rank = 0;
+	pawns_protecting_king = 0;
+
+	bitboard wkmask = bb::mask(white_king_sq);
+	bitboard bkmask = bb::mask(black_king_sq);
+
+	if (wkmask & RANK_1) {
+		king_first_rank += 1;
+		pawns_protecting_king += bb::popcount(wkattacks & board.get_piece_occ(piece::PAWN) & RANK_2);
+	}
+
+	if (bkmask & RANK_8) {
+		king_first_rank -= 1;
+		pawns_protecting_king -= bb::popcount(bkattacks & board.get_piece_occ(piece::PAWN) & RANK_7);
+	}
+
+	pawns_protecting_king *= eval::PAWNS_PROT_KING_MG;
+	pawns_protecting_king *= (256 - phase);
+	pawns_protecting_king /= 256;
+
+	king_first_rank *= eval::FIRST_RANK_KING_MG;
+	king_first_rank *= (256 - phase);
+	king_first_rank /= 256;
+
+	score += king_first_rank;
+	score += pawns_protecting_king;
 
 	/* Apply advance bonus for passed pawns */
 	bitboard tmp_passers;
@@ -1195,6 +1243,9 @@ int Position::evaluate(std::string* dbg) {
 		output += util::format("| development | %13d |\n", development);
 		output += util::format("| king_safety | %13d |\n", king_safety);
 		output += util::format("| adv_passed  | %13d |\n", passed_pawn_adv);
+		output += util::format("| edge_knghts | %13d |\n", edge_knights);
+		output += util::format("| pawn_prot_k | %13d |\n", pawns_protecting_king);
+		output += util::format("| first_r_kng | %13d |\n", king_first_rank);
 		output += util::format("| passed_pns  | %13d |\n", passed_pawns);
 		output += util::format("| phase       | %13d |\n", phase);
 		output += util::format("| (total)     | %13d |\n", score);
