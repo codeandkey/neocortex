@@ -371,18 +371,20 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, i
 
 	/* Perform standing pat */
 
-	if (cur_score >= beta) {
-		pv_line->len = 0;
+	if (!root.check()) {
+		if (cur_score >= beta) {
+			pv_line->len = 0;
 
-		if (node_count) {
-			++* node_count;
+			if (node_count) {
+				++* node_count;
+			}
+
+			return beta;
 		}
 
-		return beta;
-	}
-
-	if (alpha < cur_score) {
-		alpha = cur_score;
+		if (alpha < cur_score) {
+			alpha = cur_score;
+		}
 	}
 
 	Move pl_moves[MAX_PL_MOVES];
