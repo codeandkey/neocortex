@@ -1072,6 +1072,8 @@ int Position::evaluate(std::string* dbg) {
 	int passed_pawns;
 	int passed_pawn_adv;
 	int edge_knights;
+	int open_file_r;
+	int open_file_q;
 
 	int white_king_sq = bb::getlsb(board.get_color_occ(piece::WHITE) & board.get_piece_occ(piece::KING));
 	int black_king_sq = bb::getlsb(board.get_color_occ(piece::BLACK) & board.get_piece_occ(piece::KING));
@@ -1229,6 +1231,31 @@ int Position::evaluate(std::string* dbg) {
 	passed_pawn_adv *= eval::ADV_PASSEDPAWN;
 	score += passed_pawn_adv;
 
+	/* Apply bonus for rooks and queens on open files */
+	open_file_r = 0;
+	open_file_q = 0;
+
+	for (int f = 0; f < 8; ++f) {
+		bitboard file = bb::file(f);
+
+		if (!board.get_piece_occ(piece::PAWN) & file) {
+			// Open file
+
+			bitboard frooks = file & board.get_piece_occ(piece::ROOK);
+			bitboard fqueens = file & board.get_piece_occ(piece::QUEEN);
+
+			open_file_r += bb::popcount(frooks & board.get_color_occ(piece::WHITE));
+			open_file_q += bb::popcount(fqueens & board.get_color_occ(piece::WHITE));
+			open_file_r -= bb::popcount(frooks & board.get_color_occ(piece::BLACK));
+			open_file_q -= bb::popcount(fqueens & board.get_color_occ(piece::BLACK));
+		}
+	}
+
+	open_file_r *= eval::OPEN_FILE_ROOK;
+	open_file_q *= eval::OPEN_FILE_QUEEN;
+
+	score += open_file_r + open_file_q;
+
 	/* Write debug if needed */
 	if (dbg) {
 		std::string output;
@@ -1246,6 +1273,8 @@ int Position::evaluate(std::string* dbg) {
 		output += util::format("| pawn_prot_k | %13d |\n", pawns_protecting_king);
 		output += util::format("| first_r_kng | %13d |\n", king_first_rank);
 		output += util::format("| passed_pns  | %13d |\n", passed_pawns);
+		output += util::format("| open_file_r | %13d |\n", open_file_r);
+		output += util::format("| open_file_q | %13d |\n", open_file_q);
 		output += util::format("| phase       | %13d |\n", phase);
 		output += util::format("| (total)     | %13d |\n", score);
 		output +=              "+-------------+------+--------+\n";
