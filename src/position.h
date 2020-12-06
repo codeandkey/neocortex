@@ -219,6 +219,13 @@ namespace neocortex {
 		 * @param col Attacking color.
 		 */
 		int see(int sq, int col);
+
+		/**
+		 * Get a printable debug dump of the position.
+		 * 
+		 * @return Printable debug string.
+		 */
+		std::string dump();
 	private:
 		Board board;
 		std::vector<State> ply;

@@ -544,7 +544,6 @@ int Position::pseudolegal_moves_evasions(Move* out) {
 
 	/* Only one attacker -- look for pieces that can capture it */
 	int attacker_square = bb::getlsb(attackers);
-	bitboard capture_evade = board.attacks_on(attacker_square) & ctm;
 
 	/* If checker is sliding piece, add blocking moves */
 	bitboard block_dsts = bb::between(king_sq, attacker_square);
@@ -569,7 +568,7 @@ int Position::pseudolegal_moves_evasions(Move* out) {
 	bitboard promoting_pawns = pawns & promoting_rank;
 
 	/* Promoting left captures */
-	bitboard promoting_left_cap = bb::shift(promoting_pawns & ~FILE_A, left_dir) & capture_evade;
+	bitboard promoting_left_cap = bb::shift(promoting_pawns & ~FILE_A, left_dir) & attackers;
 
 	while (promoting_left_cap) {
 		int dst = bb::poplsb(promoting_left_cap);
@@ -580,7 +579,7 @@ int Position::pseudolegal_moves_evasions(Move* out) {
 	}
 
 	/* Promoting right captures */
-	bitboard promoting_right_cap = bb::shift(promoting_pawns & ~FILE_H, right_dir) & capture_evade;
+	bitboard promoting_right_cap = bb::shift(promoting_pawns & ~FILE_H, right_dir) & attackers;
 
 	while (promoting_right_cap) {
 		int dst = bb::poplsb(promoting_right_cap);
@@ -1280,4 +1279,37 @@ int Position::num_repetitions() {
 
 int Position::halfmove_clock() {
 	return ply.back().halfmove_clock;
+}
+
+std::string Position::dump() {
+	std::string output;
+
+	output += "board: \n";
+	output += board.to_pretty();
+	output += "\n";
+
+	output += "history: ";
+
+	for (int i = 1; i < ply.size(); ++i) {
+		output += ply[i].last_move.to_uci() + " ";
+	}
+
+	output += "\n";
+
+	output += "check: " + std::string(check() ? "yes" : "no") + std::string("\n");
+	output += "test_check(ctm): " + std::string(test_check(color_to_move) ? "yes" : "no") + std::string("\n");
+	output += "test_check(!ctm): " + std::string(test_check(!color_to_move) ? "yes" : "no") + std::string("\n");
+
+	Move moves[MAX_PL_MOVES];
+	int num_moves = pseudolegal_moves(moves);
+
+	output += "pseudolegal moves: ";
+
+	for (int i = 0; i < num_moves; ++i) {
+		output += moves[i].to_uci() + " ";
+	}
+
+	output += "\n";
+
+	return output;
 }
