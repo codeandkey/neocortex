@@ -123,12 +123,10 @@ void uci::start() {
 			searcher.go(write_info, write_bestmove, wtime, btime, winc, binc, depth, movetime, infinite);
 		}
 		else if (parts[0] == "dump") {
-#ifndef NDEBUG
 			std::string dbg, fen;
 			searcher.get_position().evaluate(&dbg);
 			fen = searcher.get_position().to_fen();
 			neocortex_info("position [%s]:\n%s\n", fen.c_str(), dbg.c_str());
-#endif
 			neocortex_info("position [%s] dump:\n%s\n", fen.c_str(), searcher.get_position().dump().c_str());
 		}
 		else if (parts[0] == "position") {
