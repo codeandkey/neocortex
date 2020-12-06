@@ -1290,7 +1290,7 @@ std::string Position::dump() {
 
 	output += "history: ";
 
-	for (int i = 1; i < ply.size(); ++i) {
+	for (unsigned i = 1; i < ply.size(); ++i) {
 		output += ply[i].last_move.to_uci() + " ";
 	}
 
