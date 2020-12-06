@@ -1074,6 +1074,7 @@ int Position::evaluate(std::string* dbg) {
 	int edge_knights;
 	int open_file_r;
 	int open_file_q;
+	int p_iso_pawns;
 
 	int white_king_sq = bb::getlsb(board.get_color_occ(piece::WHITE) & board.get_piece_occ(piece::KING));
 	int black_king_sq = bb::getlsb(board.get_color_occ(piece::BLACK) & board.get_piece_occ(piece::KING));
@@ -1238,7 +1239,7 @@ int Position::evaluate(std::string* dbg) {
 	for (int f = 0; f < 8; ++f) {
 		bitboard file = bb::file(f);
 
-		if (!board.get_piece_occ(piece::PAWN) & file) {
+		if (!(board.get_piece_occ(piece::PAWN) & file)) {
 			// Open file
 
 			bitboard frooks = file & board.get_piece_occ(piece::ROOK);
@@ -1255,6 +1256,15 @@ int Position::evaluate(std::string* dbg) {
 	open_file_q *= eval::OPEN_FILE_QUEEN;
 
 	score += open_file_r + open_file_q;
+
+	/* Apply penalty for isolated pawns */
+	p_iso_pawns = 0;
+
+	p_iso_pawns += bb::popcount(board.isolated_pawns(piece::WHITE));
+	p_iso_pawns -= bb::popcount(board.isolated_pawns(piece::WHITE));
+
+	p_iso_pawns *= eval::ISOLATED_PAWNS;
+	score += p_iso_pawns;
 
 	/* Write debug if needed */
 	if (dbg) {
@@ -1275,6 +1285,7 @@ int Position::evaluate(std::string* dbg) {
 		output += util::format("| passed_pns  | %13d |\n", passed_pawns);
 		output += util::format("| open_file_r | %13d |\n", open_file_r);
 		output += util::format("| open_file_q | %13d |\n", open_file_q);
+		output += util::format("| p_iso_pawns | %13d |\n", p_iso_pawns);
 		output += util::format("| phase       | %13d |\n", phase);
 		output += util::format("| (total)     | %13d |\n", score);
 		output +=              "+-------------+------+--------+\n";

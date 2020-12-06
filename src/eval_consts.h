@@ -36,6 +36,7 @@ namespace neocortex {
 		constexpr int FIRST_RANK_KING_MG = 7;
 		constexpr int PAWNS_PROT_KING_MG = 2;
 		constexpr int EDGE_KNIGHTS = -3;
+		constexpr int ISOLATED_PAWNS = -8;
 
 		constexpr int OPEN_FILE_ROOK = 8;
 		constexpr int OPEN_FILE_QUEEN = 4;
