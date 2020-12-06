@@ -55,6 +55,7 @@ namespace neocortex {
 
 	namespace bb {
 		extern bitboard BETWEEN[64][64];
+		extern bitboard NEIGHBOR_FILES[64];
 
 		/**
 		 * Initializes static bitboard constants.
@@ -70,6 +71,15 @@ namespace neocortex {
 		 */
 		inline bitboard between(int a, int b) {
 			return BETWEEN[a][b];
+		}
+
+		/**
+		 * Gets a mask of neighboring files to a square.
+		 * @param sq Square.
+		 * @return Files adjacent to sq.
+		 */
+		inline bitboard neighbor_files(int sq) {
+			return NEIGHBOR_FILES[sq];
 		}
 
 		/**

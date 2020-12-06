@@ -10,6 +10,7 @@
 using namespace neocortex;
 
 bitboard bb::BETWEEN[64][64];
+bitboard bb::NEIGHBOR_FILES[64];
 
 void bb::init() {
 	/* zero lookup buf */
@@ -119,6 +120,20 @@ void bb::init() {
 					BETWEEN[src][t] |= 1ULL << j;
 				}
 			} while (square::rank(t) != 0 && square::file(t) != 0);
+		}
+	}
+
+	// generate neighbor files
+	for (int sq = 0; sq < 64; ++sq) {
+		int f = square::file(sq);
+		NEIGHBOR_FILES[sq] = 0ULL;
+
+		if (f > 0) {
+			NEIGHBOR_FILES[sq] |= bb::file(f - 1);
+		}
+
+		if (f < 7) {
+			NEIGHBOR_FILES[sq] |= bb::file(f + 1);
 		}
 	}
 }
