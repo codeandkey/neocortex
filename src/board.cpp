@@ -268,6 +268,21 @@ bitboard Board::attack_spans(int col) {
 	return out;
 }
 
+bitboard Board::isolated_pawns(int col) {
+	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
+	bitboard out = 0ULL;
+
+	while (pawns) {
+		int p = bb::poplsb(pawns);
+
+		if (!(bb::neighbor_files(p) & pawns)) {
+			out |= bb::mask(p);
+		}
+	}
+	
+	return out;
+}
+
 bitboard Board::passedpawns(int col) {
 	return ~all_spans(!col) & piece_occ[piece::PAWN] & color_occ[col];
 }
