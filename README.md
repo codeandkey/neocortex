@@ -19,6 +19,7 @@ The methods used in this engine are inspired by the awesome resources available 
 - Guard heuristic
 - Static exchange evaluation
 - Specialized quiescence/evasion movegen
+- History heuristic
 
 ## dependencies
 

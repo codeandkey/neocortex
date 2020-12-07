@@ -38,6 +38,8 @@ Position::Position() {
 	first_state.was_castle = false;
 	first_state.was_en_passant = false;
 
+	reset_history_table();
+
 	ply.push_back(first_state);
 	color_to_move = piece::WHITE;
 }
@@ -51,6 +53,8 @@ Position::Position(std::string fen) {
 
 	board = Board(fields[0]);
 	color_to_move = piece::color_from_uci(fields[1][0]);
+
+	reset_history_table();
 	
 	State first_state;
 
@@ -1002,6 +1006,9 @@ void Position::order_moves(Move* moves, int num_moves, Move pv_move) {
 		// PV move bonus
 		if (moves[i] == pv_move) scores[i] += eval::ORDER_PV_MOVE;
 
+		// History bonus
+		scores[i] += history[color_to_move][moves[i].src()][moves[i].dst()];
+
 		// SEE on basic captures
 		if (board.get_color_occ(!color_to_move) & bb::mask(moves[i].dst())) scores[i] += see_capture(moves[i]);
 
@@ -1042,6 +1049,9 @@ int Position::order_moves_quiescence(Move* moves, int num_moves, Move pv_move) {
 
 		// PV move bonus
 		if (moves[i] == pv_move) scores[i] += eval::ORDER_PV_MOVE;
+
+		// History bonus
+		scores[i] += history[color_to_move][moves[i].src()][moves[i].dst()];
 
 		if (
 			(board.get_color_occ(!color_to_move) & bb::mask(moves[i].dst()) & ~board.get_piece_occ(piece::KING)) || // Normal captures
@@ -1506,4 +1516,14 @@ void Position::reset_eval_counter() {
 
 int Position::get_eval_counter() {
 	return eval_counter;
+}
+
+void Position::reset_history_table() {
+	for (int c = 0; c < 2; ++c) {
+		for (int s1 = 0; s1 < 64; ++s1) {
+			for (int s2 = 0; s2 < 64; ++s2) {
+				history[c][s1][s2] = 0;
+			}
+		}
+	}
 }

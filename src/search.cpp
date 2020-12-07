@@ -151,10 +151,11 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 		/* Start n-1 SMP threads */
 		smp_should_stop = false;
 
-		int* smp_node_counts = new int[num_threads - 1];
+		int* smp_node_counts = new int[(size_t) num_threads - 1];
 
 		for (int i = 0; i < num_threads - 1; ++i) {
-			smp_threads.push_back(std::thread([=] { smp_worker(cur_depth + (i % 2), root, smp_node_counts + i - 1); }));
+			smp_node_counts[i] = 0;
+			smp_threads.push_back(std::thread([=] { smp_worker(cur_depth + (i % 2), root, smp_node_counts + i); }));
 		}
 
 		/* Search on control thread */
@@ -327,7 +328,11 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 				return value;
 			}
 
-			if (value >= beta) return beta;
+			if (value >= beta) {
+				// Add history bonus for cutoff in normal AB
+				root.add_history_bonus(pl_moves[i], depth);
+				return beta;
+			}
 
 			if (value > alpha) {
 				alpha = value;

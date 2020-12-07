@@ -245,11 +245,25 @@ namespace neocortex {
 		 * @return Number of evaluations since reset_eval_counter() was called.
 		 */
 		int get_eval_counter();
+
+		/**
+		 * Resets the internal history heuristic table.
+		 */
+		void reset_history_table();
+
+		/**
+		 * Adds a bonus to the history table for the current CTM.
+		 * The move that receives the bonus must be UNMADE before calling this.
+		 * @param depth Depth of cutoff.
+		 */
+		void add_history_bonus(Move& m, int depth);
 	private:
 		Board board;
 		std::vector<State> ply;
 		int color_to_move;
 		int eval_counter;
+
+		int history[2][64][64];
 
 		bool test_check(int col) {
 			return (board.attacks_on(bb::getlsb(board.get_piece_occ(piece::KING) & board.get_color_occ(col))) & board.get_color_occ(!col)) != 0;
@@ -278,5 +292,9 @@ namespace neocortex {
 
 	inline bool Position::promotion() {
 		return piece::is_type(ply.back().last_move.ptype());
+	}
+
+	inline void Position::add_history_bonus(Move& m, int depth) {
+		history[color_to_move][m.src()][m.dst()] += depth * depth;
 	}
 }
