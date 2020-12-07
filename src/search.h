@@ -37,7 +37,7 @@ namespace neocortex {
 
 				out += "info depth " + std::to_string(depth) + " ";
 
-				if (seldepth >= 0) {
+				if (seldepth > 0) {
 					out += "seldepth " + std::to_string(seldepth) + " ";
 				}
 
