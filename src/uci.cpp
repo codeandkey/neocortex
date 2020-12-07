@@ -158,7 +158,7 @@ void uci::start() {
 					continue;
 				}
 
-				for (size_t i = expected_moves + 1; i < parts.size(); ++i) {
+				for (size_t i = (size_t) expected_moves + 1; i < parts.size(); ++i) {
 					Move pl_moves[MAX_PL_MOVES], matched_move = Move::null;
 					int num_pl_moves;
 
