@@ -861,11 +861,6 @@ int Position::pseudolegal_moves_quiescence_captures(Move* out) {
 
 	int oppking = bb::getlsb(opp & board.get_piece_occ(piece::KING));
 
-	bitboard bchecks = attacks::bishop(oppking, board.get_global_occ()) & ~ctm;
-	bitboard rchecks = attacks::rook(oppking, board.get_global_occ()) & ~ctm;
-	bitboard nchecks = attacks::knight(oppking) & ~ctm;
-	bitboard pchecks = attacks::pawn(!color_to_move, oppking);
-
 	bitboard ep_mask = 0;
 	int ep_square = ply.back().en_passant_square;
 
