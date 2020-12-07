@@ -151,8 +151,10 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 		/* Start n-1 SMP threads */
 		smp_should_stop = false;
 
+		int* smp_node_counts = new int[num_threads - 1];
+
 		for (int i = 0; i < num_threads - 1; ++i) {
-			smp_threads.push_back(std::thread([=] { smp_worker(cur_depth + (i % 2), root); }));
+			smp_threads.push_back(std::thread([=] { smp_worker(cur_depth + (i % 2), root, smp_node_counts + i - 1); }));
 		}
 
 		/* Search on control thread */
@@ -171,6 +173,10 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 			if (i.joinable()) {
 				i.join();
 			}
+		}
+
+		for (int i = 0; i < num_threads - 1; ++i) {
+			cur.nodes += smp_node_counts[i];
 		}
 
 		smp_threads.clear();
@@ -218,9 +224,15 @@ void search::Search::load(Position p) {
 	root = p;
 }
 
-void search::Search::smp_worker(int s_depth, Position root) {
+void search::Search::smp_worker(int s_depth, Position root, int* node_count_out) {
 	PV local_pv;
+
+	root.reset_eval_counter();
 	alphabeta(root, s_depth, score::CHECKMATED, score::CHECKMATE, 0, &local_pv, smp_should_stop);
+	
+	if (node_count_out) {
+		*node_count_out = root.get_eval_counter();
+	}
 }
 
 bool search::Search::allocated_time_expired() {

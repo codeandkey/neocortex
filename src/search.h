@@ -163,8 +163,9 @@ namespace neocortex {
 			 * @param out UCI output stream.
 			 * @param s_depth Depth to search.
 			 * @param root Root position for worker.
+			 * @param node_count_out Optional output for number of nodes searched.
 			 */
-			void smp_worker(int s_depth, Position root);
+			void smp_worker(int s_depth, Position root, int* node_count_out);
 
 			/**
 			 * Alpha-beta search routine.
