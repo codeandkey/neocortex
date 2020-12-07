@@ -22,8 +22,14 @@ static void write_info(search::SearchInfo inf) {
 	std::cout.flush();
 }
 
-static void write_bestmove(Move m) {
-	std::cout << "bestmove " << m.to_uci() << "\n";
+static void write_bestmove(Move m, Move ponder) {
+	std::cout << "bestmove " << m.to_uci();
+	
+	if (ponder.is_valid()) {
+		std::cout << " ponder " << ponder.to_uci();
+	}
+	
+	std::cout << "\n";
 	std::cout.flush();
 }
 
@@ -94,7 +100,7 @@ void uci::start() {
 		}
 		else if (parts[0] == "go") {
 			int wtime = -1, btime = -1, winc = -1, binc = -1, depth = -1, movetime = -1;
-			bool infinite = false;
+			bool infinite = false, ponder = false;
 
 			/* Parse UCI options. */
 			for (size_t i = 1; i < parts.size(); ++i) {
@@ -107,6 +113,7 @@ void uci::start() {
 				else if (parts[i] == "depth") depth = safe_parseint(parts, i + 1);
 				else if (parts[i] == "movetime") movetime = safe_parseint(parts, i + 1);
 				else if (parts[i] == "infinite") infinite = true;
+				else if (parts[i] == "ponder") ponder = true;
 				else if (parts[i] == "movestogo") {} /* ignore movestogo */
 				else {
 					throw util::fmterr("Invalid argument: %s", parts[i].c_str());

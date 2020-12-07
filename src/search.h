@@ -80,8 +80,9 @@ namespace neocortex {
 			 * @param depth Search depth
 			 * @param movetime Move time (ms)
 			 * @param infinite Infinite search
+			 * @param ponder Pondering mode
 			 */
-			void go(std::function<void(SearchInfo)> info, std::function<void(Move)> bestmove, int wtime = -1, int btime = -1, int winc = -1, int binc = -1, int depth = -1, int movetime = -1, bool infinite = false);
+			void go(std::function<void(SearchInfo)> info, std::function<void(Move, Move)> bestmove, int wtime = -1, int btime = -1, int winc = -1, int binc = -1, int depth = -1, int movetime = -1, bool infinite = false, bool ponder = false);
 
 			/**
 			 * Stops the running search.
@@ -125,6 +126,12 @@ namespace neocortex {
 			 * @return Current search root.
 			 */
 			Position get_position();
+
+			/**
+			 * Ponder hit. This should be called if the searcher is pondering and the ponder move is made.
+			 * This switches the search to normal mode.
+			 */
+			void ponder_hit();
 		private:
 			/**
 			 * Gets the elapsed time since the beginning of the whole search.
@@ -155,7 +162,7 @@ namespace neocortex {
 			 * @param info Callback for search depth info. (optional)
 			 * @param bestmove Callback for search bestmove. (optional)
 			 */
-			void control_worker(Position root, std::function<void(SearchInfo)> info, std::function<void(Move)> bestmove);
+			void control_worker(Position root, std::function<void(SearchInfo)> info, std::function<void(Move, Move)> bestmove);
 
 			/**
 			 * Search thread worker function.
@@ -224,6 +231,8 @@ namespace neocortex {
 
 			std::thread control_thread;
 			std::atomic<bool> control_should_stop;
+
+			std::atomic<bool> ponder_mode;
 
 			std::mutex depth_starttime_mutex;
 			util::time_point depth_starttime;

@@ -28,7 +28,7 @@ search::Search::~Search() {
 	stop();
 }
 
-void search::Search::go(std::function<void(SearchInfo)> info, std::function<void(Move)> bestmove, int wtime, int btime, int winc, int binc, int depth, int movetime, bool infinite) {
+void search::Search::go(std::function<void(SearchInfo)> info, std::function<void(Move, Move)> bestmove, int wtime, int btime, int winc, int binc, int depth, int movetime, bool infinite, bool ponder) {
 	stop();
 
 	this->wtime = wtime;
@@ -38,18 +38,19 @@ void search::Search::go(std::function<void(SearchInfo)> info, std::function<void
 	this->depth = depth;
 	this->movetime = movetime;
 	this->infinite = infinite;
+	this->ponder_mode = ponder;
 
 	/* Start main search thread. */
 	control_should_stop = false;
 	control_thread = std::thread([=] { control_worker(root, info, bestmove); });
 }
 
-void search::Search::control_worker(Position root, std::function<void(SearchInfo)> info, std::function<void(Move)> bestmove) {
+void search::Search::control_worker(Position root, std::function<void(SearchInfo)> info, std::function<void(Move, Move)> bestmove) {
 	int score;
 	int cur_depth;
 	int ourtime, ourinc;
 	int iter_time;
-	Move best_move;
+	Move best_move, ponder_move;
 
 	/* EBF variables, for depth time prediction */
 	float ebf = -1.0f; /* effective branching factor, set after depth 3 */
@@ -109,10 +110,10 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 
 	cur_depth = 2;
 	while (1) {
-		if (!infinite && depth > 0 && cur_depth > depth) break;
-		if (!infinite && movetime > 0 && util::time_elapsed_ms(search_starttime) >= movetime) break;
+		if (!infinite && depth > 0 && cur_depth > depth && !ponder_mode) break;
+		if (!infinite && movetime > 0 && util::time_elapsed_ms(search_starttime) >= movetime && !ponder_mode) break;
 		if (control_should_stop) break;
-		if (cur_depth >= MAX_DEPTH) break;
+		if (cur_depth >= MAX_DEPTH && !ponder_mode) break;
 
 		/* Allocate time for the next depth if timed */
 		allocated_time = -1;
@@ -133,7 +134,9 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 		if (ebf > 0.0f) {
 			if (allocated_time > 0) {
 				if (util::time_elapsed_ms(search_starttime) + (int)(ebf * ebf_times[cur_depth - 1]) >= allocated_time) {
-					break;
+					if (!ponder_mode) {
+						break;
+					}
 				}
 			}
 		}
@@ -186,6 +189,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 
 		/* Search complete, store best move */
 		best_move = cur.pv.moves[0];
+		ponder_move = cur.pv.moves[1];
 		cur.seldepth = max_ply_searched;
 
 		{
@@ -205,7 +209,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 	}
 
 	/* Write bestmove */
-	bestmove(best_move);
+	bestmove(best_move, ponder_move);
 }
 
 void search::Search::stop() {
@@ -237,6 +241,8 @@ void search::Search::smp_worker(int s_depth, Position root, int* node_count_out)
 }
 
 bool search::Search::allocated_time_expired() {
+	if (ponder_mode) return false;
+
 	std::lock_guard<std::mutex> lock(depth_starttime_mutex);
 	return (allocated_time > 0 && util::time_elapsed_ms(depth_starttime) >= allocated_time);
 }
@@ -569,4 +575,8 @@ bool search::Search::is_running() {
 
 Position search::Search::get_position() {
 	return root;
+}
+
+void search::Search::ponder_hit() {
+	ponder_mode = false;
 }
