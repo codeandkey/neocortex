@@ -861,8 +861,6 @@ int Position::pseudolegal_moves_quiescence_captures(Move* out) {
 	bitboard ctm = board.get_color_occ(color_to_move);
 	bitboard opp = board.get_color_occ(!color_to_move);
 
-	int oppking = bb::getlsb(opp & board.get_piece_occ(piece::KING));
-
 	bitboard ep_mask = 0;
 	int ep_square = ply.back().en_passant_square;
 
