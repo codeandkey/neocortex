@@ -196,6 +196,14 @@ namespace neocortex {
 		int pseudolegal_moves_quiescence(Move* dst);
 
 		/**
+		 * Gets the pseudolegal moves for the position (quiescence capture search variant)
+		 *
+		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
+		 * @return Number of moves generated.
+		 */
+		int pseudolegal_moves_quiescence_captures(Move* dst);
+
+		/**
 		 * Performs move ordering on a list of pseudolegal moves (quiescence search variant)
 		 *
 		 * @param moves Move list pointer.
@@ -226,10 +234,22 @@ namespace neocortex {
 		 * @return Printable debug string.
 		 */
 		std::string dump();
+
+		/**
+		 * Resets the evaluation counter to 0.
+		 */
+		void reset_eval_counter();
+
+		/**
+		 * Gets the current eval counter. Incremented every time evaluate() is called.
+		 * @return Number of evaluations since reset_eval_counter() was called.
+		 */
+		int get_eval_counter();
 	private:
 		Board board;
 		std::vector<State> ply;
 		int color_to_move;
+		int eval_counter;
 
 		bool test_check(int col) {
 			return (board.attacks_on(bb::getlsb(board.get_piece_occ(piece::KING) & board.get_color_occ(col))) & board.get_color_occ(!col)) != 0;

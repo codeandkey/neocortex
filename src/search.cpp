@@ -48,7 +48,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 	int score;
 	int cur_depth;
 	int ourtime, ourinc;
-	int node_count, iter_time;
+	int iter_time;
 	Move best_move;
 
 	/* EBF variables, for depth time prediction */
@@ -71,6 +71,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 	d0.depth = 0;
 	d0.nodes = 1;
 	d0.score = root.evaluate();
+	d0.seldepth = -1;
 
 	info(d0);
 
@@ -80,12 +81,14 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 		depth_starttime = util::time_now();
 	}
 
-	node_count = 0;
 	allocated_time = -1;
 
 	SearchInfo d1;
 
-	score = alphabeta(root, 1, score::CHECKMATED, score::CHECKMATE, 0, &d1.pv, &node_count, control_should_stop);
+	root.reset_eval_counter();
+	max_ply_searched = 0;
+
+	score = alphabeta(root, 1, score::CHECKMATED, score::CHECKMATE, 0, &d1.pv, control_should_stop);
 	
 	{
 		std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
@@ -93,7 +96,8 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 	}
 
 	d1.depth = 1;
-	d1.nodes = node_count;
+	d1.nodes = root.get_eval_counter();
+	d1.seldepth = max_ply_searched;
 	d1.time = iter_time;
 	d1.score = score;
 	best_move = d1.pv.moves[0];
@@ -134,11 +138,15 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 			}
 		}
 
+		root.reset_eval_counter();
+
 		/* Perform search (TODO: aspiration) */
 		{
 			std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
 			depth_starttime = util::time_now();
 		}
+
+		max_ply_searched = 0;
 
 		/* Start n-1 SMP threads */
 		smp_should_stop = false;
@@ -152,7 +160,9 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 		SearchInfo cur;
 		cur.depth = cur_depth;
 
-		cur.score = alphabeta(root, cur_depth, score::CHECKMATED, score::CHECKMATE, 0, &cur.pv, &cur.nodes, control_should_stop);
+		cur.score = alphabeta(root, cur_depth, score::CHECKMATED, score::CHECKMATE, 0, &cur.pv, control_should_stop);
+
+		cur.nodes = root.get_eval_counter();
 
 		/* Join SMP threads */
 		smp_should_stop = true;
@@ -169,6 +179,7 @@ void search::Search::control_worker(Position root, std::function<void(SearchInfo
 
 		/* Search complete, store best move */
 		best_move = cur.pv.moves[0];
+		cur.seldepth = max_ply_searched;
 
 		{
 			std::lock_guard<std::mutex> dst_lock(depth_starttime_mutex);
@@ -209,7 +220,7 @@ void search::Search::load(Position p) {
 
 void search::Search::smp_worker(int s_depth, Position root) {
 	PV local_pv;
-	alphabeta(root, s_depth, score::CHECKMATED, score::CHECKMATE, 0, &local_pv, NULL, smp_should_stop);
+	alphabeta(root, s_depth, score::CHECKMATED, score::CHECKMATE, 0, &local_pv, smp_should_stop);
 }
 
 bool search::Search::allocated_time_expired() {
@@ -217,7 +228,7 @@ bool search::Search::allocated_time_expired() {
 	return (allocated_time > 0 && util::time_elapsed_ms(depth_starttime) >= allocated_time);
 }
 
-int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, int* node_count, std::atomic<bool>& abort_watch) {
+int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, std::atomic<bool>& abort_watch) {
 	PV local_pv;
 	Move tt_move, tt_exact_move;
 	int value;
@@ -232,7 +243,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 	}
 
 	if (!depth) {
-		return quiescence(root, search::QDEPTH, alpha, beta, ply_dist, pv_line, node_count);
+		return quiescence(root, search::QDEPTH, alpha, beta, ply_dist, pv_line);
 	}
 
 	int alpha_orig = alpha;
@@ -270,7 +281,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 		// Re-search under pv node to regenerate complete pv, should be fast as all should hit TT
 		root.make_move(tt_exact_move);
 
-		value = -alphabeta(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, node_count, abort_watch);
+		value = -alphabeta(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, abort_watch);
 
 		pv_line->moves[0] = entry->pv_move;
 		pv_line->len = local_pv.len + 1;
@@ -289,9 +300,14 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 
 	for (int i = 0; i < num_pl_moves; ++i) {
 		if (root.make_move(pl_moves[i])) {
+
 			num_moves++;
 
-			value = -alphabeta(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, node_count, abort_watch);
+			value = -alphabeta(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, abort_watch);
+
+			/*if (depth == 1) {
+				neocortex_debug("Made move %s, resulting score %d\n", pl_moves[i].to_uci().c_str(), value);
+			}*/
 
 			root.unmake_move(pl_moves[i]);
 
@@ -349,7 +365,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 	return alpha;
 }
 
-int search::Search::quiescence(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, int* node_count) {
+int search::Search::quiescence(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line) {
 	PV local_pv;
 
 	/* Check for threefold repetition or 50-move-rule */
@@ -360,13 +376,7 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, i
 	int cur_score = root.evaluate();
 
 	if (!depth) {
-		pv_line->len = 0;
-	
-		if (node_count) {
-			++*node_count;
-		}
-
-		return cur_score;
+		return quiescence_captures(root, alpha, beta, ply_dist, pv_line);
 	}
 
 	/* Perform standing pat */
@@ -375,14 +385,12 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, i
 		if (cur_score >= beta) {
 			pv_line->len = 0;
 
-			if (node_count) {
-				++* node_count;
-			}
-
+			//neocortex_debug("Returning standing pat score %d\n", cur_score);
 			return beta;
 		}
 
 		if (alpha < cur_score) {
+			//neocortex_debug("Setting alpha to standing pat %d\n", cur_score);
 			alpha = cur_score;
 		}
 	}
@@ -397,7 +405,7 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, i
 		if (root.make_move(pl_moves[i])) {
 			num_moves++;
 
-			int value = -quiescence(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, node_count);
+			int value = -quiescence(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv);
 
 			root.unmake_move(pl_moves[i]);
 
@@ -427,8 +435,98 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, i
 			return score::CHECKMATED + ply_dist;
 		}
 		else {
+			/* In qsearch if there are no Q moves, we can't assume the game is a draw, but we cannot search further.
+			 * Here we just return the static eval of the node. */
 			pv_line->len = 0;
-			return eval::CONTEMPT;
+
+			return cur_score;
+		}
+	}
+
+	return alpha;
+}
+
+int search::Search::quiescence_captures(Position& root, int alpha, int beta, int ply_dist, PV* pv_line) {
+	PV local_pv;
+
+	/* Check for threefold repetition or 50-move-rule */
+	if (root.num_repetitions() >= 3 || root.halfmove_clock() >= 50) {
+		return eval::CONTEMPT;
+	}
+
+	int cur_score = root.evaluate();
+
+	/* Perform standing pat */
+
+	if (!root.check()) {
+		if (cur_score >= beta) {
+			pv_line->len = 0;
+
+			/* Set longest line */
+			if (ply_dist > max_ply_searched) {
+				max_ply_searched = ply_dist;
+			}
+
+			//neocortex_debug("Returning standing pat score %d\n", cur_score);
+			return beta;
+		}
+
+		if (alpha < cur_score) {
+			//neocortex_debug("Setting alpha to standing pat %d\n", cur_score);
+			alpha = cur_score;
+		}
+	}
+
+	Move pl_moves[MAX_PL_MOVES];
+	int num_pl_moves = root.pseudolegal_moves_quiescence_captures(pl_moves);
+	int num_moves = 0; /* num of legal moves */
+
+	num_pl_moves = root.order_moves_quiescence(pl_moves, num_pl_moves);
+
+	for (int i = 0; i < num_pl_moves; ++i) {
+		if (root.make_move(pl_moves[i])) {
+			num_moves++;
+
+			int value = -quiescence_captures(root, -beta, -alpha, ply_dist + 1, &local_pv);
+
+			root.unmake_move(pl_moves[i]);
+
+			if (value == score::INCOMPLETE) {
+				return value;
+			}
+
+			if (value >= beta) return beta;
+
+			if (value > alpha) {
+				alpha = value;
+
+				pv_line->moves[0] = pl_moves[i];
+				pv_line->len = local_pv.len + 1;
+
+				memcpy(pv_line->moves + 1, local_pv.moves, local_pv.len * sizeof local_pv.moves[0]);
+			}
+		}
+		else {
+			root.unmake_move(pl_moves[i]);
+		}
+	}
+
+	if (!num_moves) {
+		if (root.check()) {
+			pv_line->len = 0;
+			return score::CHECKMATED + ply_dist;
+		}
+		else {
+			/* In qsearch if there are no Q moves, we can't assume the game is a draw, but we cannot search further.
+			 * Here we just return the static eval of the node. */
+			pv_line->len = 0;
+
+			/* Set longest line */
+			if (ply_dist > max_ply_searched) {
+				max_ply_searched = ply_dist;
+			}
+
+			return cur_score;
 		}
 	}
 

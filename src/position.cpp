@@ -849,6 +849,155 @@ int Position::pseudolegal_moves_quiescence(Move* out) {
 	return count;
 }
 
+int Position::pseudolegal_moves_quiescence_captures(Move* out) {
+	if (check()) {
+		return pseudolegal_moves_evasions(out);
+	}
+
+	int count = 0;
+
+	bitboard ctm = board.get_color_occ(color_to_move);
+	bitboard opp = board.get_color_occ(!color_to_move);
+
+	int oppking = bb::getlsb(opp & board.get_piece_occ(piece::KING));
+
+	bitboard bchecks = attacks::bishop(oppking, board.get_global_occ()) & ~ctm;
+	bitboard rchecks = attacks::rook(oppking, board.get_global_occ()) & ~ctm;
+	bitboard nchecks = attacks::knight(oppking) & ~ctm;
+	bitboard pchecks = attacks::pawn(!color_to_move, oppking);
+
+	bitboard ep_mask = 0;
+	int ep_square = ply.back().en_passant_square;
+
+	if (square::is_valid(ep_square)) {
+		ep_mask = bb::mask(ep_square);
+	}
+
+	/* Pawn moves */
+	bitboard pawns = ctm & board.get_piece_occ(piece::PAWN);
+	bitboard promoting_rank = (color_to_move == piece::WHITE) ? RANK_7 : RANK_2;
+
+	int adv_dir = (color_to_move == piece::WHITE) ? NORTH : SOUTH;
+	int left_dir = (color_to_move == piece::WHITE) ? NORTHWEST : SOUTHWEST;
+	int right_dir = (color_to_move == piece::WHITE) ? NORTHEAST : SOUTHEAST;
+
+	bitboard promoting_pawns = pawns & promoting_rank;
+
+	/* Promoting left captures */
+	bitboard promoting_left_cap = bb::shift(promoting_pawns & ~FILE_A, left_dir) & opp;
+
+	while (promoting_left_cap) {
+		int dst = bb::poplsb(promoting_left_cap);
+		out[count++] = Move(dst - left_dir, dst, piece::QUEEN);
+		out[count++] = Move(dst - left_dir, dst, piece::KNIGHT);
+	}
+
+	/* Promoting right captures */
+	bitboard promoting_right_cap = bb::shift(promoting_pawns & ~FILE_H, right_dir) & opp;
+
+	while (promoting_right_cap) {
+		int dst = bb::poplsb(promoting_right_cap);
+		out[count++] = Move(dst - right_dir, dst, piece::QUEEN);
+		out[count++] = Move(dst - right_dir, dst, piece::KNIGHT);
+	}
+
+	/* Promoting advances */
+	bitboard promoting_advances = bb::shift(promoting_pawns, adv_dir) & ~board.get_global_occ();
+
+	while (promoting_advances) {
+		int dst = bb::poplsb(promoting_advances);
+		out[count++] = Move(dst - adv_dir, dst, piece::QUEEN);
+		out[count++] = Move(dst - adv_dir, dst, piece::KNIGHT);
+	}
+
+	/* Nonpromoting pawn moves */
+	bitboard npm_pawns = pawns & ~promoting_pawns;
+
+	/* Left captures */
+	bitboard npm_left_cap = bb::shift(npm_pawns & ~FILE_A, left_dir) & (opp | ep_mask);
+
+	while (npm_left_cap) {
+		int dst = bb::poplsb(npm_left_cap);
+		out[count++] = Move(dst - left_dir, dst);
+	}
+
+	/* Right captures */
+	bitboard npm_right_cap = bb::shift(npm_pawns & ~FILE_H, right_dir) & (opp | ep_mask);
+
+	while (npm_right_cap) {
+		int dst = bb::poplsb(npm_right_cap);
+		out[count++] = Move(dst - right_dir, dst);
+	}
+
+	/* Queen captures  */
+	bitboard queens = ctm & board.get_piece_occ(piece::QUEEN);
+
+	while (queens) {
+		int src = bb::poplsb(queens);
+		bitboard moves = attacks::queen(src, board.get_global_occ()) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* Rook captures */
+	bitboard rooks = ctm & board.get_piece_occ(piece::ROOK);
+
+	while (rooks) {
+		int src = bb::poplsb(rooks);
+		bitboard moves = attacks::rook(src, board.get_global_occ()) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* Knight captures */
+	bitboard knights = ctm & board.get_piece_occ(piece::KNIGHT);
+
+	while (knights) {
+		int src = bb::poplsb(knights);
+		bitboard moves = attacks::knight(src) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* Bishop captures */
+	bitboard bishops = ctm & board.get_piece_occ(piece::BISHOP);
+
+	while (bishops) {
+		int src = bb::poplsb(bishops);
+		bitboard moves = attacks::bishop(src, board.get_global_occ()) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	/* King captures */
+	bitboard kings = ctm & board.get_piece_occ(piece::KING);
+
+	while (kings) {
+		int src = bb::poplsb(kings);
+		bitboard moves = attacks::king(src) & opp;
+
+		while (moves) {
+			int dst = bb::poplsb(moves);
+			out[count++] = Move(src, dst);
+		}
+	}
+
+	assert(count <= MAX_PL_MOVES);
+	return count;
+}
+
 void Position::order_moves(Move* moves, int num_moves, Move pv_move) {
 	int scores[MAX_PL_MOVES] = { 0 };
 
@@ -1081,6 +1230,8 @@ int Position::evaluate(std::string* dbg) {
 
 	bitboard wkattacks = attacks::king(white_king_sq);
 	bitboard bkattacks = attacks::king(black_king_sq);
+
+	++eval_counter;
 
 	/* Start evaluation */
 	int score = 0;
@@ -1352,4 +1503,12 @@ std::string Position::dump() {
 	output += "\n";
 
 	return output;
+}
+
+void Position::reset_eval_counter() {
+	eval_counter = 0;
+}
+
+int Position::get_eval_counter() {
+	return eval_counter;
 }

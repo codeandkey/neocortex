@@ -29,12 +29,18 @@ namespace neocortex {
 			int depth = 0;
 			int score = 0;
 			int time = 0;
+			int seldepth = 0;
 			PV pv;
 
 			std::string to_string() {
 				std::string out;
 
 				out += "info depth " + std::to_string(depth) + " ";
+
+				if (seldepth >= 0) {
+					out += "seldepth " + std::to_string(seldepth) + " ";
+				}
+
 				out += "score " + score::to_uci(score) + " ";
 				out += "time " + std::to_string(time) + " ";
 				out += "nodes " + std::to_string(nodes) + " ";
@@ -168,28 +174,45 @@ namespace neocortex {
 			 * @param depth Search depth.
 			 * @param alpha Search alpha.
 			 * @param beta Search beta.
+			 * @param ply_dist Current ply distance from root.
 			 * @param pv_line Output PV.
-			 * @param nodes Optional output for number of nodes searched.
 			 * @param abort_ref Abort flag to watch. Stops the search when set to true.
 			 *
 			 * @return Search score.
 			 */
-			int alphabeta(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, int* nodes_out, std::atomic<bool>& abort_ref);
+			int alphabeta(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, std::atomic<bool>& abort_ref);
 
 			/**
 			 * Quiescence search routine.
-			 * This function is called selectively at the tail end of the search tree.
+			 * This search is called at the leaves of the normal alpha-beta tree.
+			 * The quiescence search only examines winning captures and checks.
 			 *
 			 * @param root Position to search.
 			 * @param depth Search depth.
 			 * @param alpha Search alpha.
 			 * @param beta Search beta.
+			 * @param ply_dist Current ply distance from root.
 			 * @param pv_line Output PV.
-			 * @param nodes Optional output for number of nodes searched.
 			 *
 			 * @return Search score.
 			 */
-			int quiescence(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line, int* nodes_out);
+			int quiescence(Position& root, int depth, int alpha, int beta, int ply_dist, PV* pv_line);
+
+			/**
+			 * Quiescence capture search routine.
+			 * This search is called at the leaves of the quiescence search tree.
+			 * The quiescence search examines all captures until there are no more.
+			 * If a check occurs with a capture then evasion movegen is called.
+			 *
+			 * @param root Position to search.
+			 * @param alpha Search alpha.
+			 * @param beta Search beta.
+			 * @param ply_dist Current ply distance from root.
+			 * @param pv_line Output PV.
+			 *
+			 * @return Search score.
+			 */
+			int quiescence_captures(Position& root, int alpha, int beta, int ply_dist, PV* pv_line);
 
 			Position root;
 
@@ -206,7 +229,7 @@ namespace neocortex {
 
 			/* Per-depth values */
 			std::atomic<int> allocated_time; /* Time allocated to depth */
-			std::atomic<int> num_nodes; /* Number of nodes searched */
+			std::atomic<int> max_ply_searched; /* Longest line searched (seldepth) */
 
 			/* Search options */
 			std::atomic<int> wtime, btime, winc, binc, movetime, depth;
