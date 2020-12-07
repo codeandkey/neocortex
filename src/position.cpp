@@ -22,6 +22,8 @@ Position::Position() {
 
 	State first_state;
 
+	eval_counter = 0;
+
 	first_state.castle_rights = 0xF;
 	first_state.en_passant_square = square::null;
 	first_state.fullmove_number = 1;
