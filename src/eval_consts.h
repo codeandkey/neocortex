@@ -38,6 +38,7 @@ namespace neocortex {
 		constexpr int EDGE_KNIGHTS = -3;
 		constexpr int ISOLATED_PAWNS = -8;
 		constexpr int DOUBLED_PAWNS = -6;
+		constexpr int PAWN_CHAIN = 2;
 
 		constexpr int OPEN_FILE_ROOK = 8;
 		constexpr int OPEN_FILE_QUEEN = 4;

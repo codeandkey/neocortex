@@ -1252,6 +1252,7 @@ int Position::evaluate(std::string* dbg) {
 	int open_file_q;
 	int p_iso_pawns;
 	int p_dbl_pawns;
+	int pawn_chain;
 
 	int white_king_sq = bb::getlsb(board.get_color_occ(piece::WHITE) & board.get_piece_occ(piece::KING));
 	int black_king_sq = bb::getlsb(board.get_color_occ(piece::BLACK) & board.get_piece_occ(piece::KING));
@@ -1452,11 +1453,23 @@ int Position::evaluate(std::string* dbg) {
 	p_dbl_pawns *= eval::DOUBLED_PAWNS;
 	score += p_dbl_pawns;
 
+	/* Apply bonus for chained pawns */
+	bitboard w_pawns = board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::WHITE);
+	bitboard b_pawns = board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::BLACK);
+
+	pawn_chain = 0;
+
+	pawn_chain += bb::popcount((bb::shift(w_pawns & ~FILE_A, NORTHEAST) | bb::shift(w_pawns & ~FILE_H, NORTHWEST)) & w_pawns);
+	pawn_chain -= bb::popcount((bb::shift(b_pawns & ~FILE_A, SOUTHEAST) | bb::shift(b_pawns & ~FILE_H, SOUTHWEST)) & b_pawns);
+
+	pawn_chain *= eval::PAWN_CHAIN;
+	score += pawn_chain;
+
 	/* Apply penalty for isolated pawns */
 	p_iso_pawns = 0;
 
 	p_iso_pawns += bb::popcount(board.isolated_pawns(piece::WHITE));
-	p_iso_pawns -= bb::popcount(board.isolated_pawns(piece::WHITE));
+	p_iso_pawns -= bb::popcount(board.isolated_pawns(piece::BLACK));
 
 	p_iso_pawns *= eval::ISOLATED_PAWNS;
 	score += p_iso_pawns;
@@ -1482,6 +1495,7 @@ int Position::evaluate(std::string* dbg) {
 		output += util::format("| open_file_q | %13d |\n", open_file_q);
 		output += util::format("| p_iso_pawns | %13d |\n", p_iso_pawns);
 		output += util::format("| p_dbl_pawns | %13d |\n", p_dbl_pawns);
+		output += util::format("| pawn_chain  | %13d |\n", pawn_chain);
 		output += util::format("| phase       | %13d |\n", phase);
 		output += util::format("| (total)     | %13d |\n", score);
 		output +=              "+-------------+------+--------+\n";
