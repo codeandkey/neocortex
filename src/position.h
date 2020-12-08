@@ -257,6 +257,14 @@ namespace neocortex {
 		 * @param depth Depth of cutoff.
 		 */
 		void add_history_bonus(Move& m, int depth);
+
+		/**
+		 * Gets whether a null move is appropriate for NMR in the current position.
+		 * Returns true if the CTM has at least one piece that is not a pawn or king, and is not in check.
+		 * 
+		 * @return true if null move is appropriate, false otherwise.
+		 */
+		bool null_move_allowed();
 	private:
 		Board board;
 		std::vector<State> ply;
@@ -296,5 +304,13 @@ namespace neocortex {
 
 	inline void Position::add_history_bonus(Move& m, int depth) {
 		history[color_to_move][m.src()][m.dst()] += depth * depth;
+	}
+
+	inline bool Position::null_move_allowed() {
+		bool ret = true;
+
+		bitboard npk_pieces = board.get_piece_occ(piece::BISHOP) | board.get_piece_occ(piece::KNIGHT) | board.get_piece_occ(piece::ROOK) | board.get_piece_occ(piece::QUEEN);
+
+		return (npk_pieces & board.get_color_occ(color_to_move)) && !check();
 	}
 }

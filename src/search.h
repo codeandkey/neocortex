@@ -23,6 +23,7 @@ namespace neocortex {
 		constexpr int QDEPTH = 4;
 		constexpr int MAX_DEPTH = 128;
 		constexpr int ALLOC_FRACTION = 10; /* use at most 1/nth of the remaining time */
+		constexpr int NULL_MOVE_REDUCTION = 3; /* depth reduction for null move subtrees */
 
 		struct SearchInfo {
 			int nodes = 0;

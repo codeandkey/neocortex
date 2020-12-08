@@ -134,8 +134,6 @@ Board& Position::get_board() {
 
 bool Position::make_move(Move move) {
 	assert(!test_check(!color_to_move));
-	assert(move.is_valid());
-	assert(piece::color(board.get_piece(move.src())) == color_to_move);
 
 	State last_state = ply.back();
 	ply.push_back(last_state);
@@ -148,20 +146,39 @@ bool Position::make_move(Move move) {
 		next_state.fullmove_number++;
 	}
 
-	int dst_piece = board.get_piece(move.dst());
-	int src_piece = board.remove(move.src());
-
 	next_state.halfmove_clock++;
-
-	if (piece::type(src_piece) == piece::PAWN) {
-		next_state.halfmove_clock = 0;
-	}
 
 	next_state.en_passant_square = square::null;
 	next_state.captured_piece = piece::null;
 	next_state.captured_square = square::null;
 	next_state.was_en_passant = false;
 	next_state.was_castle = false;
+
+	/* End early on null move, flip color and update zobrist as well. */
+	if (move == Move::null) {
+		bool ret = !check(); // null moves illegal in check
+		color_to_move = !color_to_move;
+
+		next_state.key = 0;
+		next_state.key ^= board.get_tt_key();
+		next_state.key ^= zobrist::en_passant(next_state.en_passant_square);
+		next_state.key ^= zobrist::castle(next_state.castle_rights);
+
+		if (color_to_move == piece::BLACK) {
+			next_state.key ^= zobrist::black_to_move();
+		}
+
+		return ret;
+	}
+
+	int dst_piece = board.get_piece(move.dst());
+	int src_piece = board.remove(move.src());
+
+	assert(piece::color(src_piece) == color_to_move);
+
+	if (piece::type(src_piece) == piece::PAWN) {
+		next_state.halfmove_clock = 0;
+	}
 
 	/* Check for EP capture */
 	if (piece::type(src_piece) == piece::PAWN && move.dst() == last_state.en_passant_square) {
@@ -282,6 +299,11 @@ void Position::unmake_move(Move move) {
 
 	/* Flip CTM early for readability */
 	color_to_move = !color_to_move;
+
+	/* If unmaking null move, good to go */
+	if (move == Move::null) {
+		return;
+	}
 
 	/* Unpromote */
 	if (piece::is_type(move.ptype())) {

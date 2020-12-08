@@ -245,6 +245,8 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 	PV local_pv;
 	Move tt_move, tt_exact_move;
 	int value;
+	int depth_reduction = 1;
+	int depth_extension = 0;
 
 	if (allocated_time_expired() || abort_watch) {
 		return score::INCOMPLETE;
@@ -294,7 +296,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 		// Re-search under pv node to regenerate complete pv, should be fast as all should hit TT
 		root.make_move(tt_exact_move);
 
-		value = -alphabeta(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, abort_watch);
+		value = -alphabeta(root, depth + depth_extension - depth_reduction, -beta, -alpha, ply_dist + 1, &local_pv, abort_watch);
 
 		pv_line->moves[0] = entry->pv_move;
 		pv_line->len = local_pv.len + 1;
@@ -303,6 +305,24 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 		root.unmake_move(tt_exact_move);
 
 		return value;
+	}
+
+	/* Perform null move reduction if available */
+	if (root.null_move_allowed() && depth >= search::NULL_MOVE_REDUCTION) {
+		root.make_move(Move::null);
+		int nm_score = -alphabeta(root, depth - search::NULL_MOVE_REDUCTION, -beta, -alpha, ply_dist + 1, &local_pv, abort_watch);
+		root.unmake_move(Move::null);
+
+		if (nm_score >= beta) {
+			//return beta; // cutoff
+		}
+	}
+
+	/* Check / capture extension */
+	if (depth >= 5) { // don't do excessive extensions near horizon
+		if (root.check() || root.capture()) {
+			depth_extension++;
+		}
 	}
 
 	Move pl_moves[MAX_PL_MOVES];
@@ -316,7 +336,13 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 
 			num_moves++;
 
-			value = -alphabeta(root, depth - 1, -beta, -alpha, ply_dist + 1, &local_pv, abort_watch);
+			int new_depth = depth + depth_extension - depth_reduction;
+
+			if (new_depth < 0) {
+				new_depth = 0;
+			}
+
+			value = -alphabeta(root, new_depth, -beta, -alpha, ply_dist + 1, &local_pv, abort_watch);
 
 			/*if (depth == 1) {
 				neocortex_debug("Made move %s, resulting score %d\n", pl_moves[i].to_uci().c_str(), value);
