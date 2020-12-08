@@ -307,8 +307,6 @@ namespace neocortex {
 	}
 
 	inline bool Position::null_move_allowed() {
-		bool ret = true;
-
 		bitboard npk_pieces = board.get_piece_occ(piece::BISHOP) | board.get_piece_occ(piece::KNIGHT) | board.get_piece_occ(piece::ROOK) | board.get_piece_occ(piece::QUEEN);
 
 		return (npk_pieces & board.get_color_occ(color_to_move)) && !check();
