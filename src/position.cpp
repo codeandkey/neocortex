@@ -1251,6 +1251,7 @@ int Position::evaluate(std::string* dbg) {
 	int open_file_r;
 	int open_file_q;
 	int p_iso_pawns;
+	int p_dbl_pawns;
 
 	int white_king_sq = bb::getlsb(board.get_color_occ(piece::WHITE) & board.get_piece_occ(piece::KING));
 	int black_king_sq = bb::getlsb(board.get_color_occ(piece::BLACK) & board.get_piece_occ(piece::KING));
@@ -1410,14 +1411,16 @@ int Position::evaluate(std::string* dbg) {
 	passed_pawn_adv *= eval::ADV_PASSEDPAWN;
 	score += passed_pawn_adv;
 
-	/* Apply bonus for rooks and queens on open files */
+	/* Apply file bonuses and penalties */
 	open_file_r = 0;
 	open_file_q = 0;
+	p_dbl_pawns = 0;
 
 	for (int f = 0; f < 8; ++f) {
 		bitboard file = bb::file(f);
+		bitboard file_pawns = board.get_piece_occ(piece::PAWN) & file;
 
-		if (!(board.get_piece_occ(piece::PAWN) & file)) {
+		if (!file_pawns) {
 			// Open file
 
 			bitboard frooks = file & board.get_piece_occ(piece::ROOK);
@@ -1428,12 +1431,26 @@ int Position::evaluate(std::string* dbg) {
 			open_file_r -= bb::popcount(frooks & board.get_color_occ(piece::BLACK));
 			open_file_q -= bb::popcount(fqueens & board.get_color_occ(piece::BLACK));
 		}
+
+		int n_white_pawns = bb::popcount(file_pawns & board.get_color_occ(piece::WHITE));
+		int n_black_pawns = bb::popcount(file_pawns & board.get_color_occ(piece::BLACK));
+
+		if (n_white_pawns > 1) {
+			p_dbl_pawns += (n_white_pawns - 1);
+		}
+
+		if (n_black_pawns > 1) {
+			p_dbl_pawns -= (n_black_pawns - 1);
+		}
 	}
 
 	open_file_r *= eval::OPEN_FILE_ROOK;
 	open_file_q *= eval::OPEN_FILE_QUEEN;
 
 	score += open_file_r + open_file_q;
+
+	p_dbl_pawns *= eval::DOUBLED_PAWNS;
+	score += p_dbl_pawns;
 
 	/* Apply penalty for isolated pawns */
 	p_iso_pawns = 0;
@@ -1464,6 +1481,7 @@ int Position::evaluate(std::string* dbg) {
 		output += util::format("| open_file_r | %13d |\n", open_file_r);
 		output += util::format("| open_file_q | %13d |\n", open_file_q);
 		output += util::format("| p_iso_pawns | %13d |\n", p_iso_pawns);
+		output += util::format("| p_dbl_pawns | %13d |\n", p_dbl_pawns);
 		output += util::format("| phase       | %13d |\n", phase);
 		output += util::format("| (total)     | %13d |\n", score);
 		output +=              "+-------------+------+--------+\n";
