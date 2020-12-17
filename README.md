@@ -6,6 +6,8 @@ A homemade C++ chess engine.
 
 Play a game with me [here!](https://neocortex-cortexbot.herokuapp.com)
 
+> NOTE: A [Lichess](https://lichess.org/) account is required to challenge the bot.
+
 ## architecture
 
 - Negamax alpha-beta search with iterative deepening
@@ -16,7 +18,7 @@ Play a game with me [here!](https://neocortex-cortexbot.herokuapp.com)
 
 ## methods
 
-Many of the methods used in this engine are inspired by the awesome resources available at the [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page):
+Many of the methods used in this engine are inspired by the extensive resources available at the [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page):
 
 - Guard heuristic
 - Static exchange evaluation
@@ -33,7 +35,7 @@ Neocortex builds on GCC 7.3+ or MSVC 2015+. To run the test suite [GoogleTest](h
 Execute `make` in the project root to build in release mode.<br>
 Execute `make debug` to build in debug mode, and `make test` to build the test suite.<br>
 
-*(Note: test suite builds require GoogleTest to be installed in the gcc include and lib paths.)*
+> NOTE: Building the test suite requires GoogleTest to be available on the host.
 
 **Windows**<br>
 Open `neocortex.vcxproj` in Visual Studio 2015 or newer. Build the solution in either Debug or Release mode.
