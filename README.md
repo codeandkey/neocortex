@@ -4,6 +4,8 @@
 
 A homemade C++ chess engine.
 
+Play a game with me [here!](https://neocortex-cortexbot.herokuapp.com)
+
 ## architecture
 
 - Negamax alpha-beta search with iterative deepening
@@ -14,7 +16,7 @@ A homemade C++ chess engine.
 
 ## methods
 
-The methods used in this engine are inspired by the awesome resources available at the [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page):
+Many of the methods used in this engine are inspired by the awesome resources available at the [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page):
 
 - Guard heuristic
 - Static exchange evaluation
