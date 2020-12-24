@@ -1,3 +1,5 @@
+/* vim: set ts=4 sw=4 noet: */
+
 #include <gtest/gtest.h>
 
 #include "../src/attacks.h"
