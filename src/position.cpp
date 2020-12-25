@@ -1459,8 +1459,8 @@ int Position::evaluate(std::string* dbg) {
 
 	pawn_chain = 0;
 
-	pawn_chain += bb::popcount((bb::shift(w_pawns & ~FILE_A, NORTHEAST) | bb::shift(w_pawns & ~FILE_H, NORTHWEST)) & w_pawns);
-	pawn_chain -= bb::popcount((bb::shift(b_pawns & ~FILE_A, SOUTHEAST) | bb::shift(b_pawns & ~FILE_H, SOUTHWEST)) & b_pawns);
+	pawn_chain += bb::popcount((bb::shift(w_pawns & ~FILE_A, NORTHWEST) | bb::shift(w_pawns & ~FILE_H, NORTHEAST)) & w_pawns);
+	pawn_chain -= bb::popcount((bb::shift(b_pawns & ~FILE_A, SOUTHWEST) | bb::shift(b_pawns & ~FILE_H, SOUTHEAST)) & b_pawns);
 
 	pawn_chain *= eval::PAWN_CHAIN;
 	score += pawn_chain;
