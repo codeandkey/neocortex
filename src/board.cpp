@@ -283,6 +283,21 @@ bitboard Board::isolated_pawns(int col) {
 	return out;
 }
 
+bitboard Board::backward_pawns(int col) {
+	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
+	bitboard stops = bb::shift(pawns, (col == piece::WHITE) ? NORTH : SOUTH);
+
+	bitboard opp_pawns = piece_occ[piece::PAWN] & color_occ[!col];
+	bitboard opp_attacks = bb::shift(opp_pawns & ~FILE_A, (col == piece::WHITE) ? NORTHWEST : SOUTHWEST);
+
+	opp_attacks |= bb::shift(opp_pawns & ~FILE_H, (col == piece::WHITE) ? NORTHEAST : SOUTHEAST);
+
+	stops &= ~attack_spans(col);
+	stops &= opp_attacks;
+
+	return bb::shift(stops, (col == piece::WHITE) ? SOUTH : NORTH);
+}
+
 bitboard Board::passedpawns(int col) {
 	return ~all_spans(!col) & piece_occ[piece::PAWN] & color_occ[col];
 }

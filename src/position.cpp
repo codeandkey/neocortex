@@ -1251,6 +1251,7 @@ int Position::evaluate(std::string* dbg) {
 	int open_file_r;
 	int open_file_q;
 	int p_iso_pawns;
+	int p_bck_pawns;
 	int p_dbl_pawns;
 	int pawn_chain;
 
@@ -1474,6 +1475,15 @@ int Position::evaluate(std::string* dbg) {
 	p_iso_pawns *= eval::ISOLATED_PAWNS;
 	score += p_iso_pawns;
 
+	/* Apply penalty for backward pawns */
+	p_bck_pawns = 0;
+
+	p_bck_pawns += bb::popcount(board.backward_pawns(piece::WHITE));
+	p_bck_pawns -= bb::popcount(board.backward_pawns(piece::BLACK));
+
+	p_bck_pawns *= eval::BACKWARD_PAWNS;
+	score += p_bck_pawns;
+
 	/* Write debug if needed */
 	if (dbg) {
 		std::string output;
@@ -1494,6 +1504,7 @@ int Position::evaluate(std::string* dbg) {
 		output += util::format("| open_file_r | %13d |\n", open_file_r);
 		output += util::format("| open_file_q | %13d |\n", open_file_q);
 		output += util::format("| p_iso_pawns | %13d |\n", p_iso_pawns);
+		output += util::format("| p_bck_pawns | %13d |\n", p_bck_pawns);
 		output += util::format("| p_dbl_pawns | %13d |\n", p_dbl_pawns);
 		output += util::format("| pawn_chain  | %13d |\n", pawn_chain);
 		output += util::format("| phase       | %13d |\n", phase);

@@ -174,6 +174,13 @@ namespace neocortex {
 		bitboard isolated_pawns(int col);
 
 		/**
+		 * Gets backward pawns for a color.
+		 * @param col Color to test.
+		 * @return Mask of backward pawns.
+		 */
+		bitboard backward_pawns(int col);
+
+		/**
 		 * Gets the middlegame material imbalance.
 		 * @return MG material score
 		 */
