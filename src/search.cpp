@@ -314,7 +314,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 		root.unmake_move(Move::null);
 
 		if (nm_score >= beta) {
-			//return beta; // cutoff
+			return beta; // cutoff
 		}
 	}
 
