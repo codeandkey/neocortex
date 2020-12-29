@@ -17,6 +17,7 @@ using namespace neocortex;
 
 static bool zobrist_initialized = false;
 static zobrist::Key piece_keys[64][12], castle_keys[16], en_passant_keys[8], black_to_move_key;
+static zobrist::Key piece_pht_keys[64][12];
 
 void zobrist::init() {
 	assert(!zobrist_initialized);
@@ -28,6 +29,12 @@ void zobrist::init() {
 	for (int sq = 0; sq < 64; ++sq) {
 		for (int p = 0; p < 12; ++p) {
 			piece_keys[sq][p] = dist(twister);
+
+			if (piece::type(p) == piece::PAWN) {
+				piece_pht_keys[sq][p] = piece_keys[sq][p];
+			} else {
+				piece_pht_keys[sq][p] = 0;
+			}
 		}
 	}
 
@@ -47,6 +54,12 @@ zobrist::Key zobrist::piece(int sq, int p) {
 	assert(zobrist_initialized);
 	if (p == piece::null) return 0;
 	return piece_keys[sq][p];
+}
+
+zobrist::Key zobrist::piece_pht(int sq, int p) {
+	assert(zobrist_initialized);
+	if (p == piece::null) return 0;
+	return piece_pht_keys[sq][p];
 }
 
 zobrist::Key zobrist::castle(int rights) {

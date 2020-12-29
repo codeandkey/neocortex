@@ -29,6 +29,16 @@ namespace neocortex {
 		Key piece(int sq, int piece);
 
 		/**
+		 * Gets the PHT zobrist key for a piece on a square.
+		 * This will only be nonzero for pawn pieces.
+		 *
+		 * @param sq Input square.
+		 * @param piece Input piece.
+		 * @return PHT key if piece is a pawn, zero otherwise.
+		 */
+		Key piece_pht(int sq, int piece);
+
+		/**
 		 * Gets the Zobrist key for a castle rights key.
 		 *
 		 * @param rights Castle rights.
