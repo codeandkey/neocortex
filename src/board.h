@@ -195,7 +195,7 @@ namespace neocortex {
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
 		int mat_mg, mat_eg;
-		zobrist::Key key;
+		zobrist::Key key, pht_key;
 	};
 
 	inline int Board::get_piece(int sq) {
@@ -216,6 +216,10 @@ namespace neocortex {
 
 	inline zobrist::Key Board::get_tt_key() {
 		return key;
+	}
+
+	inline zobrist::Key Board::get_pht_key() {
+		return pht_key;
 	}
 
 	inline int Board::material_mg() {
