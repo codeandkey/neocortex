@@ -1,0 +1,4 @@
+-std=c++14
+-Wall
+-Werror
+-Wno-format-security
