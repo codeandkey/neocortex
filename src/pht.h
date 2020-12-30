@@ -16,15 +16,13 @@ namespace neocortex {
 	namespace pht {
 		struct PawnEval {
 			int key = 0;
-			int backward_pawns = 0;
-			int candidate_passers = 0;
-			int doubled_pawns = 0;
-			int fakers = 0;
-			int hidden_passers = 0;
+			int backward = 0;
+			int straggler = 0;
+			int passed = 0;
+			int candidates = 0;
+			int doubled = 0;
 			int isolated = 0;
-			int passers = 0;
-			int sentries = 0;
-			int connected = 0;
+			int total = 0;
 		};
 
 		constexpr int PHT_DEFAULT_SIZE = 128;

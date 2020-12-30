@@ -41,10 +41,19 @@ namespace neocortex {
 		constexpr int DOUBLED_PAWNS = -6;
 		constexpr int PAWN_CHAIN = 2;
 
+		/* Pawn evaluation */
+		constexpr int PAWN_PASSED = 11;
+		constexpr int PAWN_STRAGGLER = -6;
+		constexpr int PAWN_BACKWARD = -6;
+		constexpr int PAWN_CANDIDATE = 7;
+		constexpr int PAWN_DOUBLED = -7;
+		constexpr int PAWN_ISOLATED = -4;
+
 		constexpr int OPEN_FILE_ROOK = 8;
 		constexpr int OPEN_FILE_QUEEN = 4;
 
 		constexpr int ORDER_PV_MOVE = 40000;
+
 
 		extern const int GUARD_VALUES[12];
 	}
