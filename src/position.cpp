@@ -9,6 +9,7 @@
 #include "util.h"
 #include "attacks.h"
 #include "eval_consts.h"
+#include "pht.h"
 
 #include "log.h"
 
@@ -1245,15 +1246,9 @@ int Position::evaluate(std::string* dbg) {
 	int king_safety;
 	int king_first_rank;
 	int pawns_protecting_king;
-	int passed_pawns;
-	int passed_pawn_adv;
 	int edge_knights;
 	int open_file_r;
 	int open_file_q;
-	int p_iso_pawns;
-	int p_bck_pawns;
-	int p_dbl_pawns;
-	int pawn_chain;
 
 	int white_king_sq = bb::getlsb(board.get_color_occ(piece::WHITE) & board.get_piece_occ(piece::KING));
 	int black_king_sq = bb::getlsb(board.get_color_occ(piece::BLACK) & board.get_piece_occ(piece::KING));
@@ -1351,21 +1346,6 @@ int Position::evaluate(std::string* dbg) {
 	edge_knights *= eval::EDGE_KNIGHTS;
 	score += edge_knights;
 
-	/* Find passed pawns */
-	bitboard passers[2];
-
-	passers[piece::WHITE] = board.passedpawns(piece::WHITE);
-	passers[piece::BLACK] = board.passedpawns(piece::BLACK);
-
-	/* Apply passed pawn bonus */
-	passed_pawns = 0;
-
-	passed_pawns += bb::popcount(passers[piece::WHITE]);
-	passed_pawns -= bb::popcount(passers[piece::BLACK]);
-
-	passed_pawns *= eval::PASSED_PAWNS;
-	score += passed_pawns;
-
 	/* Apply bonus for king on first rank in MG */
 	king_first_rank = 0;
 	pawns_protecting_king = 0;
@@ -1394,29 +1374,9 @@ int Position::evaluate(std::string* dbg) {
 	score += king_first_rank;
 	score += pawns_protecting_king;
 
-	/* Apply advance bonus for passed pawns */
-	bitboard tmp_passers;
-	passed_pawn_adv = 0;
-
-	tmp_passers = passers[piece::WHITE];
-	while (tmp_passers) {
-		int p = bb::poplsb(tmp_passers);
-		passed_pawn_adv += square::rank(p);
-	}
-
-	tmp_passers = passers[piece::BLACK];
-	while (tmp_passers) {
-		int p = bb::poplsb(tmp_passers);
-		passed_pawn_adv -= (7 - square::rank(p));
-	}
-
-	passed_pawn_adv *= eval::ADV_PASSEDPAWN;
-	score += passed_pawn_adv;
-
 	/* Apply file bonuses and penalties */
 	open_file_r = 0;
 	open_file_q = 0;
-	p_dbl_pawns = 0;
 
 	for (int f = 0; f < 8; ++f) {
 		bitboard file = bb::file(f);
@@ -1433,17 +1393,6 @@ int Position::evaluate(std::string* dbg) {
 			open_file_r -= bb::popcount(frooks & board.get_color_occ(piece::BLACK));
 			open_file_q -= bb::popcount(fqueens & board.get_color_occ(piece::BLACK));
 		}
-
-		int n_white_pawns = bb::popcount(file_pawns & board.get_color_occ(piece::WHITE));
-		int n_black_pawns = bb::popcount(file_pawns & board.get_color_occ(piece::BLACK));
-
-		if (n_white_pawns > 1) {
-			p_dbl_pawns += (n_white_pawns - 1);
-		}
-
-		if (n_black_pawns > 1) {
-			p_dbl_pawns -= (n_black_pawns - 1);
-		}
 	}
 
 	open_file_r *= eval::OPEN_FILE_ROOK;
@@ -1451,38 +1400,21 @@ int Position::evaluate(std::string* dbg) {
 
 	score += open_file_r + open_file_q;
 
-	p_dbl_pawns *= eval::DOUBLED_PAWNS;
-	score += p_dbl_pawns;
+	/* Lookup pawn evaluation in PHT */
+	pht::PawnEval pval, *pht_dst;
 
-	/* Apply bonus for chained pawns */
-	bitboard w_pawns = board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::WHITE);
-	bitboard b_pawns = board.get_piece_occ(piece::PAWN) & board.get_color_occ(piece::BLACK);
+	pht::lock();
 
-	pawn_chain = 0;
+	pht_dst = pht::lookup(board.get_pht_key());
+	
+	if (pht_dst->key != board.get_pht_key()) {
+		*pht_dst = pht::evaluate(board);
+	}
 
-	pawn_chain += bb::popcount((bb::shift(w_pawns & ~FILE_A, NORTHWEST) | bb::shift(w_pawns & ~FILE_H, NORTHEAST)) & w_pawns);
-	pawn_chain -= bb::popcount((bb::shift(b_pawns & ~FILE_A, SOUTHWEST) | bb::shift(b_pawns & ~FILE_H, SOUTHEAST)) & b_pawns);
+	pval = *pht_dst;
+	pht::unlock();
 
-	pawn_chain *= eval::PAWN_CHAIN;
-	score += pawn_chain;
-
-	/* Apply penalty for isolated pawns */
-	p_iso_pawns = 0;
-
-	p_iso_pawns += bb::popcount(board.isolated_pawns(piece::WHITE));
-	p_iso_pawns -= bb::popcount(board.isolated_pawns(piece::BLACK));
-
-	p_iso_pawns *= eval::ISOLATED_PAWNS;
-	score += p_iso_pawns;
-
-	/* Apply penalty for backward pawns */
-	p_bck_pawns = 0;
-
-	p_bck_pawns += bb::popcount(board.backward_pawns(piece::WHITE));
-	p_bck_pawns -= bb::popcount(board.backward_pawns(piece::BLACK));
-
-	p_bck_pawns *= eval::BACKWARD_PAWNS;
-	score += p_bck_pawns;
+	score += pval.total;
 
 	/* Write debug if needed */
 	if (dbg) {
@@ -1496,17 +1428,17 @@ int Position::evaluate(std::string* dbg) {
 		output += util::format("| ctr_control | %13d |\n", center_control);
 		output += util::format("| development | %13d |\n", development);
 		output += util::format("| king_safety | %13d |\n", king_safety);
-		output += util::format("| adv_passed  | %13d |\n", passed_pawn_adv);
 		output += util::format("| edge_knghts | %13d |\n", edge_knights);
 		output += util::format("| pawn_prot_k | %13d |\n", pawns_protecting_king);
 		output += util::format("| first_r_kng | %13d |\n", king_first_rank);
-		output += util::format("| passed_pns  | %13d |\n", passed_pawns);
 		output += util::format("| open_file_r | %13d |\n", open_file_r);
 		output += util::format("| open_file_q | %13d |\n", open_file_q);
-		output += util::format("| p_iso_pawns | %13d |\n", p_iso_pawns);
-		output += util::format("| p_bck_pawns | %13d |\n", p_bck_pawns);
-		output += util::format("| p_dbl_pawns | %13d |\n", p_dbl_pawns);
-		output += util::format("| pawn_chain  | %13d |\n", pawn_chain);
+		output += util::format("| p_backward  | %13d |\n", pval.backward);
+		output += util::format("| p_straggler | %13d |\n", pval.straggler);
+		output += util::format("| p_passed    | %13d |\n", pval.passed);
+		output += util::format("| p_candidate | %13d |\n", pval.candidates);
+		output += util::format("| p_doubled   | %13d |\n", pval.doubled);
+		output += util::format("| p_isolated  | %13d |\n", pval.isolated);
 		output += util::format("| phase       | %13d |\n", phase);
 		output += util::format("| (total)     | %13d |\n", score);
 		output +=              "+-------------+------+--------+\n";

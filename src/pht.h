@@ -11,11 +11,12 @@
 
 #include "bitboard.h"
 #include "board.h"
+#include "zobrist.h"
 
 namespace neocortex {
 	namespace pht {
 		struct PawnEval {
-			int key = 0;
+			zobrist::Key key = 0;
 			int backward = 0;
 			int straggler = 0;
 			int passed = 0;
@@ -41,7 +42,7 @@ namespace neocortex {
 		 *
 		 * @param mb New PHT size (MB).
 		 */
-		void resize(int mb);
+		void resize(unsigned long mb);
 
 		/**
 		 * Evaluates a pawn structure.
@@ -57,7 +58,7 @@ namespace neocortex {
 		 * @param pht_key PHT lookup key.
 		 * @return Pointer to corresponding PHT entry. Must not be modified while the PHT is unlocked.
 		 */
-		inline PawnEval* lookup(int pht_key) {
+		inline PawnEval* lookup(zobrist::Key pht_key) {
 			return  pht_buffer + (pht_key % pht_buffer_len);
 		}
 

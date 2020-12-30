@@ -9,6 +9,7 @@
 #include "log.h"
 #include "platform.h"
 #include "uci.h"
+#include "pht.h"
 #include "tt.h"
 #include "zobrist.h"
 #include "search.h"
@@ -29,6 +30,7 @@ int main(int argc, char** argv) {
 	zobrist::init();
 	attacks::init();
 	tt::init();
+	pht::init();
 
 	try {
 		uci::start();

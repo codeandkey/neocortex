@@ -10,6 +10,7 @@
 #include "../src/log.h"
 #include "../src/perft.h"
 #include "../src/piece.h"
+#include "../src/pht.h"
 #include "../src/search.h"
 #include "../src/tt.h"
 #include "../src/zobrist.h"
@@ -1178,6 +1179,7 @@ TEST(LogTest, SetLevel) {
 int main(int argc, char** argv) {
 	::testing::InitGoogleTest(&argc, argv);
 
+	pht::init();
 	bb::init();
 	attacks::init();
 	tt::init(16); /* Keep small TT (16mb) for testing. */

@@ -105,7 +105,7 @@ int Board::remove(int sq) {
 	piece_occ[piece::type(res)] ^= mask;
 	color_occ[piece::color(res)] ^= mask;
 	key ^= zobrist::piece(sq, res);
-	pht_key ^= zobrist::piece_pht(sq, p);
+	pht_key ^= zobrist::piece_pht(sq, res);
 
 	state[sq] = piece::null;
 

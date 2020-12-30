@@ -114,6 +114,13 @@ namespace neocortex {
 		zobrist::Key get_tt_key();
 
 		/**
+		 * Gets the PHT key for the board state.
+		 *
+		 * @return Current PHT key.
+		 */
+		zobrist::Key get_pht_key();
+
+		/**
 		 * Gets pieces attacking a square.
 		 *
 		 * @param sq Square.
