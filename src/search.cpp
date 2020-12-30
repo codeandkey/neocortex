@@ -298,7 +298,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 
 		value = -alphabeta(root, depth + depth_extension - depth_reduction, -beta, -alpha, ply_dist + 1, &local_pv, abort_watch);
 
-		pv_line->moves[0] = entry->pv_move;
+		pv_line->moves[0] = tt_exact_move;
 		pv_line->len = local_pv.len + 1;
 
 		memcpy(pv_line->moves + 1, local_pv.moves, local_pv.len * sizeof local_pv.moves[0]);
