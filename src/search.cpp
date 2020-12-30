@@ -267,7 +267,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 
 	tt::entry* entry = tt::lookup(root.get_tt_key());
 
-	tt::lock();
+	tt::lock(root.get_tt_key());
 	if (entry->key == root.get_tt_key() && entry->depth >= 1) {
 		if (entry->depth >= depth) {
 			switch (entry->type) {
@@ -289,7 +289,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 			}
 		}
 	}
-	tt::unlock();
+	tt::unlock(root.get_tt_key());
 
 	/* If there is an exact PV, just search under the PV move */
 	if (tt_exact_move.is_valid()) {
@@ -386,7 +386,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 	}
 
 	/* Write result to TT */
-	tt::lock();
+	tt::lock(root.get_tt_key());
 	entry->key = root.get_tt_key();
 	entry->value = alpha;
 	entry->depth = depth;
@@ -403,7 +403,7 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 		entry->pv_move = pv_line->moves[0];
 		entry->type = tt::entry::EXACT;
 	}
-	tt::unlock();
+	tt::unlock(root.get_tt_key());
 
 	return alpha;
 }

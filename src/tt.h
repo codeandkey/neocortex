@@ -51,13 +51,17 @@ namespace neocortex {
 		void resize(int mb);
 
 		/**
-		 * Acquires the TT mutex lock.
+		 * Acquires a TT mutex lock.
+		 *
+		 * @param k Zobrist key to lock.
 		 */
-		void lock();
+		void lock(zobrist::Key k);
 
 		/**
-		 * Releases the TT mutex lock.
+		 * Releases a TT mutex lock.
+		 *
+		 * @param k Zobrist key to unlock.
 		 */
-		void unlock();
+		void unlock(zobrist::Key k);
 	}
 }

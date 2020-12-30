@@ -11,14 +11,16 @@
 #include <cstdlib>
 #include <cassert>
 #include <thread>
+#include <shared_mutex>
 #include <mutex>
 #include <vector>
 
 using namespace neocortex;
 
 static tt::entry* tt_buffer;
+static std::mutex* tt_mutex_buffer;
 static int tt_buffer_size;
-static std::mutex tt_mutex;
+static std::shared_mutex tt_resize_mutex;
 
 void tt::init(size_t mib) {
 	tt::resize(mib);
@@ -29,19 +31,23 @@ tt::entry* tt::lookup(zobrist::Key key) {
 }
 
 void tt::resize(int mb) {
-	std::lock_guard<std::mutex> lock(tt_mutex);
+	std::lock_guard<std::shared_mutex> lock(tt_resize_mutex);
 	if (tt_buffer) delete[] tt_buffer;
+	if (tt_mutex_buffer) delete[] tt_mutex_buffer;
 
-	tt_buffer_size = mb * 1024 * 1024 / sizeof(tt::entry);
+	tt_buffer_size = mb * 1024 * 1024 / (sizeof(tt::entry) + sizeof(std::mutex));
 	tt_buffer = new tt::entry[tt_buffer_size];
+	tt_mutex_buffer = new std::mutex[tt_buffer_size];
 
-	neocortex_debug("Transposition table resized to %d mb\n", mb);
+	neocortex_debug("Transposition table resized to %d mb (%d entries)\n", mb, tt_buffer_size);
 }
 
-void tt::lock() {
-	tt_mutex.lock();
+void tt::lock(zobrist::Key k) {
+	tt_mutex_buffer[k % tt_buffer_size].lock();
+	tt_resize_mutex.lock_shared();
 }
 
-void tt::unlock() {
-	tt_mutex.unlock();
+void tt::unlock(zobrist::Key k) {
+	tt_mutex_buffer[k % tt_buffer_size].unlock();
+	tt_resize_mutex.unlock_shared();
 }
