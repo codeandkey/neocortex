@@ -191,10 +191,18 @@ namespace neocortex {
 		 * @return EG material score
 		 */
 		int material_eg();
+
+		/**
+		 * Gets the NN input layer for this board.
+		 *
+		 * @return NN input layer pointer.
+		 */
+		float* get_nn_input();
 	private:
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
 		int mat_mg, mat_eg;
+		float nn_input[64 * 16];
 		zobrist::Key key;
 	};
 
@@ -224,5 +232,9 @@ namespace neocortex {
 
 	inline int Board::material_eg() {
 		return mat_eg;
+	}
+
+	inline float* Board::get_nn_input() {
+		return nn_input;
 	}
 }
