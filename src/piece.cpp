@@ -15,33 +15,6 @@
 
 using namespace neocortex;
 
-int piece::make_piece(int color, int type) {
-	assert(color == WHITE || color == BLACK);
-	assert(type >= 0 && type <= 5);
-
-	return (type << 1) | color;
-}
-
-int piece::color(int piece) {
-	assert(is_valid(piece));
-
-	return piece & 1;
-}
-
-int piece::type(int piece) {
-	assert(is_valid(piece));
-
-	return piece >> 1;
-}
-
-bool piece::is_valid(int piece) {
-	return piece >= 0 && piece < 12;
-}
-
-bool piece::is_type(int type) {
-	return type >= 0 && type < 6;
-}
-
 char piece::get_uci(int piece) {
 	assert(is_valid(piece));
 

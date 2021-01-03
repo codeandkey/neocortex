@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <cassert>
+
 namespace neocortex {
 	namespace piece {
 		/* Piece types */
@@ -24,6 +26,16 @@ namespace neocortex {
 		constexpr int null = -1;
 
 		/**
+		 * Tests if a piece is not null.
+		 *
+		 * @param piece Input piece.
+		 * @return true iff piece is a valid piece.
+		 */
+		inline bool is_valid(int piece) {
+			return piece >= 0 && piece < 12;
+		}
+
+		/**
 		 * Constructs a piece from a color and type.
 		 *
 		 * @param color Input color.
@@ -31,7 +43,10 @@ namespace neocortex {
 		 *
 		 * @return Piece value.
 		 */
-		int make_piece(int color, int type);
+		inline int make_piece(int color, int type) {
+			assert(color == WHITE || color == BLACK);
+			return (type << 1) | color;
+		}
 
 		/**
 		 * Gets the color of a piece.
@@ -39,7 +54,10 @@ namespace neocortex {
 		 * @param piece Input piece.
 		 * @return Piece color.
 		 */
-		int color(int piece);
+		inline int color(int piece) {
+			assert(is_valid(piece));
+			return piece & 1;
+		}
 
 		/**
 		 * Gets the type of a piece.
@@ -47,15 +65,10 @@ namespace neocortex {
 		 * @param piece Input piece.
 		 * @return Piece type.
 		 */
-		int type(int piece);
-
-		/**
-		 * Tests if a piece is not null.
-		 *
-		 * @param piece Input piece.
-		 * @return true iff piece is a valid piece.
-		 */
-		bool is_valid(int piece);
+		inline int type(int piece) {
+			assert(is_valid(piece));
+			return piece >> 1;
+		}
 
 		/**
 		 * Tests if a value represents a type.
@@ -63,7 +76,9 @@ namespace neocortex {
 		 * @param piece Input type.
 		 * @return true iff piece is a valid type.
 		 */
-		bool is_type(int type);
+		inline bool is_type(int type) {
+			return type >= 0 && type < 6;
+		}
 
 		/**
 		 * Gets a UCI/FEN character for a piece.
