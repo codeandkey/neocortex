@@ -101,7 +101,6 @@ namespace neocortex {
 		operator std::string();
 
 		bool operator==(const Move& rhs) const;
-		bool operator!=(const Move& rhs) const;
 
 		static const Move null;
 	private:

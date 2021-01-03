@@ -69,10 +69,6 @@ bool Move::operator==(const Move& rhs) const {
 	return (m_src == rhs.m_src && m_dst == rhs.m_dst && m_ptype == rhs.m_ptype);
 }
 
-bool Move::operator!=(const Move& rhs) const {
-	return !(*this == rhs);
-}
-
 PV::PV() {
 	len = 0;
 }
