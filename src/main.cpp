@@ -8,6 +8,7 @@
 #include "attacks.h"
 #include "log.h"
 #include "platform.h"
+#include "nn.h"
 #include "uci.h"
 #include "tt.h"
 #include "zobrist.h"
@@ -29,6 +30,12 @@ int main(int argc, char** argv) {
 	zobrist::init();
 	attacks::init();
 	tt::init();
+
+	try {
+		nn::load(nn::DEFAULT_PATH);
+	} catch (std::exception& e) {
+		nn::generate();
+	}
 
 	try {
 		uci::start();

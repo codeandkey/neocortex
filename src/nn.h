@@ -48,6 +48,8 @@ namespace neocortex {
         constexpr int NUM_DEFAULT_LAYERS = sizeof(DEFAULT_LAYERS) / sizeof(DEFAULT_LAYERS[0]);
         constexpr int INPUT_NODES = 1024;
 
+        constexpr const char* DEFAULT_PATH = "nc.nn";
+
         void generate();
         void load(std::string path);
         void save(std::string path);

@@ -1,4 +1,5 @@
 #include "nn.h"
+#include "log.h"
 #include "util.h"
 
 #include <cassert>
@@ -84,12 +85,14 @@ void nn::generate() {
             _nn_node_biases[c][i] = new float[_nn_layer_sizes[i]];
 
             for (int j = 0; j < _nn_layer_sizes[i]; ++j) {
-                _nn_node_biases[c][i][j] = dist(twister);
+                _nn_node_biases[c][i][j] = 0.0f;
             }
         }
     }
 
     _nn_loaded = true;
+
+    neocortex_debug("Generated new NN\n");
 
     _nn_mutex.unlock();
 }
@@ -101,6 +104,7 @@ void nn::load(std::string path) {
     FILE* inp = fopen(path.c_str(), "rb");
 
     if (!inp) {
+        _nn_mutex.unlock();
         throw util::fmterr("Failed to open %s for reading: %s", path.c_str(), strerror(errno));
     }
 
@@ -125,10 +129,11 @@ void nn::load(std::string path) {
     }
 
     if (input_size != INPUT_NODES) {
-        throw util::fmterr("Input layer size mismatch in %s: expected %d, read %d", path.c_str(), INPUT_NODES, input_size);
+        neocortex_error("Input layer size mismatch in %s: expected %d, read %d", path.c_str(), INPUT_NODES, input_size);
+        goto nn_load_read_fail;
     }
 
-    // Initialize connection weights (white)
+    // Initialize connection weights
     
     _nn_connection_weights = new float**[2];
 
@@ -185,6 +190,8 @@ void nn::load(std::string path) {
     _nn_loaded = true;
     _nn_mutex.unlock();
 
+    neocortex_debug("Loaded NN from %s\n", path.c_str());
+
     fclose(inp);
     return;
 
@@ -193,6 +200,84 @@ void nn::load(std::string path) {
     _nn_mutex.unlock();
     fclose(inp);
     nn::cleanup();
+    throw util::fmterr("Failed to read weights from %s: invalid data", path.c_str());
+}
+
+void nn::save(std::string path) {
+    _nn_mutex.lock();
+
+    assert(_nn_loaded);
+
+    // Read NN configuration and parameters from file
+    FILE* out = fopen(path.c_str(), "wb");
+
+    if (!out) {
+        _nn_mutex.unlock();
+        throw util::fmterr("Failed to open %s for writing: %s", path.c_str(), strerror(errno));
+    }
+
+    // Write number of layers
+
+    if (fwrite(&_nn_num_layers, sizeof(_nn_num_layers), 1, out) != 1) {
+        goto nn_save_write_fail;
+    }
+
+    // Write layer sizes
+    if (fwrite(_nn_layer_sizes, sizeof _nn_layer_sizes[0], _nn_num_layers, out) != _nn_num_layers) {
+        goto nn_save_write_fail;
+    }
+
+    // Verify input size
+    uint16_t input_size;
+
+    input_size = INPUT_NODES;
+
+    if (fwrite(&input_size, sizeof(input_size), 1, out) != 1) {
+        goto nn_save_write_fail;
+    }
+
+    // Write connection weights
+    
+    for (int c = 0; c < 2; ++c) {
+        // Write first connection weights
+        if (fwrite(_nn_connection_weights[c][0], sizeof(***_nn_connection_weights), INPUT_NODES * _nn_layer_sizes[0], out) != INPUT_NODES * _nn_layer_sizes[0]) {
+            goto nn_save_write_fail;
+        }
+
+        // Read inner layer connection weights
+        for (int i = 0; i < _nn_num_layers - 1; ++i) {
+            if (fwrite(_nn_connection_weights[c][i + 1], sizeof(***_nn_connection_weights), _nn_layer_sizes[i] * _nn_layer_sizes[i + 1], out) != _nn_layer_sizes[i] * _nn_layer_sizes[i + 1]) {
+                goto nn_save_write_fail;
+            }
+        }
+
+        // Write last connection weights
+        if (fwrite(_nn_connection_weights[c][_nn_num_layers + 1], sizeof(***_nn_connection_weights), _nn_layer_sizes[_nn_num_layers - 1], out) != _nn_layer_sizes[_nn_num_layers - 1]) {
+            goto nn_save_write_fail;
+        }
+    }
+
+    // Write node bias
+    
+    for (int c = 0; c < 2; ++c) {
+        for (int i = 0; i < _nn_num_layers; ++i) {
+            if (fwrite(_nn_node_biases[c][i], sizeof ***_nn_node_biases, _nn_layer_sizes[i], out) != _nn_layer_sizes[i]) {
+                goto nn_save_write_fail;
+            }
+        }
+    }
+
+    _nn_mutex.unlock();
+
+    neocortex_debug("Wrote NN to %s\n", path.c_str());
+
+    fclose(out);
+    return;
+
+    // Generic handler for file read errors
+    nn_save_write_fail:
+    _nn_mutex.unlock();
+    fclose(out);
     throw util::fmterr("Failed to read weights from %s: invalid data", path.c_str());
 }
 

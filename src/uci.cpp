@@ -7,6 +7,7 @@
 
 #include "uci.h"
 #include "log.h"
+#include "nn.h"
 #include "util.h"
 #include "search.h"
 #include "position.h"
@@ -56,6 +57,9 @@ void uci::start() {
 	std::cout << "id name " << uci::NAME << "\n";
 	std::cout << "id author " << uci::AUTHOR << "\n";
 	std::cout << "option name Threads type spin default " << searcher.max_threads() << " min 1 max " << searcher.max_threads() << "\n";
+	std::cout << "option name NNPath type string default " << nn::DEFAULT_PATH << "\n";
+
+	std::string nn_path = nn::DEFAULT_PATH;
 
 	while (true) {
 		std::string command = read_command();
@@ -85,6 +89,22 @@ void uci::start() {
 						else {
 							neocortex_warn("setoption: expected 'value', read '%s'\n", parts[2].c_str());
 						}
+					}
+				} else if (parts[1] == "NNPath") {
+					if (parts[2] == "value") {
+						nn_path = "";
+						for (size_t j = 3; j < parts.size(); ++j) {
+							nn_path += parts[j];
+
+							if (j < parts.size() - 1) {
+								nn_path += " ";
+							}
+						}
+
+						nn::load(parts[3]);
+					}
+					else {
+						neocortex_warn("setoption: expected 'value', read '%s'\n", parts[2].c_str());
 					}
 				}
 			}
@@ -121,6 +141,9 @@ void uci::start() {
 #endif
 
 			searcher.go(write_info, write_bestmove, wtime, btime, winc, binc, depth, movetime, infinite);
+		}
+		else if (parts[0] == "nnwrite") {
+			nn::save(nn_path);
 		}
 		else if (parts[0] == "dump") {
 			std::string dbg, fen;
