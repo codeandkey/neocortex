@@ -9,7 +9,6 @@
 
 #include "attacks.h"
 #include "bitboard.h"
-#include "nn.h"
 #include "piece.h"
 #include "square.h"
 #include "zobrist.h"
@@ -30,6 +29,11 @@ namespace neocortex {
 		 * @param fen_data Input FEN data.
 		 */
 		Board(std::string fen_data);
+
+		/**
+		 * Board destructor. Frees NN input layers.
+		 */
+		~Board();
 
 		/**
 		 * Constructs a board matching the standard start position.
@@ -196,14 +200,16 @@ namespace neocortex {
 		/**
 		 * Gets the NN input layer for this board.
 		 *
+		 * @param c Color layer to retreive.
 		 * @return NN input layer pointer.
 		 */
-		float* get_nn_input();
+		float* get_nn_input(int c);
 	private:
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
 		int mat_mg, mat_eg;
-		float nn_input[nn::INPUT_NODES];
+		float* nn_inputs[2];
+		int ksq[2];
 		zobrist::Key key;
 	};
 
@@ -235,7 +241,7 @@ namespace neocortex {
 		return mat_eg;
 	}
 
-	inline float* Board::get_nn_input() {
-		return nn_input;
+	inline float* Board::get_nn_input(int c) {
+		return nn_inputs[c];
 	}
 }

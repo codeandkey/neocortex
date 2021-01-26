@@ -45,6 +45,7 @@
     <ClCompile Include="src\eval_consts.cpp" />
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\move.cpp" />
+    <ClCompile Include="src\nn.cpp" />
     <ClCompile Include="src\perft.cpp" />
     <ClCompile Include="src\piece.cpp" />
     <ClCompile Include="src\position.cpp" />
@@ -65,6 +66,7 @@
     <ClInclude Include="src\log.h" />
     <ClInclude Include="src\magic_consts.h" />
     <ClInclude Include="src\move.h" />
+    <ClInclude Include="src\nn.h" />
     <ClInclude Include="src\perft.h" />
     <ClInclude Include="src\piece.h" />
     <ClInclude Include="src\platform.h" />

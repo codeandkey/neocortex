@@ -7,6 +7,7 @@
 
 #include "board.h"
 #include "eval_consts.h"
+#include "nn.h"
 #include "util.h"
 
 #include "log.h"
@@ -30,13 +31,19 @@ Board::Board() {
 		piece_occ[p] = 0;
 	}
 
-	for (int i = 0; i < nn::INPUT_NODES; ++i) {
-		nn_input[i] = 0.0f;
+	for (int c = 0; c < 2; ++c) {
+		for (int i = 0; i < 20480; ++i) {
+			nn_inputs[c][i] = 0.0f;
+		}
 	}
 
 	key = 0;
 	global_occ = 0;
 	mat_mg = mat_eg = 0;
+	ksq[piece::WHITE] = ksq[piece::BLACK] = square::null;
+
+	nn_inputs[0] = new float[nn::INPUT_NODES / 2];
+	nn_inputs[1] = new float[nn::INPUT_NODES / 2];
 }
 
 Board::Board(std::string uci) : Board() {
@@ -79,6 +86,11 @@ Board Board::standard() {
 	return Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 }
 
+Board::~Board() {
+	delete[] nn_inputs[0];
+	delete[] nn_inputs[1];
+}
+
 void Board::place(int sq, int p) {
 	assert(square::is_valid(sq));
 	assert(piece::is_valid(p));
@@ -95,17 +107,24 @@ void Board::place(int sq, int p) {
 	mat_mg += eval::MATERIAL_MG_LOOKUP[p];
 	mat_eg += eval::MATERIAL_EG_LOOKUP[p];
 
-	// alter white input
+	// alter NN inputs
+	int col = piece::color(p);
 	
 	if (piece::type(p) == piece::KING) {
-		// flip inputs for all white pieces
-
+		// set inputs for all pieces of this color
+		
 		for (int i = 0; i < 64; ++i) {
 			if (i == sq) continue;
-			if (piece::is_valid(state[i]) && piece::color(state[i]) == piece::WHITE) {
-				nn_input_white[320 * sq + piece::type(state[i])
+			if (piece::is_valid(state[i]) && piece::color(state[i]) == col) {
+				nn_inputs[col][320 * sq + 5 * i + piece::type(state[i])] = 1.0f;
 			}
 		}
+
+		assert(ksq[col] == square::null);
+		ksq[col]= sq;
+	} else {
+		// alter single input
+		nn_inputs[col][320 * ksq[col] + 5 * sq + piece::type(p)] = 1.0f;
 	}
 }
 
@@ -127,33 +146,34 @@ int Board::remove(int sq) {
 	mat_mg -= eval::MATERIAL_MG_LOOKUP[res];
 	mat_eg -= eval::MATERIAL_EG_LOOKUP[res];
 
+	// alter NN inputs
+	int col = piece::color(res);
+
+	if (piece::type(res) == piece::KING) {
+		// set inputs for all pieces of this color
+
+		for (int i = 0; i < 64; ++i) {
+			if (i == sq) continue;
+			if (piece::is_valid(state[i]) && piece::color(state[i]) == col) {
+				nn_inputs[col][320 * sq + 5 * i + piece::type(state[i])] = 0.0f;
+			}
+		}
+
+		assert(square::is_valid(ksq[col]));
+		ksq[col] = square::null;
+	}
+	else {
+		// alter single input
+		nn_inputs[col][320 * ksq[col] + 5 * sq + piece::type(res)] = 0.0f; 
+	}
+
 	return res;
 }
 
 int Board::replace(int sq, int p) {
-	assert(square::is_valid(sq));
-	assert(piece::is_valid(state[sq]));
-
-	int res = state[sq];
-
-	bitboard mask = bb::mask(sq);
-
-	piece_occ[piece::type(res)] ^= mask;
-	color_occ[piece::color(res)] ^= mask;
-	piece_occ[piece::type(p)] ^= mask;
-	color_occ[piece::color(p)] ^= mask;
-
-	key ^= zobrist::piece(sq, res);
-	key ^= zobrist::piece(sq, p);
-
-	mat_mg -= eval::MATERIAL_MG_LOOKUP[res];
-	mat_eg -= eval::MATERIAL_EG_LOOKUP[res];
-	mat_mg += eval::MATERIAL_MG_LOOKUP[p];
-	mat_eg += eval::MATERIAL_EG_LOOKUP[p];
-
-	state[sq] = p;
-
-	return res;
+	int r = remove(sq);
+	place(sq, p);
+	return r;
 }
 
 std::string Board::to_uci() {

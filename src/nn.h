@@ -30,17 +30,17 @@
  *
  */
 
+#include "board.h"
+
+#include <cstdint>
 #include <string>
 
 namespace neocortex {
     namespace nn {
         constexpr int DEFAULT_LAYERS[] = {
-            2048,
-            1024,
-            1024,
-            512,
-            256,
-            128
+            8,
+            8,
+            8,
         };
 
         constexpr int NUM_DEFAULT_LAYERS = sizeof(DEFAULT_LAYERS) / sizeof(DEFAULT_LAYERS[0]);
@@ -48,11 +48,35 @@ namespace neocortex {
 
         constexpr const char* DEFAULT_PATH = "nc.nn";
 
+        extern int _nn_num_layers;
+        extern int* _nn_layer_sizes;
+
         void generate();
         void load(std::string path);
         void save(std::string path);
         void cleanup();
 
-        float evaluate(float* inp);
+        struct ComputeState {
+            ComputeState() {
+                layers = new float* [_nn_num_layers];
+
+                for (int i = 0; i < _nn_num_layers; ++i) {
+                    layers[i] = new float[_nn_layer_sizes[i]];
+                }
+            }
+
+            ~ComputeState() {
+                for (int i = 0; i < _nn_num_layers; ++i) {
+                    delete[] layers[i];
+                }
+
+                delete[] layers;
+                layers = NULL;
+            }
+
+            float** layers;
+        };
+
+        float evaluate(ComputeState& s, Board& b, int ctm);
     }
 }

@@ -110,10 +110,12 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
+      <StackReserveSize>512</StackReserveSize>
+      <HeapReserveSize>512</HeapReserveSize>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -156,12 +158,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);NDEBUG;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <StackReserveSize>512</StackReserveSize>
+      <HeapReserveSize>512</HeapReserveSize>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -195,6 +199,13 @@
       <Message>
       </Message>
     </PostBuildEvent>
+    <ClCompile>
+      <PreprocessorDefinitions>;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <StackReserveSize>512</StackReserveSize>
+      <HeapReserveSize>512</HeapReserveSize>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\attacks.h" />
@@ -205,6 +216,7 @@
     <ClInclude Include="src\log.h" />
     <ClInclude Include="src\magic_consts.h" />
     <ClInclude Include="src\move.h" />
+    <ClInclude Include="src\nn.h" />
     <ClInclude Include="src\perft.h" />
     <ClInclude Include="src\piece.h" />
     <ClInclude Include="src\platform.h" />
@@ -225,6 +237,7 @@
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\move.cpp" />
+    <ClCompile Include="src\nn.cpp" />
     <ClCompile Include="src\perft.cpp" />
     <ClCompile Include="src\piece.cpp" />
     <ClCompile Include="src\position.cpp" />
