@@ -7,11 +7,10 @@
 /**
  * Input layer:
  *
- * 64 * 12 neurons for each piece on each square.
- * Extra 64 * 2 neurons for white king on each square
- * Extra 64 * 2 neurons for black king on each square
+ * {Own king location} X {Own non-king locations}: 64 * (5 * 64) = 20480 nodes
+ * {Opponent king location} X {Opponent non-king locations} : 20480 nodes
  *
- * Total: 1024 nodes
+ * total: 40960 input nodes
  *
  * Hidden layers (2 of each, for each color)
  *
@@ -36,8 +35,7 @@
 namespace neocortex {
     namespace nn {
         constexpr int DEFAULT_LAYERS[] = {
-            1024,
-            1024,
+            2048,
             1024,
             1024,
             512,
@@ -46,7 +44,7 @@ namespace neocortex {
         };
 
         constexpr int NUM_DEFAULT_LAYERS = sizeof(DEFAULT_LAYERS) / sizeof(DEFAULT_LAYERS[0]);
-        constexpr int INPUT_NODES = 1024;
+        constexpr int INPUT_NODES = 40960;
 
         constexpr const char* DEFAULT_PATH = "nc.nn";
 
@@ -55,6 +53,6 @@ namespace neocortex {
         void save(std::string path);
         void cleanup();
 
-        float evaluate(bool* inp);
+        float evaluate(float* inp);
     }
 }

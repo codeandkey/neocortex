@@ -30,6 +30,10 @@ Board::Board() {
 		piece_occ[p] = 0;
 	}
 
+	for (int i = 0; i < nn::INPUT_NODES; ++i) {
+		nn_input[i] = 0.0f;
+	}
+
 	key = 0;
 	global_occ = 0;
 	mat_mg = mat_eg = 0;
@@ -90,6 +94,19 @@ void Board::place(int sq, int p) {
 	key ^= zobrist::piece(sq, p);
 	mat_mg += eval::MATERIAL_MG_LOOKUP[p];
 	mat_eg += eval::MATERIAL_EG_LOOKUP[p];
+
+	// alter white input
+	
+	if (piece::type(p) == piece::KING) {
+		// flip inputs for all white pieces
+
+		for (int i = 0; i < 64; ++i) {
+			if (i == sq) continue;
+			if (piece::is_valid(state[i]) && piece::color(state[i]) == piece::WHITE) {
+				nn_input_white[320 * sq + piece::type(state[i])
+			}
+		}
+	}
 }
 
 int Board::remove(int sq) {

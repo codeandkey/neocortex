@@ -1,5 +1,6 @@
 #include "nn.h"
 #include "log.h"
+#include "piece.h"
 #include "util.h"
 
 #include <cassert>
@@ -21,6 +22,8 @@ static float*** _nn_connection_weights;
 static float*** _nn_node_biases;
 static bool _nn_loaded;
 static std::shared_mutex _nn_mutex;
+
+static void _nn_compute_layer(float* inp, int inp_len, float* dst, int dst_len, float* weights, float* biases);
 
 void nn::generate() {
     std::random_device rng;
@@ -152,16 +155,16 @@ void nn::load(std::string path) {
             goto nn_load_read_fail;
         }
 
-        // Read last connection weights
-        if (fread(_nn_connection_weights[c][_nn_num_layers + 1], sizeof(***_nn_connection_weights), _nn_layer_sizes[_nn_num_layers - 1], inp) != _nn_layer_sizes[_nn_num_layers - 1]) {
-            goto nn_load_read_fail;
-        }
-
         // Read inner layer connection weights
         for (int i = 0; i < _nn_num_layers - 1; ++i) {
             if (fread(_nn_connection_weights[c][i + 1], sizeof(***_nn_connection_weights), _nn_layer_sizes[i] * _nn_layer_sizes[i + 1], inp) != _nn_layer_sizes[i] * _nn_layer_sizes[i + 1]) {
                 goto nn_load_read_fail;
             }
+        }
+
+        // Read last connection weights
+        if (fread(_nn_connection_weights[c][_nn_num_layers + 1], sizeof(***_nn_connection_weights), _nn_layer_sizes[_nn_num_layers - 1], inp) != _nn_layer_sizes[_nn_num_layers - 1]) {
+            goto nn_load_read_fail;
         }
     }
 
@@ -320,4 +323,58 @@ void nn::cleanup() {
     _nn_loaded = false;
 
     _nn_mutex.unlock();
+}
+
+void _nn_compute_layer(float* inp, int inp_len, float* dst, int dst_len, float* weights, float* biases) {
+    for (int i = 0; i < dst_len; ++i) {
+        dst[i] = biases[i];
+
+        for (int j = 0; j < inp_len; ++j) {
+            dst[i] += weights[i * dst_len + j] * inp[j];
+        }
+
+        if (dst[i] < 0.0f) {
+            dst[i] = 0.0f; // Rectified linear activation
+        }
+    }
+}
+
+float nn::evaluate(float* inp) {
+    // Try and do NN evaluation on the stack, to maintain threadsafety and performance
+    // We can work under the assumption that the NN is feed-forward, and subsequent layers have equal or fewer neurons, with the exception of the first layer.
+    
+    _nn_mutex.lock_shared();
+
+    float output[2];
+
+    for (int c = 0; c < 2; ++c) {
+        output[c] = 0.0f;
+
+        // Compute first layer activation
+        float layer_buf_a[_nn_layer_sizes[0]];
+        float layer_buf_b[_nn_layer_sizes[0]];
+
+        float* layer_buf_tmp;
+
+        float* layer_values = layer_buf_a;
+        float* next_layer_values = layer_buf_b;
+
+        _nn_compute_layer(inp, INPUT_NODES, layer_values, _nn_layer_sizes[0], _nn_connection_weights[c][0], _nn_node_biases[c][0]);
+
+        // Proceed with hidden layers
+        for (int i = 1; i < _nn_num_layers; ++i) {
+            _nn_compute_layer(layer_values, _nn_layer_sizes[i - 1], next_layer_values, _nn_layer_sizes[i], _nn_connection_weights[c][i], _nn_node_biases[c][i]);
+
+            // Swap layer buffers
+            layer_buf_tmp = layer_values;
+            layer_values = next_layer_values;
+            next_layer_values = layer_buf_tmp;
+        }
+
+        // Compute final output
+        _nn_compute_layer(layer_values, _nn_layer_sizes[_nn_num_layers - 1], &output[c], 1, _nn_connection_weights[c][_nn_num_layers + 1], _nn_node_biases[c][_nn_num_layers + 1]);
+    }
+
+    _nn_mutex.unlock_shared();
+    return output[piece::WHITE] - output[piece::BLACK];
 }

@@ -101,7 +101,13 @@ void uci::start() {
 							}
 						}
 
-						nn::load(parts[3]);
+						// Try and load NN from path, but allow failure
+						try {
+							nn::load(nn_path);
+						} catch (std::exception& e) {
+							neocortex_warn("Error occurred loading NN from %s. Generating new network..\n", nn_path.c_str());
+							nn::generate();
+						}
 					}
 					else {
 						neocortex_warn("setoption: expected 'value', read '%s'\n", parts[2].c_str());

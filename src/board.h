@@ -9,6 +9,7 @@
 
 #include "attacks.h"
 #include "bitboard.h"
+#include "nn.h"
 #include "piece.h"
 #include "square.h"
 #include "zobrist.h"
@@ -202,7 +203,7 @@ namespace neocortex {
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
 		int mat_mg, mat_eg;
-		float nn_input[64 * 16];
+		float nn_input[nn::INPUT_NODES];
 		zobrist::Key key;
 	};
 
