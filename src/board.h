@@ -208,7 +208,7 @@ namespace neocortex {
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
 		int mat_mg, mat_eg;
-		float* nn_inputs[2];
+		float nn_inputs[2][20480];
 		int ksq[2];
 		zobrist::Key key;
 	};

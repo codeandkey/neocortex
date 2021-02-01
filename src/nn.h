@@ -48,8 +48,8 @@ namespace neocortex {
 
         constexpr const char* DEFAULT_PATH = "nc.nn";
 
-        extern int _nn_num_layers;
-        extern int* _nn_layer_sizes;
+        extern unsigned int _nn_num_layers;
+        extern unsigned int* _nn_layer_sizes;
 
         void generate();
         void load(std::string path);
@@ -60,13 +60,13 @@ namespace neocortex {
             ComputeState() {
                 layers = new float* [_nn_num_layers];
 
-                for (int i = 0; i < _nn_num_layers; ++i) {
+                for (unsigned i = 0; i < _nn_num_layers; ++i) {
                     layers[i] = new float[_nn_layer_sizes[i]];
                 }
             }
 
             ~ComputeState() {
-                for (int i = 0; i < _nn_num_layers; ++i) {
+                for (unsigned i = 0; i < _nn_num_layers; ++i) {
                     delete[] layers[i];
                 }
 

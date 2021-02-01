@@ -19,6 +19,9 @@
 using namespace neocortex;
 
 Board::Board() {
+	//nn_inputs[0] = new float[nn::INPUT_NODES / 2];
+	//nn_inputs[1] = new float[nn::INPUT_NODES / 2];
+
 	for (int i = 0; i < 64; ++i) {
 		state[i] = -1;
 	}
@@ -41,9 +44,6 @@ Board::Board() {
 	global_occ = 0;
 	mat_mg = mat_eg = 0;
 	ksq[piece::WHITE] = ksq[piece::BLACK] = square::null;
-
-	nn_inputs[0] = new float[nn::INPUT_NODES / 2];
-	nn_inputs[1] = new float[nn::INPUT_NODES / 2];
 }
 
 Board::Board(std::string uci) : Board() {
@@ -87,8 +87,8 @@ Board Board::standard() {
 }
 
 Board::~Board() {
-	delete[] nn_inputs[0];
-	delete[] nn_inputs[1];
+	//delete[] nn_inputs[0];
+	//delete[] nn_inputs[1];
 }
 
 void Board::place(int sq, int p) {
@@ -124,7 +124,9 @@ void Board::place(int sq, int p) {
 		ksq[col]= sq;
 	} else {
 		// alter single input
-		nn_inputs[col][320 * ksq[col] + 5 * sq + piece::type(p)] = 1.0f;
+		if (square::is_valid(ksq[col])) {
+			nn_inputs[col][320 * ksq[col] + 5 * sq + piece::type(p)] = 1.0f;
+		}
 	}
 }
 
@@ -164,7 +166,9 @@ int Board::remove(int sq) {
 	}
 	else {
 		// alter single input
-		nn_inputs[col][320 * ksq[col] + 5 * sq + piece::type(res)] = 0.0f; 
+		if (square::is_valid(ksq[col])) {
+			nn_inputs[col][320 * ksq[col] + 5 * sq + piece::type(res)] = 0.0f; 
+		}
 	}
 
 	return res;

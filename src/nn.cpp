@@ -16,14 +16,12 @@
 
 using namespace neocortex;
 
-static int nn::_nn_num_layers;
-static int* nn::_nn_layer_sizes;
+unsigned int nn::_nn_num_layers;
+unsigned int* nn::_nn_layer_sizes;
 static float** _nn_connection_weights; // [layer][{src index} * {layer size} + {dst index}] (contains 1 extra "layer" for output weights)
 static float** _nn_node_biases; // [layer][node]
 static bool _nn_loaded;
 static std::shared_mutex _nn_mutex;
-
-static void _nn_compute_layer(float* inp, int inp_len, float* dst, int dst_len, float* weights, float* biases);
 
 void nn::generate() {
     std::random_device rng;
@@ -33,10 +31,10 @@ void nn::generate() {
     _nn_mutex.lock();
 
     _nn_num_layers = NUM_DEFAULT_LAYERS;
-    _nn_layer_sizes = new int[_nn_num_layers];
+    _nn_layer_sizes = new unsigned int[_nn_num_layers];
 
     // Copy default layer size
-    for (int i = 0; i < _nn_num_layers; ++i) {
+    for (unsigned i = 0; i < _nn_num_layers; ++i) {
         _nn_layer_sizes[i] = DEFAULT_LAYERS[i];
     }
 
@@ -46,23 +44,23 @@ void nn::generate() {
     _nn_connection_weights[0] = new float[(size_t) INPUT_NODES * _nn_layer_sizes[0]];
     _nn_connection_weights[_nn_num_layers] = new float[_nn_layer_sizes[_nn_num_layers - 1]];
 
-    for (int i = 1; i < _nn_num_layers; ++i) {
+    for (unsigned i = 1; i < _nn_num_layers; ++i) {
         _nn_connection_weights[i] = new float[(size_t) _nn_layer_sizes[i] * _nn_layer_sizes[i - 1]];
     }
 
     // Generate first connection weights
-    for (int i = 0; i < INPUT_NODES * _nn_layer_sizes[0]; ++i) {
+    for (unsigned i = 0; i < INPUT_NODES * _nn_layer_sizes[0]; ++i) {
         _nn_connection_weights[0][i] = dist(twister);
     }
 
     // Generate last connection weights
-    for (int i = 0; i < _nn_layer_sizes[_nn_num_layers - 1]; ++i) {
+    for (unsigned i = 0; i < _nn_layer_sizes[_nn_num_layers - 1]; ++i) {
         _nn_connection_weights[_nn_num_layers][i] = dist(twister);
     }
 
     // Generate inner layer connection weights
-    for (int i = 1; i < _nn_num_layers; ++i) {
-        for (int j = 0; j < _nn_layer_sizes[i] * _nn_layer_sizes[i - 1]; ++j) {
+    for (unsigned i = 1; i < _nn_num_layers; ++i) {
+        for (unsigned j = 0; j < _nn_layer_sizes[i] * _nn_layer_sizes[i - 1]; ++j) {
             _nn_connection_weights[i][j] = dist(twister);
         }
     }
@@ -73,10 +71,10 @@ void nn::generate() {
 
     // Generate node bias
         
-    for (int i = 0; i < _nn_num_layers; ++i) {
+    for (unsigned i = 0; i < _nn_num_layers; ++i) {
         _nn_node_biases[i] = new float[_nn_layer_sizes[i]];
 
-        for (int j = 0; j < _nn_layer_sizes[i]; ++j) {
+        for (unsigned j = 0; j < _nn_layer_sizes[i]; ++j) {
             _nn_node_biases[i][j] = 0.0f;
         }
     }
@@ -106,14 +104,14 @@ void nn::load(std::string path) {
     }
 
     // Read layer sizes
-    _nn_layer_sizes = new int[_nn_num_layers];
+    _nn_layer_sizes = new unsigned int[_nn_num_layers];
 
     if (fread(_nn_layer_sizes, sizeof _nn_layer_sizes[0], _nn_num_layers, inp) != _nn_num_layers) {
         goto nn_load_read_fail;
     }
 
     // Verify input size
-    int input_size;
+    unsigned input_size;
 
     if (fread(&input_size, sizeof(input_size), 1, inp) != 1) {
         goto nn_load_read_fail;
@@ -131,7 +129,7 @@ void nn::load(std::string path) {
     _nn_connection_weights[0] = new float[INPUT_NODES * _nn_layer_sizes[0]];
     _nn_connection_weights[_nn_num_layers] = new float[_nn_layer_sizes[_nn_num_layers - 1]];
 
-    for (int i = 1; i < _nn_num_layers; ++i) {
+    for (unsigned i = 1; i < _nn_num_layers; ++i) {
         _nn_connection_weights[i] = new float[_nn_layer_sizes[i] * _nn_layer_sizes[i - 1]];
     }
 
@@ -141,7 +139,7 @@ void nn::load(std::string path) {
     }
 
     // Read inner layer connection weights
-    for (int i = 1; i < _nn_num_layers; ++i) {
+    for (unsigned i = 1; i < _nn_num_layers; ++i) {
         if (fread(_nn_connection_weights[i], sizeof(**_nn_connection_weights), _nn_layer_sizes[i] * _nn_layer_sizes[i - 1], inp) != _nn_layer_sizes[i] * _nn_layer_sizes[i - 1]) {
             goto nn_load_read_fail;
         }
@@ -158,7 +156,7 @@ void nn::load(std::string path) {
 
     // Parse node bias
         
-    for (int i = 0; i < _nn_num_layers; ++i) {
+    for (unsigned i = 0; i < _nn_num_layers; ++i) {
         _nn_node_biases[i] = new float[_nn_layer_sizes[i]];
 
         if (fread(_nn_node_biases[i], sizeof **_nn_node_biases, _nn_layer_sizes[i], inp) != _nn_layer_sizes[i]) {
@@ -207,7 +205,7 @@ void nn::save(std::string path) {
     }
 
     // Verify input size
-    uint16_t input_size;
+    unsigned input_size;
 
     input_size = INPUT_NODES;
 
@@ -223,7 +221,7 @@ void nn::save(std::string path) {
     }
 
     // Read inner layer connection weights
-    for (int i = 1; i < _nn_num_layers; ++i) {
+    for (unsigned i = 1; i < _nn_num_layers; ++i) {
         if (fwrite(_nn_connection_weights[i], sizeof(**_nn_connection_weights), _nn_layer_sizes[i] * _nn_layer_sizes[i - 1], out) != _nn_layer_sizes[i] * _nn_layer_sizes[i - 1]) {
             goto nn_save_write_fail;
         }
@@ -236,7 +234,7 @@ void nn::save(std::string path) {
 
     // Write node bias
     
-    for (int i = 0; i < _nn_num_layers; ++i) {
+    for (unsigned i = 0; i < _nn_num_layers; ++i) {
         if (fwrite(_nn_node_biases[i], sizeof **_nn_node_biases, _nn_layer_sizes[i], out) != _nn_layer_sizes[i]) {
             goto nn_save_write_fail;
         }
@@ -260,7 +258,7 @@ void nn::cleanup() {
     _nn_mutex.lock();
 
     if (_nn_connection_weights) {
-        for (int i = 0; i < _nn_num_layers; ++i) {
+        for (unsigned i = 0; i < _nn_num_layers; ++i) {
             delete[] _nn_connection_weights[i];
         }
 
@@ -269,7 +267,7 @@ void nn::cleanup() {
     }
 
     if (_nn_node_biases) {
-        for (int i = 0; i < _nn_num_layers; ++i) {
+        for (unsigned i = 0; i < _nn_num_layers; ++i) {
             delete[] _nn_node_biases[i];
         }
 
@@ -289,20 +287,6 @@ void nn::cleanup() {
     _nn_mutex.unlock();
 }
 
-void _nn_compute_layer(float* inp, int inp_len, float* dst, int dst_len, float* weights, float* biases) {
-    for (int i = 0; i < dst_len; ++i) {
-        dst[i] = biases[i];
-
-        for (int j = 0; j < inp_len; ++j) {
-            dst[i] += weights[j * dst_len + i] * inp[j];
-        }
-
-        if (dst[i] < 0.0f) {
-            dst[i] = 0.0f; // Rectified linear activation
-        }
-    }
-}
-
 float nn::evaluate(ComputeState& s, Board& b, int ctm) {
     _nn_mutex.lock_shared();
 
@@ -311,7 +295,7 @@ float nn::evaluate(ComputeState& s, Board& b, int ctm) {
     float* own_input = b.get_nn_input(ctm);
     float* opp_input = b.get_nn_input(!ctm);
 
-    for (int i = 0; i < _nn_layer_sizes[0]; ++i) {
+    for (unsigned i = 0; i < _nn_layer_sizes[0]; ++i) {
         s.layers[0][i] = _nn_node_biases[0][i];
 
         // Apply first input half
@@ -332,11 +316,11 @@ float nn::evaluate(ComputeState& s, Board& b, int ctm) {
 
     // Compute hidden layers
 
-    for (int i = 1; i < _nn_num_layers; ++i) {
-        for (int dst = 0; dst < _nn_layer_sizes[i]; ++dst) {
+    for (unsigned i = 1; i < _nn_num_layers; ++i) {
+        for (unsigned dst = 0; dst < _nn_layer_sizes[i]; ++dst) {
             s.layers[i][dst] = _nn_node_biases[i][dst];
 
-            for (int src = 0; src < _nn_layer_sizes[i - 1]; ++src) {
+            for (unsigned src = 0; src < _nn_layer_sizes[i - 1]; ++src) {
                 s.layers[i][dst] += s.layers[i - 1][src] * _nn_connection_weights[i][src * _nn_layer_sizes[i] + dst];
             }
 
@@ -350,7 +334,7 @@ float nn::evaluate(ComputeState& s, Board& b, int ctm) {
 
     float output = 0.0f; // TODO: consider output bias
 
-    for (int i = 0; i < _nn_layer_sizes[_nn_num_layers - 1]; ++i) {
+    for (unsigned i = 0; i < _nn_layer_sizes[_nn_num_layers - 1]; ++i) {
         output += s.layers[_nn_num_layers - 1][i] * _nn_connection_weights[_nn_num_layers][i];
     }
 
