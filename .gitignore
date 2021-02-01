@@ -8,3 +8,4 @@ src/*.gcda
 src/*.gcno
 test/*.gcda
 test/*.gcno
+nc.nn
