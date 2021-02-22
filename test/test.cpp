@@ -594,18 +594,6 @@ TEST(PositionTest, MakeUnmakeConsistency) {
 
 	EXPECT_EQ(move_count, 56);
 
-	auto contains = [&](int m) -> bool {
-		for (int i = 0; i < move_count; ++i) {
-			if (move::match(moves[i], m)) {
-				return true;
-			}
-		}
-
-		return false;
-	};
-
-	int legal_count = 0;
-
 	for (int i = 0; i < move_count; ++i) {
 		char* mem = new char[sizeof p];
 		memcpy(mem, &p, sizeof p);
