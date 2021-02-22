@@ -16,8 +16,6 @@ namespace neocortex {
 	namespace attacks {
 		extern bitboard king_attacks[64], knight_attacks[64], pawn_attacks[2][64];
 		extern bitboard* rook_attacks[64], *bishop_attacks[64];
-		extern bitboard pawn_frontspans_list[2][64];
-		extern bitboard pawn_attackspans_list[2][64];
 
 		/**
 		 * Initializes the attack lookup tables.
@@ -49,28 +47,6 @@ namespace neocortex {
 		 */
 		inline bitboard pawn(int col, int sq) {
 			return pawn_attacks[col][sq];
-		}
-
-		/**
-		 * Looks up pawn frontspans from a source square.
-		 *
-		 * @param col Attacking color.
-		 * @param sq Source square.
-		 * @return Bitboard of squares the pawn can advance to.
-		 */
-		inline bitboard pawn_frontspans(int col, int sq) {
-			return pawn_frontspans_list[col][sq];
-		}
-
-		/**
-		 * Looks up pawn attackspans from a source square.
-		 *
-		 * @param col Attacking color.
-		 * @param sq Source square.
-		 * @return Bitboard of squares the pawn can eventually attack.
-		 */
-		inline bitboard pawn_attackspans(int col, int sq) {
-			return pawn_attackspans_list[col][sq];
 		}
 
 		/**

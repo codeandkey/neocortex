@@ -11,28 +11,23 @@
 
 namespace neocortex {
 	namespace piece {
-		/* Piece types */
-		constexpr int PAWN = 0;
-		constexpr int BISHOP = 1;
-		constexpr int KNIGHT = 2;
-		constexpr int ROOK = 3;
-		constexpr int QUEEN = 4;
-		constexpr int KING = 5;
-
-		/* Piece colors */
-		constexpr int WHITE = 0;
-		constexpr int BLACK = 1;
-
-		constexpr int null = -1;
-
 		/**
-		 * Tests if a piece is not null.
+		 * Tests if a piece is null.
 		 *
 		 * @param piece Input piece.
-		 * @return true iff piece is a valid piece.
+		 * @return true if piece is null, false otherwise.
 		 */
-		inline bool is_valid(int piece) {
-			return piece >= 0 && piece < 12;
+		inline bool is_null(int piece) {
+			return piece < 0;
+		}
+
+		/**
+		 * Gets a null piece.
+		 *
+		 * @return null piece.
+		 */
+		inline int null() {
+			return -1;
 		}
 
 		/**
@@ -43,8 +38,7 @@ namespace neocortex {
 		 *
 		 * @return Piece value.
 		 */
-		inline int make_piece(int color, int type) {
-			assert(color == WHITE || color == BLACK);
+		inline int make(int color, int type) {
 			return (type << 1) | color;
 		}
 
@@ -55,7 +49,6 @@ namespace neocortex {
 		 * @return Piece color.
 		 */
 		inline int color(int piece) {
-			assert(is_valid(piece));
 			return piece & 1;
 		}
 
@@ -66,7 +59,6 @@ namespace neocortex {
 		 * @return Piece type.
 		 */
 		inline int type(int piece) {
-			assert(is_valid(piece));
 			return piece >> 1;
 		}
 
@@ -81,51 +73,19 @@ namespace neocortex {
 		}
 
 		/**
-		 * Gets a UCI/FEN character for a piece.
+		 * Gets a UCI character for a piece.
 		 * 
 		 * @param piece Input piece.
-		 * @return Piece character in FEN format.
+		 * @return UCI piece character, or '?' if invalid.
 		 */
 		char get_uci(int piece);
 
 		/**
-		 * Parses a UCI/FEN character into a piece.
+		 * Parses a UCI character into a piece.
 		 *
 		 * @param uci Input character.
 		 * @return Encoded piece.
 		 */
 		int from_uci(char uci);
-
-		/**
-		 * Parses 'w' or 'b' into WHITE and BLACK respectively.
-		 *
-		 * @param uci Input character.
-		 * @return Parsed color.
-		 */
-		int color_from_uci(char uci);
-
-		/**
-		 * Converts a color into 'w' or 'b'.
-		 *
-		 * @param col Input color.
-		 * @return FEN color character ('w' or 'b').
-		 */
-		char color_to_uci(int col);
-
-		/**
-		 * Converts a FEN/UCI piece type char into a type.
-		 *
-		 * @param uci Input character.
-		 * @return Parsed type.
-		 */
-		int type_from_uci(char uci);
-
-		/**
-		 * Converts a piece type into a FEN/UCI piece type char.
-		 *
-		 * @param type Input type.
-		 * @return FEN type character.
-		 */
-		char type_to_uci(int type);
 	}
 }

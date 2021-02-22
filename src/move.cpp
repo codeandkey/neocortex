@@ -5,80 +5,46 @@
  * LICENSE.txt, included in this source code distribution.
  */
 
-#include "attacks.h"
-#include "bitboard.h"
 #include "move.h"
-#include "util.h"
+#include "square.h"
+#include "type.h"
 
 #include <cassert>
 
 using namespace neocortex;
 
-const Move Move::null = Move();
+int move::from_uci(std::string uci) {
+	int ptype = 0;
 
-Move::Move() : m_src(square::null), m_dst(square::null), m_ptype(piece::null) {}
+	if (uci.size() == 5) {
+		ptype = type::from_uci(uci.back());
 
-Move::Move(int src, int dst, int ptype) {
-	assert(square::is_valid(src));
-	assert(square::is_valid(dst));
+		uci.pop_back();
 
-	this->m_src = src;
-	this->m_dst = dst;
-	this->m_ptype = ptype;
-}
-
-Move::Move(std::string uci) {
-	if (uci.size() < 4 || uci.size() > 5) {
-		throw util::fmterr("Invalid UCI \"%s\": moves must be 4 or 5 characters, parsed %d", uci.c_str(), uci.size());
+		if (type::is_null(ptype)) {
+			return move::null();
+		}
 	}
 
-	m_src = square::from_uci(uci.substr(0, 2));
-	m_dst = square::from_uci(uci.substr(2, 2));
-	m_ptype = (uci.size() == 5) ? piece::type_from_uci(uci[4]) : piece::null;
-}
-
-std::string Move::to_uci() {
-	std::string output;
-
-	output += square::to_uci(m_src);
-	output += square::to_uci(m_dst);
-
-	if (piece::is_type(m_ptype)) {
-		output += piece::type_to_uci(m_ptype);
+	if (uci.size() != 4) {
+		return move::null();
 	}
 
-	return output;
+	return move::make(square::from_uci(uci.substr(0, 2)), square::from_uci(uci.substr(2, 2)), ptype);
 }
 
-bool Move::is_valid() const {
-	if (!square::is_valid(m_src)) return false;
-	if (!square::is_valid(m_dst)) return false;
+std::string move::to_uci(int m) {
+	if (move::is_null(m)) {
+		return "0000";
+	}
 
-	return true;
-}
+	std::string output = "";
 
-bool Move::match_uci(std::string uci) {
-	return *this == Move(uci);
-}
+	output += square::to_uci(move::src(m));
+	output += square::to_uci(move::dst(m));
 
-Move::operator std::string() {
-	return to_uci();
-}
-
-bool Move::operator==(const Move& rhs) const {
-	return (m_src == rhs.m_src && m_dst == rhs.m_dst && m_ptype == rhs.m_ptype);
-}
-
-PV::PV() {
-	len = 0;
-}
-
-std::string PV::to_string() {
-	std::string output;
-
-	for (int i = 0; i < len; ++i) {
-		if (i) output += ' ';
-		output += moves[i].to_uci();
+	if (m & move::PROMOTION) {
+		output += type::to_uci(move::ptype(m));
 	}
 
 	return output;

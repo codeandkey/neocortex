@@ -45,7 +45,7 @@ void zobrist::init() {
 
 zobrist::Key zobrist::piece(int sq, int p) {
 	assert(zobrist_initialized);
-	if (p == piece::null) return 0;
+	if (piece::is_null(p)) return 0;
 	return piece_keys[sq][p];
 }
 
@@ -56,7 +56,7 @@ zobrist::Key zobrist::castle(int rights) {
 
 zobrist::Key zobrist::en_passant(int sq) {
 	assert(zobrist_initialized);
-	if (sq == square::null) return 0;
+	if (square::is_null(sq)) return 0;
 	return en_passant_keys[square::file(sq)];
 }
 

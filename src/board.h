@@ -122,14 +122,6 @@ namespace neocortex {
 		bitboard attacks_on(int sq);
 
 		/**
-		 * Gets guard status of a square.
-		 *
-		 * @param sq Square.
-		 * @return Guard value from white POV.
-		 */
-		int guard_value(int sq);
-
-		/**
 		 * Faster test to see if any square in a mask is attacked.
 		 *
 		 * @param mask Bitboard mask of squares to test.
@@ -138,63 +130,9 @@ namespace neocortex {
 		 */
 		bool mask_is_attacked(bitboard mask, int col);
 
-		/**
-		 * Gets a mask of all passed pawns of a color.
-		 * @param col Color to test.
-		 * @return Passed pawn mask.
-		 */
-		bitboard passedpawns(int col);
-
-		/**
-		 * Gets the union of front spans and attack spans for a color.
-		 * @param col Color to test.
-		 * @return Span mask.
-		 */
-		bitboard all_spans(int col);
-
-		/**
-		 * Gets a mask of all pawn front spans for a color.
-		 * @param col Color to test.
-		 * @return Frontspan mask.
-		 */
-		bitboard front_spans(int col);
-
-		/**
-		 * Gets a mask of all pawn attack spans for a color.
-		 * @param col Color to test.
-		 * @return Attack span mask.
-		 */
-		bitboard attack_spans(int col);
-
-		/**
-		 * Gets isolated pawns for a color.
-		 * @param col Color to test.
-		 * @return Mask of isolated pawns.
-		 */
-		bitboard isolated_pawns(int col);
-
-		/**
-		 * Gets backward pawns for a color.
-		 * @param col Color to test.
-		 * @return Mask of backward pawns.
-		 */
-		bitboard backward_pawns(int col);
-
-		/**
-		 * Gets the middlegame material imbalance.
-		 * @return MG material score
-		 */
-		int material_mg();
-
-		/**
-		 * Gets the endgame material imbalance.
-		 * @return EG material score
-		 */
-		int material_eg();
 	private:
 		bitboard global_occ, color_occ[2], piece_occ[6];
 		int state[64];
-		int mat_mg, mat_eg;
 		zobrist::Key key;
 	};
 
@@ -216,13 +154,5 @@ namespace neocortex {
 
 	inline zobrist::Key Board::get_tt_key() {
 		return key;
-	}
-
-	inline int Board::material_mg() {
-		return mat_mg;
-	}
-
-	inline int Board::material_eg() {
-		return mat_eg;
 	}
 }

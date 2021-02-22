@@ -41,17 +41,14 @@
     <ClCompile Include="src\attacks.cpp" />
     <ClCompile Include="src\bitboard.cpp" />
     <ClCompile Include="src\board.cpp" />
-    <ClCompile Include="src\eval.cpp" />
-    <ClCompile Include="src\eval_consts.cpp" />
+    <ClCompile Include="src\color.cpp" />
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\move.cpp" />
     <ClCompile Include="src\perft.cpp" />
     <ClCompile Include="src\piece.cpp" />
     <ClCompile Include="src\position.cpp" />
-    <ClCompile Include="src\search.cpp" />
     <ClCompile Include="src\square.cpp" />
-    <ClCompile Include="src\tt.cpp" />
-    <ClCompile Include="src\uci.cpp" />
+    <ClCompile Include="src\type.cpp" />
     <ClCompile Include="src\util.cpp" />
     <ClCompile Include="src\zobrist.cpp" />
     <ClCompile Include="test\test.cpp" />
@@ -60,8 +57,7 @@
     <ClInclude Include="src\attacks.h" />
     <ClInclude Include="src\bitboard.h" />
     <ClInclude Include="src\board.h" />
-    <ClInclude Include="src\eval.h" />
-    <ClInclude Include="src\eval_consts.h" />
+    <ClInclude Include="src\color.h" />
     <ClInclude Include="src\log.h" />
     <ClInclude Include="src\magic_consts.h" />
     <ClInclude Include="src\move.h" />
@@ -69,10 +65,8 @@
     <ClInclude Include="src\piece.h" />
     <ClInclude Include="src\platform.h" />
     <ClInclude Include="src\position.h" />
-    <ClInclude Include="src\search.h" />
     <ClInclude Include="src\square.h" />
-    <ClInclude Include="src\tt.h" />
-    <ClInclude Include="src\uci.h" />
+    <ClInclude Include="src\type.h" />
     <ClInclude Include="src\util.h" />
     <ClInclude Include="src\zobrist.h" />
   </ItemGroup>

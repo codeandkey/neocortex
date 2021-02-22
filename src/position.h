@@ -11,6 +11,7 @@
 #include "move.h"
 #include "piece.h"
 #include "square.h"
+#include "type.h"
 
 #include <iostream>
 #include <string>
@@ -23,22 +24,18 @@ namespace neocortex {
 	constexpr int CASTLE_BLACK_Q = 8;
 
 	constexpr int MAX_PL_MOVES = 100;
-	constexpr int SEE_ILLEGAL = -100000;
 
 	class Position {
 	public:
 		struct State {
-			Move last_move = Move::null;
-			int en_passant_square = square::null;
+			int last_move = move::null();
+			int en_passant_square = square::null();
 			int castle_rights = 0xF;
-			int captured_piece = piece::null;
-			int captured_square = square::null;
+			int captured_piece = piece::null();
+			int captured_square = square::null();
 			int halfmove_clock = 0;
 			int fullmove_number = 1;
 			int in_check = 0;
-
-			bool was_en_passant = false;
-			bool was_castle = false;
 
 			zobrist::Key key = 0;
 		};
@@ -82,14 +79,24 @@ namespace neocortex {
 		 * @param move Pseudolegal move.
 		 * @return true if move is legal, false otherwise.
 		 */
-		bool make_move(Move move);
+		bool make_move(int move);
 
 		/**
-		 * Unmakes a move. The move must match the last move made.
-		 *
-		 * @param move Last move.
+		 * Tries to match a uci move to a pseudolegal move.
+		 * This is SLOW and should only be used for testing or user input.
+		 * 
+		 * @param m Input move, to be matched.
+		 * @param m Matched move dest if non NULL.
+		 * @return true if move is legal, false otherwise.
 		 */
-		void unmake_move(Move move);
+		bool make_matched_move(int move, int* matched_out = NULL);
+
+		/**
+		 * Unmakes a move.
+		 * 
+		 * @return Move unmade.
+		 */
+		int unmake_move();
 
 		/**
 		 * Gets a mask of valid en passant squares.
@@ -155,20 +162,12 @@ namespace neocortex {
 		int halfmove_clock();
 
 		/**
-		 * Evaluates the current position.
-		 *
-		 * @param dbg String output pointer for debug information.
-		 * @return Evaluation score.
-		 */
-		int evaluate(std::string* dbg = NULL);
-
-		/**
 		 * Gets the pseudolegal moves for the position.
 		 * 
 		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
 		 * @return Number of moves generated.
 		 */
-		int pseudolegal_moves(Move* dst);
+		int pseudolegal_moves(int* dst);
 
 		/**
 		 * Gets evasion moves for a position.
@@ -176,57 +175,7 @@ namespace neocortex {
 		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
 		 * @return Number of moves generated.
 		 */
-		int pseudolegal_moves_evasions(Move* dst);
-
-		/**
-		 * Performs move ordering on a list of pseudolegal moves.
-		 *
-		 * @param moves Move list pointer.
-		 * @param num_moves Number of moves in the list.
-		 * @param pv_move PV move if available.
-		 */
-		void order_moves(Move* moves, int num_moves, Move pv_move = Move::null);
-
-		/**
-		 * Gets the pseudolegal moves for the position (quiescence search variant)
-		 *
-		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
-		 * @return Number of moves generated.
-		 */
-		int pseudolegal_moves_quiescence(Move* dst);
-
-		/**
-		 * Gets the pseudolegal moves for the position (quiescence capture search variant)
-		 *
-		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
-		 * @return Number of moves generated.
-		 */
-		int pseudolegal_moves_quiescence_captures(Move* dst);
-
-		/**
-		 * Performs move ordering on a list of pseudolegal moves (quiescence search variant)
-		 *
-		 * @param moves Move list pointer.
-		 * @param num_moves Number of moves in the list.
-		 * @param pv_move PV move if available.
-		 * @return New size of move list.
-		 */
-		int order_moves_quiescence(Move* moves, int num_moves, Move pv_move = Move::null);
-
-		/**
-		 * Performs static exchange evaluation on a capture.
-		 * 
-		 * @param capture Capturing move.
-		 */
-		int see_capture(Move capture);
-
-		/**
-		 * Performs static exchange evaluation on a square.
-		 *
-		 * @param sq Destination square.
-		 * @param col Attacking color.
-		 */
-		int see(int sq, int col);
+		int pseudolegal_moves_evasions(int* dst);
 
 		/**
 		 * Get a printable debug dump of the position.
@@ -235,46 +184,13 @@ namespace neocortex {
 		 */
 		std::string dump();
 
-		/**
-		 * Resets the evaluation counter to 0.
-		 */
-		void reset_eval_counter();
-
-		/**
-		 * Gets the current eval counter. Incremented every time evaluate() is called.
-		 * @return Number of evaluations since reset_eval_counter() was called.
-		 */
-		int get_eval_counter();
-
-		/**
-		 * Resets the internal history heuristic table.
-		 */
-		void reset_history_table();
-
-		/**
-		 * Adds a bonus to the history table for the current CTM.
-		 * The move that receives the bonus must be UNMADE before calling this.
-		 * @param depth Depth of cutoff.
-		 */
-		void add_history_bonus(Move& m, int depth);
-
-		/**
-		 * Gets whether a null move is appropriate for NMR in the current position.
-		 * Returns true if the CTM has at least one piece that is not a pawn or king, and is not in check.
-		 * 
-		 * @return true if null move is appropriate, false otherwise.
-		 */
-		bool null_move_allowed();
 	private:
 		Board board;
 		std::vector<State> ply;
 		int color_to_move;
-		int eval_counter;
-
-		int history[2][64][64];
 
 		bool test_check(int col) {
-			return (board.attacks_on(bb::getlsb(board.get_piece_occ(piece::KING) & board.get_color_occ(col))) & board.get_color_occ(!col)) != 0;
+			return (board.attacks_on(bb::getlsb(board.get_piece_occ(type::KING) & board.get_color_occ(col))) & board.get_color_occ(!col)) != 0;
 		}
 	};
 
@@ -283,7 +199,7 @@ namespace neocortex {
 	}
 
 	inline bool Position::capture() {
-		return ply.back().captured_piece != piece::null;
+		return (ply.size() > 1) && (ply.back().last_move & (move::CAPTURE | move::CAPTURE_EP));
 	}
 
 	inline bool Position::check() {
@@ -291,24 +207,14 @@ namespace neocortex {
 	}
 
 	inline bool Position::en_passant() {
-		return ply.back().was_en_passant;
+		return (ply.size() > 1) && ply.back().last_move & move::CAPTURE_EP;
 	}
 
 	inline bool Position::castle() {
-		return ply.back().was_castle;
+		return (ply.size() > 1) && ply.back().last_move & (move::CASTLE_KS | move::CASTLE_QS);
 	}
 
 	inline bool Position::promotion() {
-		return piece::is_type(ply.back().last_move.ptype());
-	}
-
-	inline void Position::add_history_bonus(Move& m, int depth) {
-		history[color_to_move][m.src()][m.dst()] += depth * depth;
-	}
-
-	inline bool Position::null_move_allowed() {
-		bitboard npk_pieces = board.get_piece_occ(piece::BISHOP) | board.get_piece_occ(piece::KNIGHT) | board.get_piece_occ(piece::ROOK) | board.get_piece_occ(piece::QUEEN);
-
-		return (npk_pieces & board.get_color_occ(color_to_move)) && !check();
+		return (ply.size() > 1) && ply.back().last_move & move::PROMOTION;
 	}
 }

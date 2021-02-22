@@ -7,114 +7,105 @@
 
 #pragma once
 
-#include "board.h"
-#include "piece.h"
-#include "square.h"
-
 #include <string>
 
 namespace neocortex {
-	class Move {
-	public:
-		/**
-		 * Constructs a null move.
-		 */
-		Move();
+	namespace move {
+		constexpr int CASTLE_KS = 1 << 15;
+		constexpr int CASTLE_QS = 1 << 16;
+		constexpr int PAWN_JUMP = 1 << 17;
+		constexpr int CAPTURE = 1 << 18;
+		constexpr int CAPTURE_EP = 1 << 19;
+		constexpr int PROMOTION = 1 << 20;
 
 		/**
-		 * Constructs a move.
-		 *
+		 * Generates a new move from src to dst with optional ptype.
+		 * 
 		 * @param src Source square.
 		 * @param dst Destination square.
-		 * @param ptype Promotion type.
+		 * @param ptype Promotion type (optional)
+		 * @param flags Flags to apply.
+		 * 
+		 * @return New move.
 		 */
-		Move(int src, int dst, int ptype = piece::null);
+		inline int make(int src, int dst, int ptype = 0, int flags = 0) {
+			return src | (dst << 6) | (ptype << 12) | flags;
+		}
+
+		/**
+		 * Gets a null move.
+		 * @return Null move.
+		 */
+		inline int null() {
+			return -1;
+		}
 
 		/**
 		 * Parses a move from UCI.
 		 * Does not apply any flags, just sets the source and dest squares as well as the promotion type.
+		 * Returns nullmove if UCI is invalid.
 		 *
 		 * @param uci Input uci.
 		 */
-		Move(std::string uci);
+		int from_uci(std::string uci);
 
 		/**
 		 * Converts a move to a UCI string.
 		 *
+		 * @param m Input move.
 		 * @return UCI string.
 		 */
-		std::string to_uci();
+		std::string to_uci(int m);
 
 		/**
-		 * Converts a move to PGN.
+		 * Tests if this move is null.
 		 *
-		 * @param context Current board context.
+		 * @param m Input move.
+		 * @return true if this move is null.
 		 */
-		std::string to_pgn(Board& context);
-
-		/**
-		 * Tests if this move is not null.
-		 *
-		 * @return true if this move is not null.
-		 */
-		bool is_valid() const;
-
-		/**
-		 * Tests if this move matches with a UCI string.
-		 * This is used for matching input UCI moves to generated actual moves.
-		 *
-		 * @param uci Input uci.
-		 * @return true if this move can be represented with the input.
-		 */
-		bool match_uci(std::string uci);
+		inline bool is_null(int m) {
+			return m < 0;
+		}
 
 		/**
 		 * Gets the move source square.
 		 *
+		 * @param m Input move.
 		 * @return Source square.
 		 */
-		int src() const {
-			return m_src;
+		inline int src(int m) {
+			return m & 0x3F;
 		}
 
 		/**
 		 * Gets the move destination square.
 		 *
+		 * @param m Input move.
 		 * @return Destination square.
 		 */
-		int dst() const {
-			return m_dst;
+		inline int dst(int m) {
+			return (m >> 6) & 0x3F;
 		}
 
 		/**
-		 * Gets the move promotion type, or null if there is none set.
+		 * Gets the move promotion type.
 		 *
-		 * @return Promotion type, or null.
+		 * @param m Input move.
+		 * @return Promotion type
 		 */
-		int ptype() const {
-			return m_ptype;
+		inline int ptype(int m) {
+			return (m >> 12) & 0x7;
 		}
 
 		/**
-		 * Shorthand for to_uci().
+		 * Tests if two moves are the same (excluding flags)
+		 * 
+		 * @param a First move.
+		 * @param b Second move.
+		 * @return true if moves have same coordinates and ptype.
 		 */
-		operator std::string();
-
-		bool operator==(const Move& rhs) const;
-
-		static const Move null;
-	private:
-
-		int m_src, m_dst, m_ptype;
-	};
-
-	struct PV {
-		PV();
-		std::string to_string();
-
-		static constexpr int MAXSIZE = 128;
-
-		int len;
-		Move moves[PV::MAXSIZE];
-	};
+		inline int match(int a, int b) {
+			return src(a) == src(b) && dst(a) == dst(b) && ptype(a) == ptype(b);
+		}
+	}
 }

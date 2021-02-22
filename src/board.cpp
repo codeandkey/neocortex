@@ -6,8 +6,9 @@
  */
 
 #include "board.h"
-#include "eval_consts.h"
 #include "util.h"
+#include "color.h"
+#include "type.h"
 
 #include "log.h"
 
@@ -32,7 +33,6 @@ Board::Board() {
 
 	key = 0;
 	global_occ = 0;
-	mat_mg = mat_eg = 0;
 }
 
 Board::Board(std::string uci) : Board() {
@@ -54,7 +54,7 @@ Board::Board(std::string uci) : Board() {
 						throw util::fmterr("Invalid UCI: overflow in %s", rank.c_str());
 					}
 
-					state[square::at(r, f++)] = piece::null;
+					state[square::at(r, f++)] = piece::null();
 				}
 			} else {
 				if (f >= 8) {
@@ -76,9 +76,9 @@ Board Board::standard() {
 }
 
 void Board::place(int sq, int p) {
-	assert(square::is_valid(sq));
-	assert(piece::is_valid(p));
-	assert(state[sq] == piece::null);
+	assert(!square::is_null(sq));
+	assert(!piece::is_null(p));
+	assert(piece::is_null(state[sq]));
 
 	state[sq] = p;
 
@@ -88,13 +88,11 @@ void Board::place(int sq, int p) {
 	piece_occ[piece::type(p)] ^= mask;
 	color_occ[piece::color(p)] ^= mask;
 	key ^= zobrist::piece(sq, p);
-	mat_mg += eval::MATERIAL_MG_LOOKUP[p];
-	mat_eg += eval::MATERIAL_EG_LOOKUP[p];
 }
 
 int Board::remove(int sq) {
-	assert(square::is_valid(sq));
-	assert(piece::is_valid(state[sq]));
+	assert(!square::is_null(sq));
+	assert(!piece::is_null(state[sq]));
 
 	int res = state[sq];
 
@@ -105,17 +103,14 @@ int Board::remove(int sq) {
 	color_occ[piece::color(res)] ^= mask;
 	key ^= zobrist::piece(sq, res);
 
-	state[sq] = piece::null;
-
-	mat_mg -= eval::MATERIAL_MG_LOOKUP[res];
-	mat_eg -= eval::MATERIAL_EG_LOOKUP[res];
+	state[sq] = piece::null();
 
 	return res;
 }
 
 int Board::replace(int sq, int p) {
-	assert(square::is_valid(sq));
-	assert(piece::is_valid(state[sq]));
+	assert(!square::is_null(sq));
+	assert(!piece::is_null(state[sq]));
 
 	int res = state[sq];
 
@@ -128,11 +123,6 @@ int Board::replace(int sq, int p) {
 
 	key ^= zobrist::piece(sq, res);
 	key ^= zobrist::piece(sq, p);
-
-	mat_mg -= eval::MATERIAL_MG_LOOKUP[res];
-	mat_eg -= eval::MATERIAL_EG_LOOKUP[res];
-	mat_mg += eval::MATERIAL_MG_LOOKUP[p];
-	mat_eg += eval::MATERIAL_EG_LOOKUP[p];
 
 	state[sq] = p;
 
@@ -148,7 +138,7 @@ std::string Board::to_uci() {
 		for (int f = 0; f < 8; ++f) {
 			int sq = square::at(r, f);
 
-			if (state[sq] == piece::null) {
+			if (piece::is_null(state[sq])) {
 				null_count++;
 			} else {
 				if (null_count > 0) {
@@ -178,7 +168,7 @@ std::string Board::to_pretty() {
 		for (int f = 0; f < 8; ++f) {
 			int sq = square::at(r, f);
 
-			if (state[sq] == piece::null) {
+			if (piece::is_null(state[sq])) {
 				output += '.';
 			} else {
 				output += piece::get_uci(state[sq]);
@@ -192,30 +182,19 @@ std::string Board::to_pretty() {
 }
 
 bitboard Board::attacks_on(int sq) {
-	assert(square::is_valid(sq));
+	assert(!square::is_null(sq));
 
-	bitboard white_pawns = piece_occ[piece::PAWN] & color_occ[piece::WHITE];
-	bitboard black_pawns = piece_occ[piece::PAWN] & color_occ[piece::BLACK];
-	bitboard rooks_queens = piece_occ[piece::ROOK] | piece_occ[piece::QUEEN];
-	bitboard bishops_queens = piece_occ[piece::BISHOP] | piece_occ[piece::QUEEN];
+	bitboard white_pawns = piece_occ[type::PAWN] & color_occ[color::WHITE];
+	bitboard black_pawns = piece_occ[type::PAWN] & color_occ[color::BLACK];
+	bitboard rooks_queens = piece_occ[type::ROOK] | piece_occ[type::QUEEN];
+	bitboard bishops_queens = piece_occ[type::BISHOP] | piece_occ[type::QUEEN];
 
-	return (attacks::pawn(piece::WHITE, sq) & black_pawns) |
-		(attacks::pawn(piece::BLACK, sq) & white_pawns) |
-		(attacks::knight(sq) & piece_occ[piece::KNIGHT]) |
+	return (attacks::pawn(color::WHITE, sq) & black_pawns) |
+		(attacks::pawn(color::BLACK, sq) & white_pawns) |
+		(attacks::knight(sq) & piece_occ[type::KNIGHT]) |
 		(attacks::bishop(sq, global_occ) & bishops_queens) |
 		(attacks::rook(sq, global_occ) & rooks_queens) |
-		(attacks::king(sq) & piece_occ[piece::KING]);
-}
-
-int Board::guard_value(int sq) {
-	int val = 0;
-	bitboard att = attacks_on(sq);
-
-	while (att) {
-		val += eval::GUARD_VALUES[state[bb::poplsb(att)]];
-	}
-
-	return val;
+		(attacks::king(sq) & piece_occ[type::KING]);
 }
 
 bool Board::mask_is_attacked(bitboard mask, int col) {
@@ -226,78 +205,4 @@ bool Board::mask_is_attacked(bitboard mask, int col) {
 	}
 
 	return false;
-}
-
-bitboard Board::all_spans(int col) {
-	bitboard out = 0;
-	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
-
-	while (pawns) {
-		int p = bb::poplsb(pawns);
-
-		out |= attacks::pawn_attackspans(col, p);
-		out |= attacks::pawn_frontspans(col, p);
-	}
-
-	return out;
-}
-
-bitboard Board::front_spans(int col) {
-	bitboard out = 0;
-	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
-
-	while (pawns) {
-		int p = bb::poplsb(pawns);
-
-		out |= attacks::pawn_frontspans(col, p);
-	}
-
-	return out;
-}
-
-bitboard Board::attack_spans(int col) {
-	bitboard out = 0;
-	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
-
-	while (pawns) {
-		int p = bb::poplsb(pawns);
-
-		out |= attacks::pawn_attackspans(col, p);
-	}
-
-	return out;
-}
-
-bitboard Board::isolated_pawns(int col) {
-	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
-	bitboard out = 0ULL;
-
-	while (pawns) {
-		int p = bb::poplsb(pawns);
-
-		if (!(bb::neighbor_files(p) & pawns)) {
-			out |= bb::mask(p);
-		}
-	}
-	
-	return out;
-}
-
-bitboard Board::backward_pawns(int col) {
-	bitboard pawns = piece_occ[piece::PAWN] & color_occ[col];
-	bitboard stops = bb::shift(pawns, (col == piece::WHITE) ? NORTH : SOUTH);
-
-	bitboard opp_pawns = piece_occ[piece::PAWN] & color_occ[!col];
-	bitboard opp_attacks = bb::shift(opp_pawns & ~FILE_A, (col == piece::WHITE) ? NORTHWEST : SOUTHWEST);
-
-	opp_attacks |= bb::shift(opp_pawns & ~FILE_H, (col == piece::WHITE) ? NORTHEAST : SOUTHEAST);
-
-	stops &= ~attack_spans(col);
-	stops &= opp_attacks;
-
-	return bb::shift(stops, (col == piece::WHITE) ? SOUTH : NORTH);
-}
-
-bitboard Board::passedpawns(int col) {
-	return ~all_spans(!col) & piece_occ[piece::PAWN] & color_occ[col];
 }

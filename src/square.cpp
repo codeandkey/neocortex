@@ -13,7 +13,7 @@ using namespace neocortex;
 
 int square::from_uci(std::string uci) {
 	if (uci == "-") {
-		return square::null;
+		return square::null();
 	} else {
 		assert(uci.size() == 2);
 		return at(uci[1] - '1', uci[0] - 'a');
@@ -21,7 +21,7 @@ int square::from_uci(std::string uci) {
 }
 
 std::string square::to_uci(int sq) {
-	if (sq == square::null) {
+	if (square::is_null(sq)) {
 		return "-";
 	}
 

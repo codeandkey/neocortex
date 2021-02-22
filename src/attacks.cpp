@@ -9,6 +9,8 @@
 #include "util.h"
 #include "piece.h"
 #include "square.h"
+#include "color.h"
+#include "type.h"
 
 #include <cassert>
 
@@ -17,8 +19,6 @@ using namespace neocortex;
 bitboard attacks::king_attacks[64] = { 0 };
 bitboard attacks::knight_attacks[64] = { 0 };
 bitboard attacks::pawn_attacks[2][64] = { {0} };
-bitboard attacks::pawn_frontspans_list[2][64] = { {0} };
-bitboard attacks::pawn_attackspans_list[2][64] = { {0} };
 bitboard* attacks::rook_attacks[64] = { nullptr };
 bitboard* attacks::bishop_attacks[64] = { nullptr };
 
@@ -28,43 +28,17 @@ void attacks::init() {
 	for (int sq = 0; sq < 64; ++sq) {
 		int src_r = square::rank(sq), src_f = square::file(sq);
 
-		/* white pawn spans */
-		for (int rr = src_r + 1; rr < 8; ++rr) {
-			pawn_frontspans_list[piece::WHITE][sq] |= bb::mask(square::at(rr, src_f));
-
-			if (src_f > 0) {
-				pawn_attackspans_list[piece::WHITE][sq] |= bb::mask(square::at(rr, src_f - 1));
-			}
-
-			if (src_f < 7) {
-				pawn_attackspans_list[piece::WHITE][sq] |= bb::mask(square::at(rr, src_f + 1));
-			}
-		}
-
-		/* black pawn spans */
-		for (int rr = src_r - 1; rr >= 0; --rr) {
-			pawn_frontspans_list[piece::BLACK][sq] |= bb::mask(square::at(rr, src_f));
-
-			if (src_f > 0) {
-				pawn_attackspans_list[piece::BLACK][sq] |= bb::mask(square::at(rr, src_f - 1));
-			}
-
-			if (src_f < 7) {
-				pawn_attackspans_list[piece::BLACK][sq] |= bb::mask(square::at(rr, src_f + 1));
-			}
-		}
-
 		if (src_r < 7) {
-			pawn_attacks[piece::WHITE][sq] = bb::shift(bb::mask(sq) & ~FILE_A, NORTHWEST) | bb::shift(bb::mask(sq) & ~FILE_H, NORTHEAST);
+			pawn_attacks[color::WHITE][sq] = bb::shift(bb::mask(sq) & ~FILE_A, NORTHWEST) | bb::shift(bb::mask(sq) & ~FILE_H, NORTHEAST);
 		} else {
-			pawn_attacks[piece::WHITE][sq] = 0;
+			pawn_attacks[color::WHITE][sq] = 0;
 		}
 
 		if (src_r > 0) {
-			pawn_attacks[piece::BLACK][sq] = bb::shift(bb::mask(sq) & ~FILE_A, SOUTHWEST) | bb::shift(bb::mask(sq) & ~FILE_H, SOUTHEAST);
+			pawn_attacks[color::BLACK][sq] = bb::shift(bb::mask(sq) & ~FILE_A, SOUTHWEST) | bb::shift(bb::mask(sq) & ~FILE_H, SOUTHEAST);
 		}
 		else {
-			pawn_attacks[piece::BLACK][sq] = 0;
+			pawn_attacks[color::BLACK][sq] = 0;
 		}
 
 		king_attacks[sq] |= bb::shift((bb::mask(sq) & ~FILE_H), EAST);

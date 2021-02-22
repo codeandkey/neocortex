@@ -63,7 +63,7 @@ void perft_movegen(Position& p, int depth) {
 		return;
 	}
 
-	Move pl_moves[MAX_PL_MOVES];
+	int pl_moves[MAX_PL_MOVES];
 	int num_pl_moves = p.pseudolegal_moves(pl_moves);
 
 	for (int i = 0; i < num_pl_moves; ++i) {
@@ -71,6 +71,6 @@ void perft_movegen(Position& p, int depth) {
 			perft_movegen(p, depth - 1);
 		}
 
-		p.unmake_move(pl_moves[i]);
+		p.unmake_move();
 	}
 }

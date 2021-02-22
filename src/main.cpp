@@ -8,10 +8,7 @@
 #include "attacks.h"
 #include "log.h"
 #include "platform.h"
-#include "uci.h"
-#include "tt.h"
 #include "zobrist.h"
-#include "search.h"
 
 #include <iostream>
 #include <string>
@@ -28,14 +25,6 @@ int main(int argc, char** argv) {
 	bb::init();
 	zobrist::init();
 	attacks::init();
-	tt::init();
-
-	try {
-		uci::start();
-	}
-	catch (std::exception& e) {
-		neocortex_error("Unhandled exception: %s\n", e.what());
-	}
 
 	return 0;
 }
