@@ -1,33 +1,22 @@
 # Neocortex
 
-[![Build Status](https://travis-ci.com/codeandkey/neocortex.svg?branch=master)](https://travis-ci.com/codeandkey/neocortex) [![Coverage Status](https://coveralls.io/repos/github/codeandkey/neocortex/badge.svg?branch=master&kill_cache=1)](https://coveralls.io/github/codeandkey/neocortex?branch=master)
+[![Build Status](https://travis-ci.com/codeandkey/nczero.svg?branch=master)](https://travis-ci.com/codeandkey/nczero) [![Coverage Status](https://coveralls.io/repos/github/codeandkey/nczero/badge.svg?branch=master&kill_cache=1)](https://coveralls.io/github/codeandkey/nczero?branch=master)
 
-A homemade C++ chess engine.
-
-Play a game with me [here!](https://neocortex-cortexbot.herokuapp.com)
-
-> NOTE: A [Lichess](https://lichess.org/) account is required to challenge the bot.
+A self-learning chess engine.
 
 ## architecture
 
-- Negamax alpha-beta search with iterative deepening
-- Lazy SMP parallel search
-- Transposition table with Zobrist hashing
-- Time control management
-- UCI support
+Many techniques in this engine are inspired by the revolutionary [AlphaZero](https://arxiv.org/pdf/1712.01815.pdf) as well as the extensive [Chess Programming Wiki](https://www.chessprogramming.org).
 
-## methods
-
-Many of the methods used in this engine are inspired by the extensive resources available at the [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page):
-
-- Guard heuristic
-- Static exchange evaluation
-- Specialized quiescence/evasion movegen
-- History heuristic
+- Parallel Monte Carlo Tree Search
+- Bitboard move generation
+- Incremental input layers
 
 ## dependencies
 
-Neocortex builds on GCC 7.3+ or MSVC 2015+. To run the test suite [GoogleTest](https://github.com/google/googletest) must be available on the host.
+- GCC 8+ on \*NIX, or MSVC 15.7+ on Windows
+- [TensorFlow C API](https://www.tensorflow.org/install/lang_c)
+- [GoogleTest](https://github.com/google/googletest) to run tests
 
 ## building
 
@@ -35,7 +24,8 @@ Neocortex builds on GCC 7.3+ or MSVC 2015+. To run the test suite [GoogleTest](h
 Execute `make` in the project root to build in release mode.<br>
 Execute `make debug` to build in debug mode, and `make test` to build the test suite.<br>
 
-> NOTE: Building the test suite requires GoogleTest to be available on the host.
-
 **Windows**<br>
-Open `neocortex.vcxproj` in Visual Studio 2015 or newer. Build the solution in either Debug or Release mode.
+Open `neocortex.vcxproj` in Visual Studio. Build the solution in either Debug or Release mode.<br>
+To run the test suite, open `neocortex_test.vcxproj` and build in Debug mode.<br>
+
+> NOTE: Building the test suite requires GoogleTest to be available on the host.
