@@ -5,6 +5,7 @@
 #include "position.h"
 #include "net.h"
 
+#include <atomic>
 #include <thread>
 #include <mutex>
 
@@ -55,7 +56,6 @@ namespace neocortex {
 
 			Node root;
 			int num_threads, max_batchsize_per_thread;
-			nn::Network net;
 			std::vector<nn::Network> nets;
 
 			std::atomic<bool> running;

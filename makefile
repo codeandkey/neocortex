@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Werror -Wno-format-security
-LDFLAGS = -pthread
+CXXFLAGS = -std=c++17 -Wall -Werror -Wno-format-security -Wno-sign-compare -I/usr/include/tensorflow
+LDFLAGS = -pthread -ltensorflow
 
 SOURCES = $(filter-out src/main.cpp, $(wildcard src/*.cpp))
 OBJECTS = $(SOURCES:.cpp=.o)

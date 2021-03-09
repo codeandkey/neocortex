@@ -19,6 +19,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <list>
 
 #define MODE_TRAIN 0
 
@@ -51,11 +52,6 @@ int main(int argc, char** argv) {
 	bb::init();
 	zobrist::init();
 	attacks::init();
-
-	if (argc > 3) {
-		std::cerr << "Too many models!\n";
-		return usage(*argv);
-	}
 
 	int num_games = 32;
 	int max_batchsize_per_thread = 16;
@@ -110,6 +106,22 @@ int main(int argc, char** argv) {
 				return usage(*argv);
 			}
 		}
+		else if (std::string(argv[i]) == "-j") {
+			if (i == argc - 1) {
+				neocortex_error("'-j': expected argument\n");
+				return usage(*argv);
+			}
+
+			try {
+				num_search_threads = std::stoi(argv[i + 1], NULL, 10);
+				++i;
+			}
+			catch (std::exception& e) {
+				neocortex_error("Exception parsing '-j' argument: %s\n", e.what());
+				return usage(*argv);
+			}
+		}
+
 		else {
 			model_paths.push_back(argv[i]);
 		}
@@ -139,6 +151,11 @@ int main(int argc, char** argv) {
 
 		neocortex_info("Defaulting to latest generation: %d\n", cgen);
 		model_paths.push_back(std::string("gen") + std::to_string(cgen));
+	}
+
+	if (model_paths.size() > 2) {
+		std::cerr << "Too many models!\n";
+		return usage(*argv);
 	}
 
 	std::sort(model_paths.begin(), model_paths.end());
@@ -186,8 +203,6 @@ int main(int argc, char** argv) {
 				players[color::BLACK]->get_name().c_str()
 			);
 
-			float mcts_counts[4096];
-
 			std::vector<int> game_moves;
 
 			// Start making moves until game is over.
@@ -222,7 +237,7 @@ int main(int argc, char** argv) {
 }
 
 int usage(char* a0) {
-	std::cout << "usage: " << a0 << " [-n num] [-b maxbatchsize] [modelA [modelB]]\n";
+	std::cout << "usage: " << a0 << " [-n num] [-b maxbatchsize] [-t time] [-j threads] [modelA [modelB]]\n";
 
 	return 1;
 }

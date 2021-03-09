@@ -6,10 +6,11 @@
 #include <initializer_list>
 #include <random>
 #include <iterator>
+#include <cmath>
 
 using namespace neocortex;
 
-Search::Search(std::string path, int max_batchsize_per_thread, int num_threads, std::string fen) : net(net), root() {
+Search::Search(std::string path, int max_batchsize_per_thread, int num_threads, std::string fen) {
 	if (num_threads > 4) num_threads = 1;
 
 	this->max_batchsize_per_thread = max_batchsize_per_thread;
@@ -127,12 +128,11 @@ int Search::build_batch(Node& node, int threadid, int allocated, int offset) {
 
 		for (int i = 0; i < node.children.size(); ++i) {
 			auto& child = node.children[i];
-			int policy_ind = move::src(child.action) * 64 + move::dst(child.action);
 			float uct = child.q + child.p * POLICY_WEIGHT + EXPLORATION * std::sqrt(((float) std::log(node.n + 1) / ((float) child.n + 1.0f)));
 			uct_total += uct;
 			uct_pairs.push_back({ uct, i });
 
-			assert(!isnan(uct));
+			assert(!std::isnan(uct));
 		}
 
 		node.lock->unlock();
@@ -239,14 +239,14 @@ void Search::worker(int id) {
 			for (size_t i = 0; i < batch_size; ++i) {
 				batch_nodes[id][i]->backprop(value[i]);
 
-				assert(!isnan(value[i]));
+				assert(!std::isnan(value[i]));
 
 				double p_total = 0.0f;
 
 				for (auto& c : batch_nodes[id][i]->children) {
 					c.p = policy[4096 * i + move::src(c.action) * 64 + move::dst(c.action)];
 					p_total += c.p;
-					assert(!isnan(c.p));
+					assert(!std::isnan(c.p));
 				}
 
 				for (auto& c : batch_nodes[id][i]->children) {
@@ -267,7 +267,7 @@ void Search::worker(int id) {
 
 int Search::search(int search_time, std::vector<float>* mcts_counts) {
 	neocortex_info("%s: searching on %s for %d ms, %d batch, %d threads\n",
-		net.get_name().c_str(),
+		nets[0].get_name().c_str(),
 		positions[0].to_fen().c_str(),
 		search_time,
 		max_batchsize_per_thread,
@@ -355,7 +355,7 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 		std::string movestr = move::to_uci(root.children[i].action);
 
 		neocortex_info(
-			"%s> %5s  %02.1f%% | N=%4d | Q=%+02.2f | W=%+02.2f | P=%02.3f%%\n",
+			"%s> %5s  %03.1f%% | N=%4d | Q=%+04.2f | W=%+04.2f | P=%05.3f%%\n",
 			(root.children[i].action == chosen) ? "##" : "  ",
 			movestr.c_str(),
 			100.0f * (float)root.children[i].n / (float)n_total,

@@ -41,15 +41,29 @@ std::string util::timestring() {
 }
 
 util::time_point util::time_now() {
+#ifdef NEOCORTEX_WIN32
 	return clock();
+#else
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return now;
+#endif
 }
 
 double util::time_elapsed(time_point reference) {
+#ifdef NEOCORTEX_WIN32
 	return ((double) (clock() - reference)) / (double) CLOCKS_PER_SEC;
+#else
+	util::time_point now = time_now();
+	double elapsed = (now.tv_sec - reference.tv_sec);
+	elapsed += (now.tv_nsec - reference.tv_nsec) / 1000000000.0;
+
+	return elapsed;
+#endif
 }
 
 int util::time_elapsed_ms(time_point reference) {
-	return (clock() - reference) * 1000 / CLOCKS_PER_SEC;
+	return time_elapsed(reference) * 1000;
 }
 
 std::vector<std::string> util::split(std::string input, char delim) {

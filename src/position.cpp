@@ -856,7 +856,7 @@ bool Position::is_game_over(int* result) {
 		return true;
 	}
 
-	if ((nking == board.get_piece_occ(type::KNIGHT) | board.get_piece_occ(type::BISHOP)) && bb::popcount(nking) == 1) {
+	if ((nking == (board.get_piece_occ(type::KNIGHT) | board.get_piece_occ(type::BISHOP))) && bb::popcount(nking) == 1) {
 		// King and minor piece vs. king
 
 		if (result) *result = 0;
@@ -879,7 +879,7 @@ bool Position::is_game_over(int* result) {
 	int moves[MAX_PL_MOVES];
 	int num_moves = pseudolegal_moves(moves);
 
-	if (moves == 0) {
+	if (num_moves == 0) {
 		if (check()) {
 			// Checkmate
 

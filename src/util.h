@@ -53,7 +53,11 @@ namespace neocortex {
 		}
 
 		/* Time manipulation */
+#ifdef NEOCORTEX_WIN32
 		typedef clock_t time_point;
+#else
+		typedef struct timespec time_point;
+#endif
 
 		/**
 		 * Gets a string representing the current time.

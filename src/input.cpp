@@ -3,6 +3,7 @@
 #include "color.h"
 
 #include <algorithm>
+#include <cstring>
 
 using namespace neocortex;
 
