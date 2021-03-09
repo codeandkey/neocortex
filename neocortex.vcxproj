@@ -111,9 +111,16 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>tensorflow.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -157,11 +164,18 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);NDEBUG</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>tensorflow.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -195,15 +209,37 @@
       <Message>
       </Message>
     </PostBuildEvent>
+    <ClCompile>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>tensorflow.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\search.h" />
     <ClInclude Include="src\attacks.h" />
     <ClInclude Include="src\bitboard.h" />
     <ClInclude Include="src\board.h" />
     <ClInclude Include="src\color.h" />
+    <ClInclude Include="src\cppflow\context.h" />
+    <ClInclude Include="src\cppflow\cppflow.h" />
+    <ClInclude Include="src\cppflow\datatype.h" />
+    <ClInclude Include="src\cppflow\defer.h" />
+    <ClInclude Include="src\cppflow\model.h" />
+    <ClInclude Include="src\cppflow\ops.h" />
+    <ClInclude Include="src\cppflow\raw_ops.h" />
+    <ClInclude Include="src\cppflow\tensor.h" />
+    <ClInclude Include="src\input.h" />
     <ClInclude Include="src\log.h" />
     <ClInclude Include="src\magic_consts.h" />
     <ClInclude Include="src\move.h" />
+    <ClInclude Include="src\net.h" />
     <ClInclude Include="src\perft.h" />
     <ClInclude Include="src\piece.h" />
     <ClInclude Include="src\platform.h" />
@@ -218,12 +254,15 @@
     <ClCompile Include="src\bitboard.cpp" />
     <ClCompile Include="src\board.cpp" />
     <ClCompile Include="src\color.cpp" />
+    <ClCompile Include="src\input.cpp" />
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\move.cpp" />
+    <ClCompile Include="src\net.cpp" />
     <ClCompile Include="src\perft.cpp" />
     <ClCompile Include="src\piece.cpp" />
     <ClCompile Include="src\position.cpp" />
+    <ClCompile Include="src\search.cpp" />
     <ClCompile Include="src\square.cpp" />
     <ClCompile Include="src\type.cpp" />
     <ClCompile Include="src\util.cpp" />

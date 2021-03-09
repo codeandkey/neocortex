@@ -53,7 +53,7 @@ namespace neocortex {
 		}
 
 		/* Time manipulation */
-		typedef std::chrono::steady_clock::time_point time_point;
+		typedef clock_t time_point;
 
 		/**
 		 * Gets a string representing the current time.

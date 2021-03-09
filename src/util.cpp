@@ -41,15 +41,15 @@ std::string util::timestring() {
 }
 
 util::time_point util::time_now() {
-	return std::chrono::steady_clock::now();
+	return clock();
 }
 
 double util::time_elapsed(time_point reference) {
-	return std::chrono::duration_cast<std::chrono::microseconds>(util::time_now() - reference).count() / 1000000.0;
+	return ((double) (clock() - reference)) / (double) CLOCKS_PER_SEC;
 }
 
 int util::time_elapsed_ms(time_point reference) {
-	return (int) std::chrono::duration_cast<std::chrono::milliseconds>(util::time_now() - reference).count();
+	return (clock() - reference) * 1000 / CLOCKS_PER_SEC;
 }
 
 std::vector<std::string> util::split(std::string input, char delim) {

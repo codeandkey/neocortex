@@ -42,8 +42,10 @@
     <ClCompile Include="src\bitboard.cpp" />
     <ClCompile Include="src\board.cpp" />
     <ClCompile Include="src\color.cpp" />
+    <ClCompile Include="src\input.cpp" />
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\move.cpp" />
+    <ClCompile Include="src\net.cpp" />
     <ClCompile Include="src\perft.cpp" />
     <ClCompile Include="src\piece.cpp" />
     <ClCompile Include="src\position.cpp" />
@@ -58,9 +60,11 @@
     <ClInclude Include="src\bitboard.h" />
     <ClInclude Include="src\board.h" />
     <ClInclude Include="src\color.h" />
+    <ClInclude Include="src\input.h" />
     <ClInclude Include="src\log.h" />
     <ClInclude Include="src\magic_consts.h" />
     <ClInclude Include="src\move.h" />
+    <ClInclude Include="src\net.h" />
     <ClInclude Include="src\perft.h" />
     <ClInclude Include="src\piece.h" />
     <ClInclude Include="src\platform.h" />

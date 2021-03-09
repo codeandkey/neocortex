@@ -146,13 +146,13 @@ bool Position::make_move(int m) {
 	int dst = move::dst(m);
 	int ctm = color_to_move;
 
+	int src_piece = board.remove(src);
+
 	if (m & move::CAPTURE) {
 		// Move is standard capture
 		next_state.captured_piece = board.remove(dst);
 		next_state.captured_square = dst;
 		next_state.halfmove_clock = 0;
-
-		board.place(dst, board.remove(src));
 	}
 	else if (m & move::CAPTURE_EP) {
 		// Move is en-passant capture
@@ -162,15 +162,12 @@ bool Position::make_move(int m) {
 		next_state.captured_piece = board.remove(capture_square);
 		next_state.captured_square = capture_square;
 		next_state.halfmove_clock = 0;
-
-		board.place(dst, board.remove(src));
 	}
 	else if (m & move::CASTLE_KS) {
 		// Move is kingside castle
 		static int ks_rook_src[2] = { square::H1, square::H8 };
 		static int ks_rook_dst[2] = { square::F1, square::F8 };
 
-		board.place(dst, board.remove(src));
 		board.place(ks_rook_dst[ctm], board.remove(ks_rook_src[ctm]));
 	}
 	else if (m & move::CASTLE_QS) {
@@ -178,25 +175,18 @@ bool Position::make_move(int m) {
 		static int qs_rook_src[2] = { square::A1, square::A8 };
 		static int qs_rook_dst[2] = { square::D1, square::D8 };
 
-		board.place(dst, board.remove(src));
 		board.place(qs_rook_dst[ctm], board.remove(qs_rook_src[ctm]));
 	}
-	else if (m & move::PROMOTION) {
-		// Move is promotion
+
+	// Test if pawn move to reset hmc
+	if (board.get_piece_occ(type::PAWN) & bb::mask(src)) {
 		next_state.halfmove_clock = 0;
-
-		board.remove(src);
-		board.place(dst, piece::make(ctm, move::ptype(m)));
 	}
-	else {
-		// Move is quiet
 
-		// Test if pawn move to reset hmc
-		if (board.get_piece_occ(type::PAWN) & bb::mask(src)) {
-			next_state.halfmove_clock = 0;
-		}
-
-		board.place(dst, board.remove(src));
+	if (m & move::PROMOTION) {
+		board.place(dst, piece::make(ctm, move::ptype(m)));
+	} else {
+		board.place(dst, src_piece);
 	}
 
 	bitboard modmask = bb::mask(src) | bb::mask(dst);
@@ -275,10 +265,11 @@ int Position::unmake_move() {
 	int dst = move::dst(m);
 	int ctm = color_to_move;
 
+	int moved_piece = board.remove(dst);
+
 	if (m & (move::CAPTURE | move::CAPTURE_EP)) {
 		// Move was standard capture or EP
 
-		board.place(src, board.remove(dst));
 		board.place(last_state.captured_square, last_state.captured_piece);
 	}
 	else if (m & move::CASTLE_KS) {
@@ -286,7 +277,6 @@ int Position::unmake_move() {
 		static int ks_rook_src[2] = { square::H1, square::H8 };
 		static int ks_rook_dst[2] = { square::F1, square::F8 };
 
-		board.place(src, board.remove(dst));
 		board.place(ks_rook_src[ctm], board.remove(ks_rook_dst[ctm]));
 	}
 	else if (m & move::CASTLE_QS) {
@@ -294,19 +284,15 @@ int Position::unmake_move() {
 		static int qs_rook_src[2] = { square::A1, square::A8 };
 		static int qs_rook_dst[2] = { square::D1, square::D8 };
 
-		board.place(src, board.remove(dst));
 		board.place(qs_rook_src[ctm], board.remove(qs_rook_dst[ctm]));
 	}
-	else if (m & move::PROMOTION) {
+
+	if (m & move::PROMOTION) {
 		// Move was promotion
 
-		board.remove(dst);
 		board.place(src, piece::make(ctm, type::PAWN));
-	}
-	else {
-		// Move was quiet
-
-		board.place(src, board.remove(dst));
+	} else {
+		board.place(src, moved_piece);
 	}
 
 	return m;
@@ -840,6 +826,76 @@ int Position::num_repetitions() {
 
 int Position::halfmove_clock() {
 	return ply.back().halfmove_clock;
+}
+
+bool Position::is_game_over(int* result) {
+	// Check halfmove clock
+	if (halfmove_clock() >= 100) {
+		if (result) *result = 0;
+		return true;
+	}
+
+	// Check threefold repetition
+	int reps = 0;
+	for (auto i : ply) {
+		if (i.key == ply.back().key) {
+			if (++reps >= 3) {
+				if (result) *result = 0;
+				return true;
+			}
+		}
+	}
+
+	// Check insufficient material
+	bitboard nking = board.get_global_occ() & ~board.get_piece_occ(type::KING);
+
+	if (!nking) {
+		// Only two kings
+
+		if (result) *result = 0;
+		return true;
+	}
+
+	if ((nking == board.get_piece_occ(type::KNIGHT) | board.get_piece_occ(type::BISHOP)) && bb::popcount(nking) == 1) {
+		// King and minor piece vs. king
+
+		if (result) *result = 0;
+		return true;
+	}
+
+	if (nking == board.get_piece_occ(type::BISHOP) && bb::popcount(nking) == 2) {
+		// Kings and two same-color bishops
+
+		int first = bb::poplsb(nking);
+		int second = bb::poplsb(nking);
+
+		if (first % 2 == second % 2) {
+			if (result) *result = 0;
+			return true;
+		}
+	}
+
+	// Generate moves
+	int moves[MAX_PL_MOVES];
+	int num_moves = pseudolegal_moves(moves);
+
+	if (moves == 0) {
+		if (check()) {
+			// Checkmate
+
+			if (result) *result = (color_to_move == color::WHITE) ? -1 : 1;
+			return true;
+		}
+		else {
+			// Stalemate
+
+			if (result) *result = 0;
+			return true;
+		}
+	}
+
+	// Game is still going
+	return false;
 }
 
 std::string Position::dump() {

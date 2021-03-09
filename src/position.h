@@ -162,6 +162,13 @@ namespace neocortex {
 		int halfmove_clock();
 
 		/**
+		 * Gets the game's move number.
+		 *
+		 * @return Move number.
+		 */
+		int move_number();
+
+		/**
 		 * Gets the pseudolegal moves for the position.
 		 * 
 		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
@@ -183,6 +190,14 @@ namespace neocortex {
 		 * @return Printable debug string.
 		 */
 		std::string dump();
+
+		/**
+		* Tests if the game is over. If it is, game result is placed in *result.
+		* 1: white wins
+		* 0: draw
+		* -1: black wins
+		*/
+		bool is_game_over(int* result);
 
 	private:
 		Board board;
@@ -216,5 +231,9 @@ namespace neocortex {
 
 	inline bool Position::promotion() {
 		return (ply.size() > 1) && ply.back().last_move & move::PROMOTION;
+	}
+
+	inline int Position::move_number() {
+		return ply.back().fullmove_number;
 	}
 }

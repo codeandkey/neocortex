@@ -595,20 +595,15 @@ TEST(PositionTest, MakeUnmakeConsistency) {
 	EXPECT_EQ(move_count, 56);
 
 	for (int i = 0; i < move_count; ++i) {
-		char* mem = new char[sizeof p];
-		memcpy(mem, &p, sizeof p);
+		std::string f1 = p.to_fen();
 
 		EXPECT_TRUE(p.make_move(moves[i]));
 		EXPECT_EQ(p.unmake_move(), moves[i]);
 
-		char* mem2 = new char[sizeof p];
-		memcpy(mem2, &p, sizeof p);
+		std::string f2 = p.to_fen();
 
-		// Memory should be unchanged after making and unmaking move.
-		EXPECT_EQ(memcmp(mem, mem2, sizeof p), 0);
-
-		delete[] mem;
-		delete[] mem2;
+		// FEN should be unchanged after making and unmaking move.
+		EXPECT_EQ(f1, f2);
 	}
 }
 
