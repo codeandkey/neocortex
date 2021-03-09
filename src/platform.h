@@ -14,6 +14,7 @@
 #ifdef _WIN32
 #define NEOCORTEX_WIN32
 #define NEOCORTEX_PLATFORM "Windows"
+#include <Windows.h>
 #elif defined(__linux__)
 #define NEOCORTEX_LINUX
 #define NEOCORTEX_PLATFORM "Linux"

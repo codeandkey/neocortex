@@ -21,7 +21,7 @@ namespace neocortex {
 		void pop_frame(int batch_id);
 
 		void clear_lmm(int batch_id);
-		void write_lmm(int batch_id, int m);
+		void write_lmm(int batch_id, int m, int pov);
 
 		std::vector<float>& get_board_input();
 		std::vector<float>& get_lmm_input();

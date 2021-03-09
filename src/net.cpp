@@ -6,10 +6,6 @@ using namespace neocortex::nn;
 
 Network::Network(std::string path) : model(path) {
 	name = std::filesystem::path(path).filename().string();
-
-	if (name.rfind("gen", 0) == 0) {
-		name = std::string("Nc0 generation ") + name.substr(3);
-	}
 }
 
 std::string Network::get_name() {

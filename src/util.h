@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "platform.h"
+
 #include <iostream>
 #include <chrono>
 #include <memory>

@@ -42,7 +42,11 @@ std::string util::timestring() {
 
 util::time_point util::time_now() {
 #ifdef NEOCORTEX_WIN32
-	return clock();
+	LARGE_INTEGER ctr;
+	if (!QueryPerformanceCounter(&ctr)) {
+		throw std::runtime_error("QueryPerformanceFrequency failed");
+	}
+	return ctr.QuadPart;
 #else
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -52,7 +56,13 @@ util::time_point util::time_now() {
 
 double util::time_elapsed(time_point reference) {
 #ifdef NEOCORTEX_WIN32
-	return ((double) (clock() - reference)) / (double) CLOCKS_PER_SEC;
+	static LARGE_INTEGER freq;
+	static bool freqstat = QueryPerformanceFrequency(&freq);
+	static float freq_f = double(freq.QuadPart);
+	if (!freqstat) {
+		throw std::runtime_error("QueryPerformanceFrequency failed");
+	}
+	return double(time_now() - reference) / freq_f;
 #else
 	util::time_point now = time_now();
 	double elapsed = (now.tv_sec - reference.tv_sec);

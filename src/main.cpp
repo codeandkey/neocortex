@@ -5,6 +5,8 @@
  * LICENSE.txt, included in this source code distribution.
  */
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "attacks.h"
 #include "color.h"
 #include "log.h"
@@ -20,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <cerrno>
 
 #define MODE_TRAIN 0
 
@@ -55,8 +58,8 @@ int main(int argc, char** argv) {
 
 	int num_games = 32;
 	int max_batchsize_per_thread = 16;
-	int num_search_threads = std::thread::hardware_concurrency();
-	int search_time = 20000;
+	int num_search_threads = 1; // std::thread::hardware_concurrency();
+	int search_time = 2500;
 
 	std::vector<std::string> model_paths;
 
@@ -166,6 +169,10 @@ int main(int argc, char** argv) {
 	std::filesystem::path target_games_dir = games_dir;
 	target_games_dir /= model_paths.front() + "-vs-" + model_paths.back();
 
+	if (std::filesystem::create_directories(target_games_dir)) {
+		std::cout << "Created new game directory at " << target_games_dir << "\n";
+	}
+
 	neocortex_info("Saving games to %s\n", target_games_dir.string().c_str());
 	neocortex_info("Initializing searchers.\n");
 	
@@ -208,10 +215,21 @@ int main(int argc, char** argv) {
 			// Start making moves until game is over.
 			int ctm = color::WHITE;
 
-			while (true) {
-				std::vector<float> mcts_counts;
+			std::vector<std::vector<float>> mcts_frames;
+			std::vector<std::vector<float>> lmm_frames;
+			std::vector<std::vector<float>> input_frames;
+			std::vector<int> moves;
 
-				int action = players[ctm]->search(search_time, &mcts_counts);
+			Position p;
+			int result;
+
+			while (!p.is_game_over(&result)) {
+				std::vector<float> mcts_frame, input_frame;
+
+				int action = players[ctm]->search(search_time, &mcts_frame);
+
+				lmm_frames.push_back(players[ctm]->get_lmm_frame());
+				input_frames.push_back(players[ctm]->get_input_frame());
 
 				players[ctm]->do_action(action);
 
@@ -219,6 +237,60 @@ int main(int argc, char** argv) {
 				if (players[ctm] != players[!ctm]) {
 					players[!ctm]->do_action(action);
 				}
+
+				mcts_frames.push_back(mcts_frame);
+				moves.push_back(action);
+				p.make_move(action);
+				ctm = p.get_color_to_move();
+			}
+
+			neocortex_info("Game over, result %d\n", result);
+
+			// Write decisions to output
+			std::ofstream outfile(game_path.string().c_str());
+
+			if (!outfile) {
+				throw std::runtime_error("Failed to write game to " + game_path.string() + " : " + strerror(errno));
+			}
+
+			if (result != 0) {
+				outfile << players[(1 - result) / 2]->get_name() << "\n";
+			}
+			else {
+				outfile << "draw\n";
+			}
+
+			ctm = color::WHITE;
+
+			for (int j = 0; j < moves.size(); ++j) {
+				outfile << move::to_uci(moves[j]); // write decision
+				outfile << " ";
+				outfile << ((ctm == color::WHITE) ? 1 : -1) * result; // write outcome
+
+				for (auto c : input_frames[j]) { // write input frame
+					outfile << " ";
+					outfile << c;
+				}
+
+				for (auto c : mcts_frames[j]) { // write mcts frame
+					outfile << " ";
+					outfile << c;
+				}
+
+				for (auto c : lmm_frames[j]) { // write lmm frame
+					outfile << " ";
+					outfile << c;
+				}
+
+				outfile << "\n";
+
+				ctm = !ctm;
+			}
+
+			neocortex_info("Wrote gamedata to %s\n", game_path.string().c_str());
+
+			for (auto s : searchers) {
+				s->reset();
 			}
 		}
 

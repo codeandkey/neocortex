@@ -107,8 +107,13 @@ void Input::clear_lmm(int batch_id) {
 	std::fill_n(input_lmm.begin() + ((size_t) batch_id * 4096L), 4096, 0.0f);
 }
 
-void Input::write_lmm(int batch_id, int m) {
-	input_lmm[(size_t) batch_id * 4096 + (size_t) move::src(m) * 64 + move::dst(m)] = 1.0f;
+void Input::write_lmm(int batch_id, int m, int pov) {
+	if (pov == color::WHITE) {
+		input_lmm[(size_t)batch_id * 4096 + (size_t)move::src(m) * 64 + move::dst(m)] = 1.0f;
+	}
+	else {
+		input_lmm[(size_t)batch_id * 4096 + (size_t)(63 - move::src(m)) * 64 + (63 - move::dst(m))] = 1.0f;
+	}
 }
 
 std::vector<float>& Input::get_board_input() {

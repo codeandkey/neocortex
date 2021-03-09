@@ -11,7 +11,7 @@
 using namespace neocortex;
 
 Search::Search(std::string path, int max_batchsize_per_thread, int num_threads, std::string fen) {
-	if (num_threads > 4) num_threads = 1;
+	//if (num_threads > 4) num_threads = 1;
 
 	this->max_batchsize_per_thread = max_batchsize_per_thread;
 	this->num_threads = num_threads;
@@ -57,7 +57,11 @@ void Search::reset(std::string fen) {
 	}
 }
 
-int Search::build_batch(Node& node, int threadid, int allocated, int offset) {
+int Search::build_batch(Node& node, int threadid, int allocated, int depth, int offset) {
+	if (depth > max_depth) {
+		max_depth = depth;
+	}
+
 	// Test if node has children
 	if (node.children.empty()) {
 		// Check if terminal
@@ -101,7 +105,7 @@ int Search::build_batch(Node& node, int threadid, int allocated, int offset) {
 
 				for (int i = 0; i < num_moves; ++i) {
 					if (positions[threadid].make_move(moves[i])) {
-						inputs[ctm][threadid].write_lmm(offset, moves[i]);
+						inputs[ctm][threadid].write_lmm(offset, moves[i], ctm);
 						node.children.emplace_back(&node, moves[i]);
 					}
 
@@ -178,7 +182,7 @@ int Search::build_batch(Node& node, int threadid, int allocated, int offset) {
 
 			positions[threadid].make_move(child.action);
 
-			int new_batches = build_batch(child, threadid, child_alloc, offset);
+			int new_batches = build_batch(child, threadid, child_alloc, depth + 1, offset);
 
 			positions[threadid].unmake_move();
 
@@ -235,6 +239,8 @@ void Search::worker(int id) {
 			thread_states[id] = '-';
 			thread_states_lock.unlock();
 
+			bool mirror_policy = (positions[id].get_color_to_move() == color::BLACK);
+
 			// Assign policy and backprop values
 			for (size_t i = 0; i < batch_size; ++i) {
 				batch_nodes[id][i]->backprop(value[i]);
@@ -242,11 +248,20 @@ void Search::worker(int id) {
 				assert(!std::isnan(value[i]));
 
 				double p_total = 0.0f;
-
-				for (auto& c : batch_nodes[id][i]->children) {
-					c.p = policy[4096 * i + move::src(c.action) * 64 + move::dst(c.action)];
-					p_total += c.p;
-					assert(!std::isnan(c.p));
+				if (mirror_policy) {
+					// Black POV, the policy needs to be mirrored.
+					for (auto& c : batch_nodes[id][i]->children) {
+						c.p = policy[4096 * i + (63 - move::src(c.action)) * 64 + (63 - move::dst(c.action))];
+						p_total += c.p;
+						assert(!std::isnan(c.p));
+					}
+				}
+				else {
+					for (auto& c : batch_nodes[id][i]->children) {
+						c.p = policy[4096 * i + move::src(c.action) * 64 + move::dst(c.action)];
+						p_total += c.p;
+						assert(!std::isnan(c.p));
+					}
 				}
 
 				for (auto& c : batch_nodes[id][i]->children) {
@@ -283,30 +298,47 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 	running = true;
 	pos_count = 0;
 	terminal_count = 0;
+	max_depth = 0;
 
 	for (int i = 0; i < num_threads; ++i) {
 		threads.push_back(std::thread(&Search::worker, this, i));
 	}
 
 	// Wait for time to expire
-	const int delay = 100;
+	const int delay = 250;
 	int elapsed = 0;
 
 	while (elapsed <= search_time) {
 		size_t progress = (elapsed * 10) / search_time;
 
-		std::string progbar(progress, '#');
-		std::string emptybar(10 - progress, '-');
+		std::string progbar(progress + 1, '#');
+		std::string emptybar(9 - progress, '-');
 
 		thread_states_lock.lock();
 
-		neocortex_info("Iterating [%s%s] [%s] %5d evaluated | %2.2fs elapsed | %.2f EPS | %4dms batch | %4dms exec | %d terminals\r",
+		Node* best_child = NULL;
+		int best_n = -1;
+		float value = 0.0f;
+		
+		for (auto& i : root.children) {
+			if (i.n >= best_n) {
+				best_n = i.n;
+				best_child = &i;
+				value = (i.n == best_n) ? (value + i.q) / 2.0f : i.q;
+			}
+		}
+
+		neocortex_info("Iterating [%s%s] [%s] %c%+3.2f%c %5d evaluated | %3.2fs elapsed | %6.2f EPS | %3d depth | %4dms batch | %4dms exec | %d terminals          \r",
 			progbar.c_str(),
 			emptybar.c_str(),
 			thread_states.c_str(),
+			(best_n < 0) ? '(' : ' ',
+			value,
+			(best_n < 0) ? ')' : ' ',
 			pos_count.load(),
 			(float)elapsed / 1000.0f,
 			pos_count / ((elapsed + 1) / 1000.0f),
+			max_depth,
 			batch_avg.load(),
 			exec_avg.load(),
 			terminal_count.load()
@@ -315,6 +347,11 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 		thread_states_lock.unlock();
 
 		std::this_thread::sleep_for(std::chrono::duration<int, std::milli>(delay));
+
+		if (pos_count == 0 && terminal_count == 0) {
+			starttime = util::time_now();
+		}
+
 		elapsed = util::time_elapsed_ms(starttime);
 	}
 
@@ -330,9 +367,16 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 
 	std::vector<int> n_dist;
 
+	if (mcts_counts) mcts_counts->resize(4096, 0.0f);
+
 	for (int i = 0; i < root.children.size(); ++i) {
 		n_dist.push_back(root.children[i].n);
-		if (mcts_counts) mcts_counts->push_back(root.children[i].n);
+		if (positions[0].get_color_to_move() == color::WHITE) {
+			if (mcts_counts) (*mcts_counts)[move::src(root.children[i].action) * 64 + move::dst(root.children[i].action)] = root.children[i].n;
+		}
+		else {
+			if (mcts_counts) (*mcts_counts)[(63 - move::src(root.children[i].action)) * 64 + (63 - move::dst(root.children[i].action))] = root.children[i].n;
+		}
 	}
 
 	// Perform ND child selection
@@ -343,26 +387,32 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 	int chosen = root.children[dist(rng)].action;
 
 	// Print debug info
-	neocortex_info("Selecting nondeterministically from %d children:\n", root.children.size());
+	neocortex_info("Picking from %d children:\n", root.children.size());
+
+	std::vector<std::pair<int, int>> n_pairs;
 
 	int n_total = 0;
 
 	for (int i = 0; i < root.children.size(); ++i) {
 		n_total += root.children[i].n;
+		n_pairs.push_back({ root.children[i].n, i });
 	}
 
-	for (int i = 0; i < root.children.size(); ++i) {
-		std::string movestr = move::to_uci(root.children[i].action);
+	std::sort(n_pairs.begin(), n_pairs.end(), [&](auto& a, auto& b) { return a.first > b.first; });
+
+	for (int i = 0; i < n_pairs.size(); ++i) {
+		auto& child = root.children[n_pairs[i].second];
+		std::string movestr = move::to_uci(child.action);
 
 		neocortex_info(
 			"%s> %5s  %03.1f%% | N=%4d | Q=%+04.2f | W=%+04.2f | P=%05.3f%%\n",
-			(root.children[i].action == chosen) ? "##" : "  ",
+			(child.action == chosen) ? "##" : "  ",
 			movestr.c_str(),
-			100.0f * (float)root.children[i].n / (float)n_total,
-			root.children[i].n,
-			root.children[i].q,
-			root.children[i].w,
-			100.0f * (float)root.children[i].p
+			100.0f * (float)child.n / (float)n_total,
+			child.n,
+			child.q,
+			child.w,
+			100.0f * (float)child.p
 		);
 	}
 
@@ -427,4 +477,14 @@ int Search::color_to_move() {
 
 std::string Search::get_name() {
 	return nets[0].get_name();
+}
+
+std::vector<float> Search::get_lmm_frame() {
+	int ctm = positions[0].get_color_to_move();
+	return std::vector(inputs[ctm][0].get_lmm_input().begin(), inputs[ctm][0].get_lmm_input().begin() + 4096);
+}
+
+std::vector<float> Search::get_input_frame() {
+	int ctm = positions[0].get_color_to_move();
+	return std::vector(inputs[ctm][0].get_board_input().begin(), inputs[ctm][0].get_board_input().begin() + 8 * 8 * 85);
 }

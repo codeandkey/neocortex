@@ -27,6 +27,9 @@ namespace neocortex {
 
 			std::string get_name();
 
+			std::vector<float> get_lmm_frame();
+			std::vector<float> get_input_frame();
+
 		private:
 			struct Node {
 				Node(Node* parent = NULL, int action = move::null()) {
@@ -55,7 +58,7 @@ namespace neocortex {
 			};
 
 			Node root;
-			int num_threads, max_batchsize_per_thread;
+			int num_threads, max_batchsize_per_thread, max_depth;
 			std::vector<nn::Network> nets;
 
 			std::atomic<bool> running;
@@ -69,6 +72,6 @@ namespace neocortex {
 			std::mutex thread_states_lock;
 
 			void worker(int id);
-			int build_batch(Node& node, int threadid, int allocated, int offset=0);
+			int build_batch(Node& node, int threadid, int allocated, int depth=0, int offset=0);
 		};
 }
