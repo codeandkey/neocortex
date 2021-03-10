@@ -371,12 +371,6 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 
 	for (int i = 0; i < root.children.size(); ++i) {
 		n_dist.push_back(root.children[i].n);
-		if (positions[0].get_color_to_move() == color::WHITE) {
-			if (mcts_counts) (*mcts_counts)[move::src(root.children[i].action) * 64 + move::dst(root.children[i].action)] = root.children[i].n;
-		}
-		else {
-			if (mcts_counts) (*mcts_counts)[(63 - move::src(root.children[i].action)) * 64 + (63 - move::dst(root.children[i].action))] = root.children[i].n;
-		}
 	}
 
 	// Perform ND child selection
@@ -403,6 +397,15 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 	for (int i = 0; i < n_pairs.size(); ++i) {
 		auto& child = root.children[n_pairs[i].second];
 		std::string movestr = move::to_uci(child.action);
+
+		for (int i = 0; i < root.children.size(); ++i) {
+			if (positions[0].get_color_to_move() == color::WHITE) {
+				if (mcts_counts) (*mcts_counts)[move::src(child.action) * 64 + move::dst(child.action)] = child.n / (float)n_total;
+			}
+			else {
+				if (mcts_counts) (*mcts_counts)[(63 - move::src(child.action)) * 64 + (63 - move::dst(child.action))] = child.n / (float)n_total;
+			}
+		}
 
 		neocortex_info(
 			"%s> %5s  %03.1f%% | N=%4d | Q=%+04.2f | W=%+04.2f | P=%05.3f%%\n",
