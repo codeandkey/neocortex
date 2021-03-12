@@ -609,55 +609,82 @@ TEST(PositionTest, MakeUnmakeConsistency) {
 
 TEST(PositionTest, InputLayerInitial) {
 	Position p;
-
-	auto layer_to_string = [&](std::vector<float>& v) -> std::string {
-		std::string out;
-
-		for (auto& i : v) {
-			out += std::to_string(i) + ", ";
-		}
-
-		return out;
-	};
-
 	std::vector<float>& actual_input = p.get_input();
 
 	// Piece bits for each square
-	static int pbits[64] = {
+	static int expected_pbit[64] = {
 		3, 2, 1, 4, 5, 1, 2, 3,
 		0, 0, 0, 0, 0, 0, 0, 0,
-		-1, -1, -1, -1, -1, -1, -1,
-		-1, -1, -1, -1, -1, -1, -1,
-		-1, -1, -1, -1, -1, -1, -1,
-		-1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1,
 		6, 6, 6, 6, 6, 6, 6, 6,
 		9, 8, 7, 10, 11, 7, 8, 9,
 	};
-
-	std::vector<float> expected_input;
-	expected_input.resize(8 * 8 * 85, 0.0f);
 
 	float expected_header[15] = {
 		1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, // move number = 1
 		0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, // HMC = 0
 	};
 
-	// Build expected input
+	// Check each square
 	for (int r = 0; r < 8; ++r) {
 		for (int f = 0; f < 8; ++f) {
 			int sq = r * 8 + f;
-			expected_input[r * (8 * 85) + f * 85 + 15 + pbits[sq]] = 1.0f;
-			memcpy(&expected_input[r * (8 * 85) + f * 85], expected_header, sizeof(float) * 15);
+			size_t offset = r * (8 * 85) + f * 85;
+
+			// Check header matches
+			for (int i = 0; i < 15; ++i) {
+				ASSERT_EQ(
+					std::string("Header bit ") + std::to_string(i) + " : " + std::to_string(expected_header[i]),
+					std::string("Header bit ") + std::to_string(i) + " : " + std::to_string(actual_input[offset + i])
+				);
+			}
+
+			// Check pbit matches
+
+			int actual_pbit = -1;
+			for (int i = 0; i < 12; ++i) {
+				if (actual_input[offset + 15 + i] == 1.0f) {
+					ASSERT_EQ(square::to_uci(sq) + ": -1", square::to_uci(sq) + ": " + std::to_string(actual_pbit));
+					actual_pbit = i;
+				}
+			}
+
+			ASSERT_EQ(square::to_uci(sq) + ": " + std::to_string(expected_pbit[sq]), square::to_uci(sq) + ": " + std::to_string(actual_pbit));
+
+			// Check reps is 0
+			ASSERT_EQ(square::to_uci(sq) + ": " + std::to_string(0.0f), square::to_uci(sq) + ": " + std::to_string(actual_input[offset + 15 + 12]));
+			ASSERT_EQ(square::to_uci(sq) + ": " + std::to_string(0.0f), square::to_uci(sq) + ": " + std::to_string(actual_input[offset + 15 + 13]));
 		}
 	}
+}
 
-	ASSERT_EQ(layer_to_string(actual_input), layer_to_string(expected_input));
+TEST(PositionTest, InputLayerConsistency) {
+	Position p;
+	std::vector<float> start_input = p.get_input();
+
+	p.make_matched_move(move::from_uci("e2e4"));
+	p.make_matched_move(move::from_uci("e7e5"));
+	p.make_matched_move(move::from_uci("e1e2"));
+	p.make_matched_move(move::from_uci("e8e7"));
+	p.make_matched_move(move::from_uci("b1c3"));
+
+	p.unmake_move();
+	p.unmake_move();
+	p.unmake_move();
+	p.unmake_move();
+	p.unmake_move();
+
+	ASSERT_EQ(start_input.size(), p.get_input().size());
+	ASSERT_TRUE(std::equal(start_input.begin(), start_input.end(), p.get_input().begin()));
 }
 
 /**
  * PerftTest: movegen perft testing
  */
-TEST(PerftTest, StandardPerft) {
+/*TEST(PerftTest, StandardPerft) {
 	Position p;
 	perft::results res;
 
@@ -883,7 +910,7 @@ TEST(PerftTest, PerftSix) {
 
 	res = perft::run(p, 4);
 	EXPECT_EQ(res.nodes, 3894594);
-}
+}*/
 
 /* LogTest: basic tests for logging functions */
 
