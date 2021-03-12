@@ -196,17 +196,47 @@ namespace neocortex {
 		* 1: white wins
 		* 0: draw
 		* -1: black wins
+		*
+		*  @param result Result variable, set to result val. if non-NULL
+		*  @return true if game is over, false otherwise
 		*/
 		bool is_game_over(int* result);
 
+		/**
+		 * Gets a reference to the current position input layer for the color to move's POV.
+		 *
+		 * @return reference to input layer.
+		 */
+		std::vector<float>& get_input();
 	private:
 		Board board;
 		std::vector<State> ply;
+		std::vector<float> input[2];
+		// hist_ply * 8 ranks * 8 files * 2 colors * 14 bits
+		std::vector<std::vector<std::vector<std::vector<std::vector<float>>>>> hist_frames;
 		int color_to_move;
 
 		bool test_check(int col) {
 			return (board.attacks_on(bb::getlsb(board.get_piece_occ(type::KING) & board.get_color_occ(col))) & board.get_color_occ(!col)) != 0;
 		}
+
+		/**
+		 * Writes the current frame into the input layer.
+		 * Updates first history ply and writes square headers.
+		 */
+		void _write_frame();
+
+		/**
+		 * Pushes the current input frame onto the history stack.
+		 * Sets the first history ply to 0s.
+		 */
+		void _push_frame();
+
+		/**
+		 * Shift the history plies back 1, overwriting the first history ply.
+		 * Also updates the square headers to the current move number and HMC.
+		 */
+		void _pop_frame();
 	};
 
 	inline int Position::get_color_to_move() {
@@ -235,5 +265,9 @@ namespace neocortex {
 
 	inline int Position::move_number() {
 		return ply.back().fullmove_number;
+	}
+
+	inline std::vector<float>& Position::get_input() {
+		return input[color_to_move];
 	}
 }

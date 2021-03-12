@@ -607,6 +607,53 @@ TEST(PositionTest, MakeUnmakeConsistency) {
 	}
 }
 
+TEST(PositionTest, InputLayerInitial) {
+	Position p;
+
+	auto layer_to_string = [&](std::vector<float>& v) -> std::string {
+		std::string out;
+
+		for (auto& i : v) {
+			out += std::to_string(i) + ", ";
+		}
+
+		return out;
+	};
+
+	std::vector<float>& actual_input = p.get_input();
+
+	// Piece bits for each square
+	static int pbits[64] = {
+		3, 2, 1, 4, 5, 1, 2, 3,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		-1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1,
+		6, 6, 6, 6, 6, 6, 6, 6,
+		9, 8, 7, 10, 11, 7, 8, 9,
+	};
+
+	std::vector<float> expected_input;
+	expected_input.resize(8 * 8 * 85, 0.0f);
+
+	float expected_header[15] = {
+		1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, // move number = 1
+		0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, // HMC = 0
+	};
+
+	// Build expected input
+	for (int r = 0; r < 8; ++r) {
+		for (int f = 0; f < 8; ++f) {
+			int sq = r * 8 + f;
+			expected_input[r * (8 * 85) + f * 85 + 15 + pbits[sq]] = 1.0f;
+			memcpy(&expected_input[r * (8 * 85) + f * 85], expected_header, sizeof(float) * 15);
+		}
+	}
+
+	ASSERT_EQ(layer_to_string(actual_input), layer_to_string(expected_input));
+}
+
 /**
  * PerftTest: movegen perft testing
  */

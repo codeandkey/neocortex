@@ -14,6 +14,7 @@
 
 #include <cassert>
 #include <climits>
+#include <cstring>
 
 using namespace neocortex;
 
@@ -36,6 +37,11 @@ Position::Position() {
 
 	ply.push_back(first_state);
 	color_to_move = color::WHITE;
+
+	input[0].resize(8 * 8 * 85, 0.0f);
+	input[1].resize(8 * 8 * 85, 0.0f);
+
+	_write_frame();
 }
 
 Position::Position(std::string fen) {
@@ -89,6 +95,11 @@ Position::Position(std::string fen) {
 	}
 
 	ply.push_back(first_state);
+
+	input[0].resize(8 * 8 * 85, 0.0f);
+	input[1].resize(8 * 8 * 85, 0.0f);
+
+	_write_frame();
 }
 
 std::string Position::to_fen() {
@@ -232,6 +243,9 @@ bool Position::make_move(int m) {
 		next_state.key ^= zobrist::black_to_move();
 	}
 
+	_push_frame();
+	_write_frame();
+
 	/* Check that king is not in attack */
 	return !test_check(!color_to_move);
 }
@@ -294,6 +308,8 @@ int Position::unmake_move() {
 	} else {
 		board.place(src, moved_piece);
 	}
+
+	_pop_frame();
 
 	return m;
 }
@@ -929,4 +945,156 @@ std::string Position::dump() {
 	output += "\n";
 
 	return output;
+}
+
+void Position::_write_frame() {
+	int reps = num_repetitions() - 1;
+	float rb1 = reps & 1;
+	float rb2 = reps >> 1;
+
+	static int pbits_lookup[2][12] = {
+		{ // white POV
+			0, // wpawn : 00
+			6, // bpawn : 01
+			1, // wbishop : 10
+			7, // bbishop : 11
+			2, // wknight : 100
+			8, // bknight : 101
+			3, // wrook : 110
+			9, // brook : 111
+			4, // wqueen : 1000
+			10, // bqueen : 1001
+			5, // wking : 1010
+			11, // bking : 1011
+		},
+		{ // black POV
+			6, // wpawn : 00
+			0, // bpawn : 01
+			7, // wbishop : 10
+			1, // bbishop : 11
+			8, // wknight : 100
+			2, // bknight : 101
+			9, // wrook : 110
+			3, // brook : 111
+			10, // wqueen : 1000
+			4, // bqueen : 1001
+			11, // wking : 1010
+			5, // bking : 1011
+		},
+	};
+
+	// Write headers while we're iterating over the squares anyway
+	float header[15];
+
+	int move_number = ply.back().fullmove_number;
+	int halfmove_clock = ply.back().halfmove_clock;
+
+	for (int i = 0; i < 9; ++i) {
+		header[i] = (float) ((move_number >> i) & 1);
+	}
+
+	for (int i = 0; i < 6; ++i) {
+		header[9 + i] = (float)((halfmove_clock >> i) & 1);
+	}
+
+	for (size_t r = 0; r < 8; ++r) {
+		for (size_t f = 0; f < 8; ++f) {
+			int p = board.get_piece(square::at(r, f));
+
+			for (int c = 0; c < 2; ++c) {
+				size_t offset;
+
+				if (c == color::WHITE) {
+					offset = (size_t) r * 680 + f * 85;
+				} else {
+					offset = (size_t) (7 - r) * 680 + (7 - f) * 85;
+				}
+
+				// Write square header
+				memcpy(&input[c][offset], header, sizeof(float) * 15);
+
+				// Write square piece data
+				if (!piece::is_null(p)) {
+					input[c][offset + 15 + pbits_lookup[c][p]] = 1.0f;
+				}
+
+				// Write repetition bits
+				input[c][offset + 27] = rb1;
+				input[c][offset + 28] = rb2;
+			}
+		}
+	}
+}
+
+void Position::_push_frame() {
+	// 8 ranks * 8 squares * 2 colors * 14 bits per frame
+	std::vector<std::vector<std::vector<std::vector<float>>>> frame;
+
+	for (size_t r = 0; r < 8; ++r) {
+		std::vector<std::vector<std::vector<float>>> rank;
+
+		for (size_t f = 0; f < 8; ++f) {
+			std::vector<std::vector<float>> colors;
+
+			for (int c = 0; c < 2; ++c) {
+				size_t offset = (size_t) r * 680 + f * 85;
+
+				// Grab last frame
+				std::vector<float> bits(&input[c][offset + 71], &input[c][offset + 71] + 14);
+
+				// Shift frames back
+				memmove(&input[c][offset + 29], &input[c][offset + 15], sizeof(float) * 14 * 4);
+
+				// Zero most recent frame
+				for (int i = 0; i < 14; ++i) {
+					input[c][offset + 15 + i] = 0.0f;
+				}
+
+				colors.push_back(bits);
+			}
+
+			rank.push_back(colors);
+		}
+
+		frame.push_back(rank);
+	}
+
+	hist_frames.push_back(frame);
+}
+
+void Position::_pop_frame() {
+	auto ranks = hist_frames.back();
+
+	// Rewrite headers with current state
+	float header[15];
+
+	int move_number = ply.back().fullmove_number;
+	int halfmove_clock = ply.back().halfmove_clock;
+
+	for (int i = 0; i < 9; ++i) {
+		header[i] = (float) ((move_number >> i) & 1);
+	}
+
+	for (int i = 0; i < 6; ++i) {
+		header[9 + i] = (float)((halfmove_clock >> i) & 1);
+	}
+
+	for (size_t r = 0; r < 8; ++r) {
+		for (size_t f = 0; f < 8; ++f) {
+			for (int c = 0; c < 2; ++c) {
+				size_t offset = (size_t) r * 680 + f * 85;
+
+				// Shift frames forward
+				memmove(&input[c][offset + 15], &input[c][offset + 29], sizeof(float) * 14 * 4);
+
+				// Grab last frame
+				memcpy(&input[c][offset + 71], &ranks[r][f][c][0], sizeof(float) * 14);
+
+				// Write square header
+				memcpy(&input[c][offset], header, sizeof(float) * 15);
+			}
+		}
+	}
+
+	hist_frames.pop_back();
 }
