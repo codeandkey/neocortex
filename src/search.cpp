@@ -316,14 +316,12 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 
 		thread_states_lock.lock();
 
-		Node* best_child = NULL;
 		int best_n = -1;
 		float value = 0.0f;
 		
 		for (auto& i : root.children) {
 			if (i.n >= best_n) {
 				best_n = i.n;
-				best_child = &i;
 				value = (i.n == best_n) ? (value + i.q) / 2.0f : i.q;
 			}
 		}
