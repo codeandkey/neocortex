@@ -24,11 +24,7 @@
 #include <list>
 #include <cerrno>
 
-#define MODE_TRAIN 0
-
 using namespace neocortex;
-
-void train() {}
 
 int usage(char* a0);
 
@@ -146,7 +142,7 @@ int main(int argc, char** argv) {
 					neocortex_error("Failed to find first generation, cannot continue\n");
 					return 1;
 				}
-				
+
 				--cgen;
 				break;
 			}
@@ -175,7 +171,7 @@ int main(int argc, char** argv) {
 
 	neocortex_info("Saving games to %s\n", target_games_dir.string().c_str());
 	neocortex_info("Initializing searchers.\n");
-	
+
 	try {
 		std::list<Search*> searchers;
 
