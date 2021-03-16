@@ -208,6 +208,15 @@ namespace neocortex {
 		 * @return reference to input layer.
 		 */
 		std::vector<float>& get_input();
+
+		/**
+		 * Gets LMM data for the position, and generate legal moves.
+		 *
+		 * @param lmm_out LMM output buffer (must have room for 4096 floats)
+		 * @param moves_out Buffer for legal moves (must be MAX_PL_MOVES length)
+		 * @return Number of legal moves generated
+		 */
+		int get_lmm(float* lmm_out, int* moves_out);
 	private:
 		Board board;
 		std::vector<State> ply;

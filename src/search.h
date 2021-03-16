@@ -9,10 +9,10 @@
 #include <mutex>
 
 namespace neocortex {
-		class Search {
-		public:
-			const float EXPLORATION = 1.414; // sqrt(2)
-			const float POLICY_WEIGHT = 5.0f;
+        class Search {
+        public:
+            const float EXPLORATION = 1.414; // sqrt(2)
+            const float POLICY_WEIGHT = 5.0f;
 
             /**
              * Builds a new search.
@@ -21,14 +21,14 @@ namespace neocortex {
              * @param bsize Batch size
              * @param posroot Search root
              */
-			Search(nn::Network& net, int max_batch_size, Position& posroot);
+            Search(nn::Network& net, int max_batch_size, Position& posroot);
 
             /**
              * Loads a new root position. Discards any cached search trees.
              *
              * @param posroot Search root
              */
-			void reset(Position& posroot);
+            void reset(Position& posroot);
 
             /**
              * Searches the current root.
@@ -39,14 +39,14 @@ namespace neocortex {
              *
              * @return Selected action
              */
-			int search(int search_time, std::vector<float>* mcts_counts);
+            int search(int search_time, std::vector<float>* mcts_counts);
 
             /**
              * Advances the search root position and tree.
              *
              * @param action Move to make.
              */
-			void do_action(int action);
+            void do_action(int action);
 
             /**
              * Gets a reference to the root position.
@@ -62,7 +62,33 @@ namespace neocortex {
              */
             nn::Network& get_network();
 
-		private:
+        private:
+            struct Node {
+                Node(Node* parent = NULL, int action = move::null()) {
+                    n = 0;
+                    terminal = -3;
+                    q = w = 0.0f;
+                    p = -1.0f;
+                    this->action = action;
+                    this->parent = parent;
+                    this->lock = std::make_unique<std::mutex>();
+                }
+
+                int n, action, terminal; // -1: loss, 0: draw, (-2): not terminal, (-3): unknown
+                float q, w;
+                double p;
+                Node* parent;
+                std::unique_ptr<std::mutex> lock;
+                std::vector<Node> children;
+
+                void backprop(float v) {
+                    ++n;
+                    w += v;
+                    q = w / (float) n;
+                    if (parent) parent->backprop(-v);
+                }
+            };
+
             class Worker {
                 /**
                  * Initializes a new search worker.
@@ -105,13 +131,16 @@ namespace neocortex {
 
             private:
                 void set_state(std::string val);
+                void worker(nn::Network& net, Node& root);
 
-                int build_batch(Node& root, int offset=0, int allocated=0);
+                int build_batch(Node& root, int allocated, int depth = 0, int offset = 0);
 
                 std::atomic<bool> running;
+                std::atomic<int> batch_avg, exec_avg, max_depth, terminal_count, pos_count;
 
                 std::string state;
                 std::mutex state_lock;
+                std::thread worker_thread;
 
                 int bsize;
 
@@ -119,52 +148,12 @@ namespace neocortex {
                 std::vector<float> board_input_layer;
                 std::vector<float> lmm_input_layer;
 
-                Position cur_position;
+                Position position;
             };
 
-			struct Node {
-				Node(Node* parent = NULL, int action = move::null()) {
-					n = 0;
-					terminal = -3;
-					q = w = 0.0f;
-					p = -1.0f;
-					this->action = action;
-					this->parent = parent;
-					this->lock = std::make_unique<std::mutex>();
-				}
-
-				int n, action, terminal; // -1: loss, 0: draw, (-2): not terminal, (-3): unknown
-				float q, w;
-				double p;
-				Node* parent;
-				std::unique_ptr<std::mutex> lock;
-				std::vector<Node> children;
-
-				void backprop(float v) {
-					++n;
-					w += v;
-					q = w / (float) n;
-					if (parent) parent->backprop(-v);
-				}
-			};
-
-			Node root;
-			int num_threads, max_batchsize_per_thread, max_depth;
-			nn::Network net;
-
-			std::atomic<bool> running;
-			std::atomic<int> pos_count, terminal_count, batch_avg, exec_avg;
-
-            std::vector<std::vector<float>> board_inputs;
-            std::vector<std::vector<float>> lmm_inputs;
-
-			std::vector<Position> positions;
-			std::vector<std::vector<Node*>> batch_nodes;
-
-			std::string thread_states;
-			std::mutex thread_states_lock;
-
-			void worker(int id);
-			int build_batch(Node& node, int threadid, int allocated, int depth=0, int offset=0);
-		};
+            Node root;
+            int num_threads, max_batchsize_per_thread;
+            nn::Network net;
+            std::vector<Worker> workers;
+        };
 }

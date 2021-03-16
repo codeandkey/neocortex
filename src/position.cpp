@@ -1098,3 +1098,35 @@ void Position::_pop_frame() {
 
 	hist_frames.pop_back();
 }
+
+int Position::get_lmm(float* lmm_out, int* moves_out) {
+	int pl_moves[MAX_PL_MOVES];
+	int num_pl = pseudolegal_moves(pl_moves);
+	int num_legal = 0;
+
+	for (int i = 0; i < 4096; ++i) {
+		lmm_out[i] = 0.0f;
+	}
+
+	if (color_to_move == color::WHITE) {
+		for (int i = 0; i < num_pl; ++i) {
+			if (make_move(pl_moves[i])) {
+				lmm_out[move::src(pl_moves[i]) * 63 + move::dst(pl_moves[i])] = 1.0f;
+				moves_out[num_legal++] = pl_moves[i];
+			}
+
+			unmake_move();
+		}
+	} else {
+		for (int i = 0; i < num_pl; ++i) {
+			if (make_move(pl_moves[i])) {
+				lmm_out[(63 - move::src(pl_moves[i])) * 63 + (63 - move::dst(pl_moves[i]))] = 1.0f;
+				moves_out[num_legal++] = pl_moves[i];
+			}
+
+			unmake_move();
+		}
+	}
+
+	return num_legal;
+}
