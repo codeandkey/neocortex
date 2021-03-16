@@ -10,51 +10,35 @@
 
 using namespace neocortex;
 
-Search::Search(std::string path, int max_batchsize_per_thread, int num_threads, std::string fen) {
-	//if (num_threads > 4) num_threads = 1;
-
+Search::Search(nn::Network& net, int max_batchsize_per_thread, int num_threads, Position& posroot) : net(net) {
 	this->max_batchsize_per_thread = max_batchsize_per_thread;
 	this->num_threads = num_threads;
-	
+
 	batch_nodes.resize(num_threads);
 
 	for (auto& b : batch_nodes) {
 		b.resize(max_batchsize_per_thread, NULL);
 	}
 
-	neocortex_info("Initializing %d networks..\n", num_threads);
+    board_inputs.resize(num_threads);
+    lmm_inputs.resize(num_threads);
+	batch_nodes.resize(num_threads);
 
-	for (int i = 0; i < num_threads; ++i) {
-		neocortex_info("Initializing network %d of %d..\n", i + 1, num_threads);
-		nets.push_back(nn::Network(path));
-	}
+    for (int i = 0; i < num_threads; ++i) {
+    }
 
 	thread_states = std::string(num_threads, ' ');
-
-	reset(fen);
+	reset(posroot);
 }
 
-void Search::reset(std::string fen) {
+void Search::reset(Position& posroot) {
 	positions.clear();
-	inputs[color::WHITE].clear();
-	inputs[color::BLACK].clear();
 
 	for (int i = 0; i < num_threads; ++i) {
-		positions.push_back(Position(fen));
-		inputs[color::WHITE].push_back(Input(max_batchsize_per_thread));
-		inputs[color::BLACK].push_back(Input(max_batchsize_per_thread));
+		positions.push_back(posroot);
 	}
 
 	root = Node();
-
-	// Initialize inputs
-	for (int c = 0; c < 2; ++c) {
-		for (auto& inp : inputs[c]) {
-			for (int j = 0; j < max_batchsize_per_thread; ++j) {
-				inp.write_frame(j, positions[0].get_board(), c, positions[0].num_repetitions(), positions[0].move_number(), positions[0].halfmove_clock());
-			}	
-		}
-	}
 }
 
 int Search::build_batch(Node& node, int threadid, int allocated, int depth, int offset) {
@@ -72,7 +56,7 @@ int Search::build_batch(Node& node, int threadid, int allocated, int depth, int 
 				node.terminal = -2;
 			}
 		}
-		
+
 		if (node.terminal > -2) {
 			// Backprop the terminal value and return.
 			// The game is either a loss (checkmate, color to move has lost) or a draw
@@ -318,7 +302,7 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 
 		int best_n = -1;
 		float value = 0.0f;
-		
+
 		for (auto& i : root.children) {
 			if (i.n >= best_n) {
 				best_n = i.n;
@@ -424,26 +408,9 @@ int Search::search(int search_time, std::vector<float>* mcts_counts) {
 }
 
 void Search::do_action(int action) {
-	// Advance all boards, inputs by action
+	// Advance all boards
 	for (int i = 0; i < num_threads; ++i) {
 		positions[i].make_move(action);
-
-		for (int c = 0; c < 2; ++c) {
-			for (int b = 0; b < max_batchsize_per_thread; ++b) {
-				Input& input = inputs[c][i];
-
-				input.push_frame(b);
-
-				input.write_frame(
-					b,
-					positions[i].get_board(),
-					c,
-					positions[i].num_repetitions(),
-					positions[i].move_number(),
-					positions[i].halfmove_clock()
-				);
-			}
-		}
 	}
 
 	// Preserve child if exists, otherwise generate a new root
@@ -472,20 +439,88 @@ void Search::do_action(int action) {
 	}
 }
 
-int Search::color_to_move() {
-	return positions[0].get_color_to_move();
+Position& Search::get_root() {
+    return positions[0];
 }
 
-std::string Search::get_name() {
-	return nets[0].get_name();
+nn::Network& Search::get_network() {
+    return net;
 }
 
-std::vector<float> Search::get_lmm_frame() {
-	int ctm = positions[0].get_color_to_move();
-	return std::vector(inputs[ctm][0].get_lmm_input().begin(), inputs[ctm][0].get_lmm_input().begin() + 4096);
+Search::Worker::Worker(int bsize) {
+    running = false;
+    state = "not started";
+    board_input_layer.resize(bsize * 8 * 8 * 85);
+    lmm_input_layer.resize(bsize * 4096);
+    this->bsize = bsize;
 }
 
-std::vector<float> Search::get_input_frame() {
-	int ctm = positions[0].get_color_to_move();
-	return std::vector(inputs[ctm][0].get_board_input().begin(), inputs[ctm][0].get_board_input().begin() + 8 * 8 * 85);
+Search::Worker::start(nn::Network& net, Node& root) {
+	while (running) {
+		auto batch_starttime = util::time_now();
+
+        set_state("building");
+
+		// Clear batch nodes
+		batch_node = std::vector<Node*>(max_batchsize_per_thread, NULL);
+
+		int batch_size = build_batch(root, id, bsize);
+
+		batch_avg = (util::time_elapsed_ms(batch_starttime) + batch_avg) / 2;
+
+		if (batch_size > 0) {
+			auto exec_starttime = util::time_now();
+
+            set_state("evaluate");
+
+			auto results = net.evaluate(
+                cur_position.get_board_input(),
+                cur_position.get_lmm_input(),
+				bsize
+			);
+
+			auto policy = results[0].get_data<float>();
+			auto value = results[1].get_data<float>();
+
+            set_state("backprop");
+
+			bool mirror_policy = (positions[id].get_color_to_move() == color::BLACK);
+
+			// Assign policy and backprop values
+			for (size_t i = 0; i < batch_size; ++i) {
+				batch_nodes[id][i]->backprop(value[i]);
+
+				assert(!std::isnan(value[i]));
+
+				double p_total = 0.0f;
+				if (mirror_policy) {
+					// Black POV, the policy needs to be mirrored.
+					for (auto& c : batch_nodes[id][i]->children) {
+						c.p = policy[4096 * i + (63 - move::src(c.action)) * 64 + (63 - move::dst(c.action))];
+						p_total += c.p;
+						assert(!std::isnan(c.p));
+					}
+				}
+				else {
+					for (auto& c : batch_nodes[id][i]->children) {
+						c.p = policy[4096 * i + move::src(c.action) * 64 + move::dst(c.action)];
+						p_total += c.p;
+						assert(!std::isnan(c.p));
+					}
+				}
+
+				for (auto& c : batch_nodes[id][i]->children) {
+					c.p /= p_total;
+				}
+
+				batch_nodes[id][i]->lock->unlock();
+			}
+
+			// Update total evaluations
+			pos_count += batch_size;
+
+			// Update average exec/backprop time
+			exec_avg = (util::time_elapsed_ms(exec_starttime) + exec_avg) / 2;
+		}
+	}
 }
