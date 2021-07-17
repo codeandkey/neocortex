@@ -1,0 +1,186 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "attacks",
+    srcs = ["src/attacks.cpp"],
+    hdrs = ["src/attacks.h"],
+    deps = [
+        ":bitboard",
+        ":magic_consts",
+        ":piece",
+        ":square",
+        ":util",
+    ],
+)
+
+cc_library(
+    name = "bitboard",
+    srcs = ["src/bitboard.cpp"],
+    hdrs = ["src/bitboard.h"],
+    deps = [
+        ":platform",
+        ":square",
+    ],
+)
+
+cc_library(
+    name = "board",
+    srcs = ["src/board.cpp"],
+    hdrs = ["src/board.h"],
+    deps = [
+        ":attacks",
+        ":bitboard",
+        ":eval_consts",
+        ":piece",
+        ":square",
+        ":util",
+        ":zobrist",
+    ],
+)
+
+cc_library(
+    name = "eval",
+    srcs = ["src/eval.cpp"],
+    hdrs = ["src/eval.h"],
+    deps = [
+        ":position",
+    ],
+)
+
+
+cc_library(
+    name = "eval_consts",
+    srcs = ["src/eval_consts.cpp"],
+    hdrs = ["src/eval_consts.h"],
+    deps = [
+        ":piece",
+    ],
+)
+
+cc_library(
+    name = "magic_consts",
+    hdrs = ["src/magic_consts.h"],
+)
+
+cc_library(
+    name = "move",
+    srcs = ["src/move.cpp"],
+    hdrs = ["src/move.h"],
+    deps = [
+        ":attacks",
+        ":bitboard",
+        ":board",
+        ":piece",
+        ":square",
+    ],
+)
+
+cc_library(
+    name = "perft",
+    srcs = ["src/perft.cpp"],
+    hdrs = ["src/perft.h"],
+    deps = [
+      ":position",
+      ":util",
+    ],
+)
+
+cc_library(
+    name = "piece",
+    srcs = ["src/piece.cpp"],
+    hdrs = ["src/piece.h"],
+    deps = [
+        ":util",
+    ],
+)
+
+cc_library(
+    name = "platform",
+    hdrs = ["src/platform.h"],
+)
+
+cc_library(
+    name = "position",
+    srcs = ["src/position.cpp"],
+    hdrs = ["src/position.h"],
+    deps = [
+        ":board",
+        ":eval_consts",
+        ":move",
+        ":piece",
+        ":square",
+        ":util",
+    ],
+)
+
+cc_library(
+    name = "search",
+    srcs = ["src/search.cpp"],
+    hdrs = ["src/search.h"],
+    deps = [
+      ":eval",
+      ":position",
+      ":move",
+      ":tt",
+      ":util",
+    ]
+)
+
+
+cc_library(
+    name = "square",
+    srcs = ["src/square.cpp"],
+    hdrs = ["src/square.h"],
+)
+
+cc_library(
+    name = "tt",
+    srcs = ["src/tt.cpp"],
+    hdrs = ["src/tt.h"],
+    deps = [
+      ":eval",
+      ":move",
+      ":zobrist",
+    ],
+)
+
+cc_library(
+    name = "util",
+    srcs = ["src/util.cpp"],
+    hdrs = ["src/util.h"],
+    deps = [
+        ":platform",
+    ],
+)
+
+cc_library(
+    name = "zobrist",
+    srcs = ["src/zobrist.cpp"],
+    hdrs = ["src/zobrist.h"],
+    deps = [
+        ":piece",
+        ":square",
+    ],
+)
+
+cc_test(
+  name = "neocortex_test",
+    srcs = ["test/test.cpp"],
+    copts = ["-Iexternal/gtest/include"],
+    deps = [
+        ":attacks",
+        ":bitboard",
+        ":board",
+        ":eval",
+        ":eval_consts",
+        ":perft",
+        ":piece",
+        ":search",
+        ":tt",
+        ":zobrist",
+        "@gtest//:gtest_main",
+    ],
+)
+ 

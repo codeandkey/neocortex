@@ -6,7 +6,6 @@
  */
 
 #include "tt.h"
-#include "log.h"
 
 #include <cstdlib>
 #include <cassert>
@@ -38,8 +37,6 @@ void tt::resize(int mb) {
 	tt_buffer_size = mb * 1024 * 1024 / (sizeof(tt::entry) + sizeof(std::mutex));
 	tt_buffer = new tt::entry[tt_buffer_size];
 	tt_mutex_buffer = new std::mutex[tt_buffer_size];
-
-	neocortex_debug("Transposition table resized to %d mb (%d entries)\n", mb, tt_buffer_size);
 }
 
 void tt::lock(zobrist::Key k) {

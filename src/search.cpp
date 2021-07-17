@@ -6,7 +6,6 @@
  */
 
 #include "search.h"
-#include "log.h"
 #include "tt.h"
 #include "eval_consts.h"
 
@@ -582,7 +581,7 @@ void search::Search::set_threads(int num) {
 
 	num_threads = num;
 
-	neocortex_info("Using %d search threads.\n", num);
+	// neocortex_info("Using %d search threads.\n", num);
 }
 
 int search::Search::max_threads() {

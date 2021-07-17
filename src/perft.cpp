@@ -7,7 +7,6 @@
 
 #include "perft.h"
 #include "util.h"
-#include "log.h"
 
 #include <cassert>
 #include <iostream>

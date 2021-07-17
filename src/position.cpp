@@ -10,8 +10,6 @@
 #include "attacks.h"
 #include "eval_consts.h"
 
-#include "log.h"
-
 #include <cassert>
 #include <climits>
 

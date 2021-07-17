@@ -1,0 +1,1 @@
+build --cxxopt='-std=c++17 -Wall -Werror -Wno-format-security' --linkopt='pthread'

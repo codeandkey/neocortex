@@ -5,7 +5,6 @@
  * LICENSE.txt, included in this source code distribution.
  */
 
-#include "log.h"
 #include "piece.h"
 #include "square.h"
 #include "zobrist.h"

@@ -9,8 +9,6 @@
 #include "eval_consts.h"
 #include "util.h"
 
-#include "log.h"
-
 #include <cassert>
 #include <cctype>
 #include <vector>
