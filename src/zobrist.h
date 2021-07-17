@@ -18,6 +18,13 @@ namespace neocortex {
 		 * Must be called before querying any keys.
 		 */
 		void init();
+		
+		/**
+		 * Confirms whether or not the Zobrist keys have been initialized.
+		 *
+		 * @return true if Zobrist keys are initialized, false otherwise.
+		 */
+	  bool is_init();
 
 		/**
 		 * Gets the Zobrist key for a piece on a square.

@@ -7,7 +7,6 @@
 #include "../src/board.h"
 #include "../src/eval.h"
 #include "../src/eval_consts.h"
-#include "../src/log.h"
 #include "../src/perft.h"
 #include "../src/piece.h"
 #include "../src/search.h"
@@ -1157,20 +1156,6 @@ TEST(PerftTest, PerftSix) {
 
 	res = perft::run(p, 4);
 	EXPECT_EQ(res.nodes, 3894594);
-}
-
-/* LogTest: basic tests for logging functions */
-
-TEST(LogTest, SetColor) {
-	log::set_color(log::ColorMode::IF_TTY);
-
-	EXPECT_EQ(log::get_color(), log::ColorMode::IF_TTY);
-}
-
-TEST(LogTest, SetLevel) {
-	log::set_level(log::DEBUG);
-
-	EXPECT_EQ(log::get_level(), log::DEBUG);
 }
 
 /* Testing entry point */

@@ -343,10 +343,6 @@ int search::Search::alphabeta(Position& root, int depth, int alpha, int beta, in
 
 			value = -alphabeta(root, new_depth, -beta, -alpha, ply_dist + 1, &local_pv, abort_watch);
 
-			/*if (depth == 1) {
-				neocortex_debug("Made move %s, resulting score %d\n", pl_moves[i].to_uci().c_str(), value);
-			}*/
-
 			root.unmake_move(pl_moves[i]);
 
 			if (value == score::INCOMPLETE) {
@@ -426,13 +422,10 @@ int search::Search::quiescence(Position& root, int depth, int alpha, int beta, i
 	if (!root.check()) {
 		if (cur_score >= beta) {
 			pv_line->len = 0;
-
-			//neocortex_debug("Returning standing pat score %d\n", cur_score);
 			return beta;
 		}
 
 		if (alpha < cur_score) {
-			//neocortex_debug("Setting alpha to standing pat %d\n", cur_score);
 			alpha = cur_score;
 		}
 	}
@@ -508,13 +501,10 @@ int search::Search::quiescence_captures(Position& root, int alpha, int beta, int
 			if (ply_dist > max_ply_searched) {
 				max_ply_searched = ply_dist;
 			}
-
-			//neocortex_debug("Returning standing pat score %d\n", cur_score);
 			return beta;
 		}
 
 		if (alpha < cur_score) {
-			//neocortex_debug("Setting alpha to standing pat %d\n", cur_score);
 			alpha = cur_score;
 		}
 	}
@@ -580,8 +570,6 @@ void search::Search::set_threads(int num) {
 	if (num > max_threads()) num = max_threads();
 
 	num_threads = num;
-
-	// neocortex_info("Using %d search threads.\n", num);
 }
 
 int search::Search::max_threads() {

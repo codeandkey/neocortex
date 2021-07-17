@@ -42,6 +42,10 @@ void zobrist::init() {
 	zobrist_initialized = true;
 }
 
+bool is_init() {
+	return zobrist_initialized;
+}
+
 zobrist::Key zobrist::piece(int sq, int p) {
 	assert(zobrist_initialized);
 	if (p == piece::null) return 0;
