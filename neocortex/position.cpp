@@ -6,52 +6,67 @@
  */
 
 #include "position.h"
-#include "util.h"
 #include "attacks.h"
-#include "eval_consts.h"
+#include "eval.h"
 
-#include "log.h"
+#include <assert.h>
+#include <string.h>
 
-#include <cassert>
-#include <climits>
+void ncPositionInit(ncPosition* p)
+{
+	ncBoardStandard(&p->board);
 
-using namespace neocortex;
-
-Position::Position() {
-	board = Board::standard();
-
-	State first_state;
-
-	eval_counter = 0;
-
-	first_state.castle_rights = 0xF;
-	first_state.en_passant_square = square::null;
-	first_state.fullmove_number = 1;
-	first_state.halfmove_clock = 0;
-	first_state.captured_piece = piece::null;
-	first_state.captured_square = piece::null;
-	first_state.last_move = Move::null;
-	first_state.key = 0;
-	first_state.key ^= board.get_tt_key();
-	first_state.key ^= zobrist::castle(first_state.castle_rights);
-	first_state.in_check = 0;
-	first_state.was_castle = false;
-	first_state.was_en_passant = false;
-
-	reset_history_table();
-
-	ply.push_back(first_state);
-	color_to_move = piece::WHITE;
+	p->ctm = NC_WHITE;
+	p->nply = 1;
+	p->ply[0].captured_piece = NC_NULL;
+	p->ply[0].captured_square = NC_NULL;
+	p->ply[0].castle_rights = 0xF;
+	p->ply[0].check = 0;
+	p->ply[0].en_passant = NC_NULL;
+	p->ply[0].key = ncBoardHashKey(&p->board);
+	p->ply[0].fullmove_number = 1;
+	p->ply[0].last_move = NC_NULL;
+	p->ply[0].was_castle = 0;
+	p->ply[0].was_ep = 0;
 }
 
-Position::Position(std::string fen) {
-	std::vector<std::string> fields = util::split(fen, ' ');
+int ncPositionFromFen(ncPosition* p, char* fen)
+{
+	p->nply = 1;
+	p->ply[0].captured_piece = NC_NULL;
+	p->ply[0].captured_square = NC_NULL;
+	p->ply[0].castle_rights = 0;
+	p->ply[0].last_move = NC_NULL;
+	p->ply[0].was_castle = 0;
+	p->ply[0].was_ep = 0;
+	p->ply[0].key = 0;
 
-	if (fields.size() != 6) {
-		throw util::fmterr("Invalid FEN: expected 6 fields, parsed %d", fields.size());
+	if (ncBoardReadFen(&p->board, strtok(fen, " ")))
+		return -1;
+
+	p->ply[0].key ^= ncBoardHashKey(&p->board);
+
+	switch (*strtok(NULL, " "))
+	{
+		case 'w':
+			p->ctm = NC_WHITE;
+			break;
+		case 'b':
+			p->ctm = NC_BLACK;
+			break;
+		default:
+			return -1;
 	}
 
-	board = Board(fields[0]);
+	for (char* i = strtok(NULL, " "); *i; ++i)
+	{
+		switch (*i)
+		{
+			case 'K':
+
+		}
+	}
+
 	color_to_move = piece::color_from_uci(fields[1][0]);
 
 	reset_history_table();

@@ -16,10 +16,12 @@
 #define NC_CASTLE_BLACK_Q 8
 
 #define NC_MAX_PL_MOVES 128
+#define NC_MAX_PLY      512
+#define NC_SEE_ILLEGAL     -100000
 
 typedef struct {
 	ncMove last_move;
-	ncSquare en_pasant;
+	ncSquare en_passant;
 	int castle_rights;
 	ncPiece captured_piece;
 	ncSquare captured_square;
@@ -32,271 +34,203 @@ typedef struct {
 } ncPly;
 
 typedef struct {
+	ncBoard board;
+	int ctm;
+	int nply;
+	ncPly ply[NC_MAX_PLY];
 } ncPosition;
 
-	constexpr int SEE_ILLEGAL = -100000;
+/**
+ * Constructs a position from a FEN.
+ *
+ * @param fen Input FEN.
+ */
+int ncPositionFromFen(ncPosition* p, std::string fen);
 
-		/**
-		 * Constructs a position for a FEN.
-		 *
-		 * @param fen Input FEN.
-		 */
-		Position(std::string fen);
+/**
+ * Converts a position to a FEN.
+ *
+ * @return Number of characters copied.
+ */
+int ncPositionToFen(ncPosition* p, char* fen, int maxlen);
 
-		/**
-		 * Converts a position to a FEN.
-		 *
-		 * @retrun FEN string.
-		 */
-		std::string to_fen();
-
-		/**
-		 * Gets a reference to the position's current board.
-		 *
-		 * @return Board reference.
-		 */
-		Board& get_board();
-
-		/**
-		 * Gets the current color to move.
-		 *
-		 * @return Color to move.
-		 */
-		int get_color_to_move();
-
-		/**
-		 * Tries to make a move.
-		 * 
-		 * @param move Pseudolegal move.
-		 * @return true if move is legal, false otherwise.
-		 */
-		bool make_move(Move move);
-
-		/**
-		 * Unmakes a move. The move must match the last move made.
-		 *
-		 * @param move Last move.
-		 */
-		void unmake_move(Move move);
-
-		/**
-		 * Gets a mask of valid en passant squares.
-		 *
-		 * @return En-passant mask.
-		 */
-		bitboard en_passant_mask(); /* gets a mask of valid en passant capture targets, or 0 if none */
-
-		/**
-		 * Gets the position's zobrist key for TT indexing.
-		 *
-		 * @return Zobrist key.
-		 */
-		zobrist::Key get_tt_key();
-
-		/**
-		 * Test if the position is a check.
-		 *
-		 * @return true if color to move is in check, false otherwise.
-		 */
-		bool check();
-
-		/**
-		 * Test if the last move made was a capture.
-		 *
-		 * @return true if a capture was made, false otherwise.
-		 */
-		bool capture();
-
-		/**
-		 * Test if the last move made was an en passant capture.
-		 *
-		 * @return true if last move was en passant, false otherwise.
-		 */
-		bool en_passant();
-
-		/**
-		 * Test if the last move made was a promotion.
-		 *
-		 * @return true if last move was a promotion, false otherwise.
-		 */
-		bool promotion();
-
-		/**
-		 * Test if the last move made was a castle.
-		 *
-		 * @return true if last move was a castle, false otherwise.
-		 */
-		bool castle();
-
-		/**
-		 * Gets the number of times the current position has occurred throughout the game.
-		 *
-		 * @return Number of instances. Will always be at least 1.
-		 */
-		int num_repetitions();
-
-		/**
-		 * Gets the game's halfmove clock.
-		 *
-		 * @return Halfmove clock.
-		 */
-		int halfmove_clock();
-
-		/**
-		 * Evaluates the current position.
-		 *
-		 * @param dbg String output pointer for debug information.
-		 * @return Evaluation score.
-		 */
-		int evaluate(std::string* dbg = NULL);
-
-		/**
-		 * Gets the pseudolegal moves for the position.
-		 * 
-		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
-		 * @return Number of moves generated.
-		 */
-		int pseudolegal_moves(Move* dst);
-
-		/**
-		 * Gets evasion moves for a position.
-		 *
-		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
-		 * @return Number of moves generated.
-		 */
-		int pseudolegal_moves_evasions(Move* dst);
-
-		/**
-		 * Performs move ordering on a list of pseudolegal moves.
-		 *
-		 * @param moves Move list pointer.
-		 * @param num_moves Number of moves in the list.
-		 * @param pv_move PV move if available.
-		 */
-		void order_moves(Move* moves, int num_moves, Move pv_move = Move::null);
-
-		/**
-		 * Gets the pseudolegal moves for the position (quiescence search variant)
-		 *
-		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
-		 * @return Number of moves generated.
-		 */
-		int pseudolegal_moves_quiescence(Move* dst);
-
-		/**
-		 * Gets the pseudolegal moves for the position (quiescence capture search variant)
-		 *
-		 * @param dst Buffer to fill with moves. Must be MAX_PL_MOVES size.
-		 * @return Number of moves generated.
-		 */
-		int pseudolegal_moves_quiescence_captures(Move* dst);
-
-		/**
-		 * Performs move ordering on a list of pseudolegal moves (quiescence search variant)
-		 *
-		 * @param moves Move list pointer.
-		 * @param num_moves Number of moves in the list.
-		 * @param pv_move PV move if available.
-		 * @return New size of move list.
-		 */
-		int order_moves_quiescence(Move* moves, int num_moves, Move pv_move = Move::null);
-
-		/**
-		 * Performs static exchange evaluation on a capture.
-		 * 
-		 * @param capture Capturing move.
-		 */
-		int see_capture(Move capture);
-
-		/**
-		 * Performs static exchange evaluation on a square.
-		 *
-		 * @param sq Destination square.
-		 * @param col Attacking color.
-		 */
-		int see(int sq, int col);
-
-		/**
-		 * Get a printable debug dump of the position.
-		 * 
-		 * @return Printable debug string.
-		 */
-		std::string dump();
-
-		/**
-		 * Resets the evaluation counter to 0.
-		 */
-		void reset_eval_counter();
-
-		/**
-		 * Gets the current eval counter. Incremented every time evaluate() is called.
-		 * @return Number of evaluations since reset_eval_counter() was called.
-		 */
-		int get_eval_counter();
-
-		/**
-		 * Resets the internal history heuristic table.
-		 */
-		void reset_history_table();
-
-		/**
-		 * Adds a bonus to the history table for the current CTM.
-		 * The move that receives the bonus must be UNMADE before calling this.
-		 * @param depth Depth of cutoff.
-		 */
-		void add_history_bonus(Move& m, int depth);
-
-		/**
-		 * Gets whether a null move is appropriate for NMR in the current position.
-		 * Returns true if the CTM has at least one piece that is not a pawn or king, and is not in check.
-		 * 
-		 * @return true if null move is appropriate, false otherwise.
-		 */
-		bool null_move_allowed();
-	private:
-		Board board;
-		std::vector<State> ply;
-		int color_to_move;
-		int eval_counter;
-
-		int history[2][64][64];
-
-		bool test_check(int col) {
-			return (board.attacks_on(bb::getlsb(board.get_piece_occ(piece::KING) & board.get_color_occ(col))) & board.get_color_occ(!col)) != 0;
-		}
-	};
-
-	inline int Position::get_color_to_move() {
-		return color_to_move;
-	}
-
-	inline bool Position::capture() {
-		return ply.back().captured_piece != piece::null;
-	}
-
-	inline bool Position::check() {
-		return ply.back().in_check;
-	}
-
-	inline bool Position::en_passant() {
-		return ply.back().was_en_passant;
-	}
-
-	inline bool Position::castle() {
-		return ply.back().was_castle;
-	}
-
-	inline bool Position::promotion() {
-		return piece::is_type(ply.back().last_move.ptype());
-	}
-
-	inline void Position::add_history_bonus(Move& m, int depth) {
-		history[color_to_move][m.src()][m.dst()] += depth * depth;
-	}
-
-	inline bool Position::null_move_allowed() {
-		bitboard npk_pieces = board.get_piece_occ(piece::BISHOP) | board.get_piece_occ(piece::KNIGHT) | board.get_piece_occ(piece::ROOK) | board.get_piece_occ(piece::QUEEN);
-
-		return (npk_pieces & board.get_color_occ(color_to_move)) && !check();
-	}
+/**
+ * Gets a reference to the position's current board.
+ *
+ * @return Board reference.
+ */
+static inline ncBoard* ncPositionGetBoard(ncPosition* p)
+{
+	return &p->board;
 }
+
+/**
+ * Gets the current color to move.
+ *
+ * @return Color to move.
+ */
+static inline int ncPositionGetCTM(ncPosition* p)
+{
+	return p->ctm;
+}
+
+/**
+ * Tries to make a move.
+ * 
+ * @param move Pseudolegal move.
+ * @return 1 if move is legal, 0 otherwise.
+ */
+int ncPositionMakeMove(ncPosition* p, ncMove move);
+
+/**
+ * Unmakes a move. The move must match the last move made.
+ *
+ * @param move Last move.
+ */
+void ncPositionUnmakeMove(ncPosition* p, ncMove move);
+
+/**
+ * Gets a mask of valid en passant squares.
+ *
+ * @return En-passant mask.
+ */
+ncBitboard ncPositionEPMask(ncPosition* p)
+{
+	ncSquare sq = p->ply[p->nply - 1].en_passant;
+	return ncSquareValid(sq) ? ncSquareMask(sq) : 0ULL;
+}
+
+/**
+ * Gets the position's zobrist key for TT indexing.
+ *
+ * @return Zobrist key.
+ */
+ncHashKey ncPositionGetKey(ncPosition* p)
+{
+	return p->ply[p->nply - 1].key;
+}
+
+/**
+ * Test if the position is a check.
+ *
+ * @return 1 if color to move is in check, 0 otherwise.
+ */
+int ncPositionIsCheck(ncPosition* p)
+{
+	return p->ply[p->nply - 1].check;
+}
+
+/**
+ * Test if the last move made was a capture.
+ *
+ * @return 1 if a capture was made, 0 otherwise.
+ */
+int ncPositionIsCapture(ncPosition* p)
+{
+	return ncPieceValid(p->ply[p->nply - 1].captured_piece);
+}
+
+/**
+ * Test if the last move made was an en passant capture.
+ *
+ * @return 1 if last move was en passant, 0 otherwise.
+ */
+int ncPositionIsEP(ncPosition* p)
+{
+	return p->ply[p->nply - 1].was_ep;
+}
+
+/**
+ * Test if the last move made was a promotion.
+ *
+ * @return 1 if last move was a promotion, 0 otherwise.
+ */
+static inline int ncPositionIsPromotion(ncPosition* p)
+{
+	return ncPieceTypeValid(ncMovePtype(p->ply[p->nply - 1].last_move));
+}
+
+/**
+ * Test if the last move made was a castle.
+ *
+ * @return 1 if last move was a castle, 0 otherwise.
+ */
+static inline int ncPositionIsCastle(ncPosition* p)
+{
+	return p->ply[p->nply - 1].was_castle;
+}
+
+/**
+ * Gets the number of times the current position has occurred throughout the game.
+ *
+ * @return Number of instances. Will always be at least 1.
+ */
+int ncPositionRepCount(ncPosition* p);
+
+/**
+ * Gets the game's halfmove clock.
+ *
+ * @return Halfmove clock.
+ */
+static inline int ncPositionHalfmoveClock(ncPosition* p)
+{
+	return p->ply[p->nply - 1].halfmove_clock;
+}
+
+/**
+ * Evaluates the current position.
+ *
+ * @param dbg String output pointer for debug information.
+ * @return Evaluation score.
+ */
+int ncPositionEvaluate(ncPosition* p);
+
+/**
+ * Gets the pseudolegal moves for the position.
+ * 
+ * @param dst Buffer to fill with moves. Should be at least
+ * NC_MAX_PL_MOVES in length.
+ *
+ * @return Number of moves generated.
+ */
+int ncPositionPLMoves(ncMove* dst, int max);
+
+/**
+ * Gets evasion moves for a position.
+ *
+ * @param dst Buffer to fill with moves. Should be at least
+ * NC_MAX_PL_MOVES in length.
+ *
+ * @return Number of moves generated.
+ */
+int ncPositionPLEvasions(ncPosition* p, ncMove* dst);
+
+/**
+ * Performs move ordering on a list of pseudolegal moves.
+ *
+ * @param moves Move list pointer.
+ * @param num_moves Number of moves in the list.
+ */
+void ncPositionOrderMoves(ncPosition* p, ncMove* moves, int num);
+
+/**
+ * Performs static exchange evaluation on a capture.
+ * 
+ * @param capture Capturing move.
+ */
+int ncPositionSEECapture(ncPosition* p, ncMove capture);
+
+/**
+ * Performs static exchange evaluation on a square.
+ *
+ * @param sq Destination square.
+ * @param col Attacking color.
+ */
+int ncPositionSEE(ncSquare sq, ncColor col);
+
+/**
+ * Get a printable debug dump of the position.
+ * 
+ * @return Number of characters copied.
+ */
+int ncPositionDump(ncPosition* p, char* out, int maxlen);
