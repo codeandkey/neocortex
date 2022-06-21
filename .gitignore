@@ -1,10 +1,1 @@
-src/*.o
-test/*.o
-x64
-neocortex
-packages
-*.vcxproj.user
-src/*.gcda
-src/*.gcno
-test/*.gcda
-test/*.gcno
+build
