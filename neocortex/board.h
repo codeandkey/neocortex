@@ -31,7 +31,7 @@ ncPiece ncBoardGetPiece(ncBoard* b, ncSquare sq);
 ncHashKey ncBoardHashKey(ncBoard* b);
 ncBitboard ncBoardAttackers(ncBoard* b, ncSquare sq);
 int ncBoardGuard(ncBoard* b, ncSquare sq);
-int ncBoardIsAttacked(ncBoard* b, ncSquare sq);
+int ncBoardIsAttacked(ncBoard* b, ncBitboard mask, ncColor col);
 ncBitboard ncBoardPassers(ncBoard* b, ncColor color);
 ncBitboard ncBoardAllspans(ncBoard* b, ncColor color);
 ncBitboard ncBoardFrontspans(ncBoard* b, ncColor color);

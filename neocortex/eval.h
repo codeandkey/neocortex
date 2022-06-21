@@ -7,53 +7,67 @@
 
 #pragma once
 
-#include "position.h"
+#include "types.h"
 
-#include <climits>
-#include <string>
+static const int NC_MATERIAL_MG[] =
+{
+	100, -100,
+	300, -300,
+	300, -300,
+	500, -500,
+	900, -900,
+	1200, -1200
+};
 
-namespace neocortex {
-	namespace score {
-		/**
-		 * Test if a value represents a forced mate for either color.
-		 *
-		 * @param value Value to test.
-		 * @return true iff input is a forced mate.
-		 */
-		bool is_mate(int value);
+// TODO - adjust endgame material weighting
+static const int NC_MATERIAL_EG[] =
+{
+	100, -100,
+	300, -300,
+	300, -300,
+	500, -500,
+	900, -900,
+	1200, -1200
+};
 
-		/**
-		 * Gets the "parent" for an eval. If the eval is a mate, this function increases the distance-to-mate.
-		 * If the eval is not a mate, this function returns the unaltered input.
-		 *
-		 * @param value Input value.
-		 * @return Evaluation parent value.
-		 */
-		int parent(int value);
+static const int NC_GUARD[] =
+{
+	9, -9,
+	6, -6,
+	5, -5,
+	2, -2,
+	1, -1,
+	1, -1
+};
 
-		/**
-		 * Converts a score into a human readable string.
-		 * Scores: "[+/-]<value>"
-		 * Mates: "#[+/-]<ply>"
-		 *
-		 * @param value Input score.
-		 * @return Human-readable score string.
-		 */
-		std::string to_string(int value);
+/**
+ * Returns the MG material score for <pc>. Negative values are returned for
+ * black material, and positive values for white.
+ *
+ * @param pc Piece to evaluate.
+ * @return Middlegame material value.
+ */
+static inline int ncMaterialValueMG(ncPiece pc)
+{
+	assert(ncPieceValid(pc));
+	return NC_MATERIAL_MG[pc];
+}
 
-		/**
-		 * Converts a score into a UCI-compliant score string.
-		 *
-		 * @param value Input score.
-		 * @return UCI score string.
-		 */
-		std::string to_uci(int value);
+/**
+ * Returns the EG material score for <pc>. Negative values are returned for
+ * black material, and positive values for white.
+ *
+ * @param pc Piece to evaluate.
+ * @return Middlegame material value.
+ */
+static inline int ncMaterialValueEG(ncPiece pc)
+{
+	assert(ncPieceValid(pc));
+	return NC_MATERIAL_EG[pc];
+}
 
-		static constexpr int CHECKMATE = 4000000;
-		static constexpr int CHECKMATED = -CHECKMATE;
-		static constexpr int INCOMPLETE = INT_MIN;
-		static constexpr int MAX = INT_MAX; /* should be used for AB bounds, not valid scores */
-		static constexpr int MIN = INT_MIN;
-		static constexpr int MATE_THRESHOLD = 32;
-	}
+static inline int ncGuardValue(ncPiece pc)
+{
+	assert(ncPieceValid(pc));
+	return NC_GUARD[pc];
 }

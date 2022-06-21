@@ -7,7 +7,8 @@
 
 #include "attacks.h"
 #include "board.h"
-#include "eval_consts.h"
+#include "eval.h"
+#include "zobrist.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -96,7 +97,7 @@ ncPiece ncBoardRemove(ncBoard* b, ncSquare sq) {
 	b->global_occ ^= mask;
 	b->piece_occ[ncPieceType(res)] ^= mask;
 	b->color_occ[ncPieceColor(res)] ^= mask;
-	b->key ^= ncZobristPiece(sq, p);
+	b->key ^= ncZobristPiece(sq, res);
 
 	b->state[sq] = NC_NULL;
 
@@ -128,70 +129,69 @@ ncPiece ncBoardReplace(ncBoard* b, ncSquare sq, ncPiece p) {
 	b->mat_mg += ncMaterialValueMG(p);
 	b->mat_eg += ncMaterialValueEG(p);
 
-	state[sq] = p;
+	b->state[sq] = p;
 
 	return res;
 }
 
-std::string Board::to_uci() {
-	std::string output;
-
+int ncBoardToFen(ncBoard* b, char* out, int maxlen)
+{
 	int null_count = 0;
+	int head = 0;
+	char localbuf[80];
 
 	for (int r = 7; r >= 0; --r) {
 		for (int f = 0; f < 8; ++f) {
-			int sq = square::at(r, f);
+			ncSquare sq = ncSquareAt(r, f);
 
-			if (state[sq] == NC_null) {
+			if (b->state[sq] == NC_NULL) {
 				null_count++;
 			} else {
 				if (null_count > 0) {
-					output += '0' + null_count;
+					localbuf[head++] = '0' + null_count;
 					null_count = 0;
 				}
 
-				output += NC_get_uci(state[sq]);
+				localbuf[head++] = ncPieceToChar(b->state[sq]);
 			}
 		}
 
 		if (null_count > 0) {
-			output += '0' + null_count;
+			localbuf[head++] = '0' + null_count;
 			null_count = 0;
 		}
 
-		if (r) output += '/';
+		if (r) localbuf[head++] += '/';
 	}
 
-	return output;
+	strncpy(localbuf, out, maxlen);
+	return head < maxlen ? head : maxlen;
 }
 
 int ncBoardWritePretty(ncBoard* b, char* out, int maxlen) {
 	int head = 0;
+	char localbuf[70];
 
 	for (int r = 7; r >= 0 && head < maxlen - 1; --r) {
 		for (int f = 0; f < 8 && head < maxlen - 1; ++f) {
 			ncSquare sq = ncSquareAt(r, f);
 
 			if (!ncPieceValid(b->state[sq])) {
-				out[head++] = '.';
+				localbuf[head++] = '.';
 			} else {
-				out[head++] = ncPieceToChar(b->state[sq]);
-			}
-
-			if (head >= maxlen - 1)
-			{
-				out[maxlen - 1] = '\0';
-				return maxlen;
+				localbuf[head++] = ncPieceToChar(b->state[sq]);
 			}
 		}
 
-		output += '\n';
+		localbuf[head++] = '\n';
 	}
 
-	return head;
+	strncpy(out, localbuf, maxlen);
+
+	return head < maxlen ? head : maxlen;
 }
 
-ncBitboard ncBoardAttacksOn(ncBoard* b, ncSquare sq) {
+ncBitboard ncBoardAttackers(ncBoard* b, ncSquare sq) {
 	assert(ncSquareValid(sq));
 
 	ncBitboard white_pawns = b->piece_occ[NC_PAWN] & b->color_occ[NC_WHITE];
@@ -209,10 +209,10 @@ ncBitboard ncBoardAttacksOn(ncBoard* b, ncSquare sq) {
 
 int ncBoardGuard(ncBoard* b, ncSquare sq) {
 	int val = 0;
-	ncBitboard att = ncBoardAttacksOn(b, sq);
+	ncBitboard att = ncBoardAttackers(b, sq);
 
 	while (att) {
-		val += ncGuardValues(b->state[ncBitboardPop(&att)]);
+		val += ncGuardValue(b->state[ncBitboardPop(&att)]);
 	}
 
 	return val;
@@ -222,7 +222,7 @@ int ncBoardIsAttacked(ncBoard* b, ncBitboard mask, ncColor col) {
 	ncBitboard opp = b->color_occ[col];
 
 	while (mask) {
-		if (ncBoardAttacksOn(b, ncBitboardPop(&mask)) & opp) return 0;
+		if (ncBoardAttackers(b, ncBitboardPop(&mask)) & opp) return 0;
 	}
 
 	return 1;
@@ -249,7 +249,7 @@ ncBitboard ncBoardFrontspans(ncBoard* b, ncColor col) {
 	while (pawns) {
 		int p = ncBitboardPop(&pawns);
 
-		out |= attacks::pawn_frontspans(col, p);
+		out |= ncPawnFrontspans(col, p);
 	}
 
 	return out;
@@ -257,25 +257,25 @@ ncBitboard ncBoardFrontspans(ncBoard* b, ncColor col) {
 
 ncBitboard ncBoardAttackspans(ncBoard* b, ncColor col) {
 	ncBitboard out = 0;
-	ncBitboard pawns = piece_occ[NC_PAWN] & color_occ[col];
+	ncBitboard pawns = b->piece_occ[NC_PAWN] & b->color_occ[col];
 
 	while (pawns) {
 		int p = ncBitboardPop(&pawns);
 
-		out |= attacks::pawn_attackspans(col, p);
+		out |= ncPawnAttackspans(col, p);
 	}
 
 	return out;
 }
 
-ncBitboard Board::isolated_pawns(ncColor col) {
-	ncBitboard pawns = piece_occ[NC_PAWN] & color_occ[col];
+ncBitboard ncBoardIsolated(ncBoard* b, ncColor col) {
+	ncBitboard pawns = b->piece_occ[NC_PAWN] & b->color_occ[col];
 	ncBitboard out = 0ULL;
 
 	while (pawns) {
 		int p = ncBitboardPop(&pawns);
 
-		if (!(bb::neighbor_files(p) & pawns)) {
+		if (!(ncSquareNeighborFiles(p) & pawns)) {
 			out |= ncSquareMask(p);
 		}
 	}
@@ -283,14 +283,14 @@ ncBitboard Board::isolated_pawns(ncColor col) {
 	return out;
 }
 
-ncBitboard Board::backward_pawns(ncBoard* b, ncColor col) {
-	ncBitboard pawns = piece_occ[NC_PAWN] & color_occ[col];
+ncBitboard ncBoardBackwards(ncBoard* b, ncColor col) {
+	ncBitboard pawns = b->piece_occ[NC_PAWN] & b->color_occ[col];
 	ncBitboard stops = ncBitboardShift(pawns, (col == NC_WHITE) ? NC_NORTH : NC_SOUTH);
 
-	ncBitboard opp_pawns = piece_occ[NC_PAWN] & color_occ[!col];
-	ncBitboard opp_attacks = ncBitboardShift(opp_pawns & ~FILE_A, (col == NC_WHITE) ? NC_NORTHWEST : NC_SOUTHWEST);
+	ncBitboard opp_pawns = b->piece_occ[NC_PAWN] & b->color_occ[!col];
+	ncBitboard opp_attacks = ncBitboardShift(opp_pawns & ~NC_FILE_A, (col == NC_WHITE) ? NC_NORTHWEST : NC_SOUTHWEST);
 
-	opp_attacks |= ncBitboardShift(opp_pawns & ~FILE_H, (col == NC_WHITE) ? NC_NORTHEAST : NC_SOUTHEAST);
+	opp_attacks |= ncBitboardShift(opp_pawns & ~NC_FILE_H, (col == NC_WHITE) ? NC_NORTHEAST : NC_SOUTHEAST);
 
 	stops &= ~ncBoardAttackspans(b, col);
 	stops &= opp_attacks;

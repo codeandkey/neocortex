@@ -1,1 +1,1 @@
-add_executable (neocortex neocortex.c attacks.c)
+add_executable (neocortex neocortex.c attacks.c board.c zobrist.c)

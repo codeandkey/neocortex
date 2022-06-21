@@ -50,9 +50,48 @@ typedef int      ncSquare;
 #define NC_QUEEN 4
 #define NC_KING 5
 
+static const ncBitboard NC_NEIGHBOR_FILES[8] =
+{
+    NC_FILE_B,
+    NC_FILE_A | NC_FILE_C,
+    NC_FILE_B | NC_FILE_D,
+    NC_FILE_C | NC_FILE_E,
+    NC_FILE_D | NC_FILE_F,
+    NC_FILE_E | NC_FILE_G,
+    NC_FILE_F | NC_FILE_H,
+    NC_FILE_G
+};
+
+/**
+ * Locates the position of the least significant '1' bit in a bitboard.
+ * Equivalent to locating the "next" square in a set.
+ *
+ * @param b Input bitboard. Must have at least one square set.
+ * @return int Least significant square set in bitboard.
+ */
+static inline int ncBitboardPop(ncBitboard* b)
+{
+    unsigned long pos;
+    assert(b);
+
+#ifdef NC_WIN32 
+    _BitScanForward64(&pos, *b);
+#else
+    pos = __builtin_ctzll(*b);
+#endif
+
+    *b ^= (1ULL << pos);
+    return (int) pos;
+}
+
 static inline int ncBitboardShift(ncBitboard b, int dir)
 {
     return (dir > 0) ? b << dir : b >> -dir;
+}
+
+static inline int ncColorValid(ncColor col)
+{
+    return !(col / 2); // what
 }
 
 static inline int ncPieceValid(ncPiece p)
@@ -71,15 +110,51 @@ static inline ncColor ncPieceColor(ncPiece p)
     return p & 1;
 }
 
+static inline ncPiece ncPieceMake(ncPiece ptype, ncColor col)
+{
+    assert(ncPieceTypeValid(ptype));
+    assert(ncColorValid(col));
+
+    return col | (ptype << 1);
+}
+
 static inline ncPiece ncPieceFromChar(char c)
 {
     switch (c)
     {
         case 'p':
-            return NC_BLACK | (NC_PAWN << 1);
+            return ncPieceMake(NC_PAWN, NC_BLACK);
+        case 'n':
+            return ncPieceMake(NC_KNIGHT, NC_BLACK);
+        case 'b':
+            return ncPieceMake(NC_BISHOP, NC_BLACK);
+        case 'r':
+            return ncPieceMake(NC_ROOK, NC_BLACK);
+        case 'q':
+            return ncPieceMake(NC_QUEEN, NC_BLACK);
+        case 'k':
+            return ncPieceMake(NC_KING, NC_BLACK);
+        case 'P':
+            return ncPieceMake(NC_PAWN, NC_WHITE);
+        case 'N':
+            return ncPieceMake(NC_KNIGHT, NC_WHITE);
+        case 'B':
+            return ncPieceMake(NC_BISHOP, NC_WHITE);
+        case 'R':
+            return ncPieceMake(NC_ROOK, NC_WHITE);
+        case 'Q':
+            return ncPieceMake(NC_QUEEN, NC_WHITE);
+        case 'K':
+            return ncPieceMake(NC_KING, NC_WHITE);
         default:
             return NC_NULL;
     }
+}
+
+static inline char ncPieceToChar(ncPiece p)
+{
+    assert(ncPieceValid(p));
+    return "PpNnBbRrQqKk"[p];
 }
 
 static inline ncPiece ncPieceType(ncPiece p)
@@ -96,12 +171,20 @@ static inline ncSquare ncSquareAt(int rank, int file)
     return rank * 8 + file;
 }
 
-static inline int ncSquareValid(ncSquare s) { return s >= 0 & s < 64; }
+static inline int ncSquareValid(ncSquare s)
+{
+    return s >= 0 & s < 64;
+}
 
 static inline int ncSquareFile(ncSquare s)
 {
     assert(ncSquareValid(s));
     return s & 0x3;
+}
+
+static inline ncBitboard ncSquareNeighborFiles(ncSquare sq)
+{
+    return NC_NEIGHBOR_FILES[ncSquareFile(sq)];
 }
 
 static inline int ncSquareRank(ncSquare s)

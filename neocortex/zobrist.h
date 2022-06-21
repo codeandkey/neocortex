@@ -7,48 +7,42 @@
 
 #pragma once
 
-#include <cstdint>
+#include "types.h"
 
-namespace neocortex {
-	namespace zobrist {
-		typedef uint64_t Key;
+/**
+ * Initializes Zobrist keys.
+ * Must be called before querying any keys.
+ */
+void ncZobristInit();
 
-		/**
-		 * Initializes Zobrist keys.
-		 * Must be called before querying any keys.
-		 */
-		void init();
+/**
+ * Gets the Zobrist key for a piece on a square.
+ *
+ * @param sq Input square.
+ * @param piece Input piece.
+ * @return Zobrist key for piece on square.
+ */
+ncHashKey ncZobristPiece(ncSquare sq, ncPiece piece);
 
-		/**
-		 * Gets the Zobrist key for a piece on a square.
-		 *
-		 * @param sq Input square.
-		 * @param piece Input piece.
-		 * @return Zobrist key for piece on square.
-		 */
-		Key piece(int sq, int piece);
+/**
+ * Gets the Zobrist key for a castle rights key.
+ *
+ * @param rights Castle rights.
+ * @return Associated Zobrist key.
+ */
+ncHashKey ncZobristCastle(int rights);
 
-		/**
-		 * Gets the Zobrist key for a castle rights key.
-		 *
-		 * @param rights Castle rights.
-		 * @return Associated Zobrist key.
-		 */
-		Key castle(int rights);
+/**
+ * Gets the zobrist key for an en-passant state.
+ *
+ * @param file Square for en-passant.
+ * @return Associated Zobrist key.
+ */
+ncHashKey ncZobristEnPassant(ncSquare sq);
 
-		/**
-		 * Gets the zobrist key for an en-passant state.
-		 *
-		 * @param file Square for en-passant.
-		 * @return Associated Zobrist key.
-		 */
-		Key en_passant(int sq);
-
-		/**
-		 * Gets the black-to-move Zobrist key.
-		 *
-		 * @return Zobrist key.
-		 */
-		Key black_to_move();
-	}
-}
+/**
+ * Gets the black-to-move Zobrist key.
+ *
+ * @return Zobrist key.
+ */
+ncHashKey ncZobristBlackToMove();
