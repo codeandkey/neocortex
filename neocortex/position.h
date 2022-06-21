@@ -8,45 +8,33 @@
 #pragma once
 
 #include "board.h"
-#include "move.h"
-#include "piece.h"
-#include "square.h"
+#include "types.h"
 
-#include <iostream>
-#include <string>
-#include <vector>
+#define NC_CASTLE_WHITE_K 1
+#define NC_CASTLE_WHITE_Q 2
+#define NC_CASTLE_BLACK_K 4
+#define NC_CASTLE_BLACK_Q 8
 
-namespace neocortex {
-	constexpr int CASTLE_WHITE_K = 1;
-	constexpr int CASTLE_WHITE_Q = 2;
-	constexpr int CASTLE_BLACK_K = 4;
-	constexpr int CASTLE_BLACK_Q = 8;
+#define NC_MAX_PL_MOVES 128
 
-	constexpr int MAX_PL_MOVES = 100;
+typedef struct {
+	ncMove last_move;
+	ncSquare en_pasant;
+	int castle_rights;
+	ncPiece captured_piece;
+	ncSquare captured_square;
+	int halfmove_clock;
+	int fullmove_number;
+	int check;
+	int was_ep;
+	int was_castle;
+	ncHashKey key;
+} ncPly;
+
+typedef struct {
+} ncPosition;
+
 	constexpr int SEE_ILLEGAL = -100000;
-
-	class Position {
-	public:
-		struct State {
-			Move last_move = Move::null;
-			int en_passant_square = square::null;
-			int castle_rights = 0xF;
-			int captured_piece = piece::null;
-			int captured_square = square::null;
-			int halfmove_clock = 0;
-			int fullmove_number = 1;
-			int in_check = 0;
-
-			bool was_en_passant = false;
-			bool was_castle = false;
-
-			zobrist::Key key = 0;
-		};
-
-		/**
-		 * Constructs a standard start position.
-		 */
-		Position();
 
 		/**
 		 * Constructs a position for a FEN.
