@@ -22,7 +22,7 @@ extern ncBitboard NC_PAWN_ATTACKSPANS[2][64];
  * Must be called before performing any lookups.
  * Failure to do so will result in undefined behavior.
  */
-void init();
+void ncAttacksInit();
 
 /**
  * Computes a magic attack index from relevant occupancy, magic number and bits.
@@ -45,7 +45,7 @@ static inline int magic_index(ncBitboard rocc, ncBitboard magic, int bits) {
  * @param sq Source square.
  * @return Bitboard of attacked squares.
  */
-static inline ncBitboard ncPawnAttacks(int col, int sq) {
+static inline ncBitboard ncAttacksPawn(int col, int sq) {
 	return NC_PAWN_ATTACKS[col][sq];
 }
 
@@ -77,7 +77,7 @@ static inline ncBitboard ncPawnAttackspans(int col, int sq) {
  * @param sq Source square.
  * @return Bitboard of attacked squares.
  */
-static inline ncBitboard ncKingAttacks(int sq) {
+static inline ncBitboard ncAttacksKing(int sq) {
 	return NC_KING_ATTACKS[sq];
 }
 
@@ -87,7 +87,7 @@ static inline ncBitboard ncKingAttacks(int sq) {
  * @param sq Source square.
  * @return Bitboard of attacked squares.
  */
-static inline ncBitboard ncKnightAttacks(int sq) {
+static inline ncBitboard ncAttacksKnight(int sq) {
 	assert(ncSquareValid(sq));
 	return NC_KNIGHT_ATTACKS[sq];
 }
@@ -99,7 +99,7 @@ static inline ncBitboard ncKnightAttacks(int sq) {
  * @param occ Board global occupancy.
  * @return Bitboard of attacked squares.
  */
-static inline ncBitboard ncBishopAttacks(int sq, ncBitboard occ) {
+static inline ncBitboard ncAttacksBishop(int sq, ncBitboard occ) {
 	assert(ncSquareValid(sq));
 	return NC_BISHOP_ATTACKS[sq][magic_index(occ & NC_BISHOP_MASKS[sq], NC_BISHOP_MAGICS[sq], NC_BISHOP_BITS[sq])];
 }
@@ -111,7 +111,7 @@ static inline ncBitboard ncBishopAttacks(int sq, ncBitboard occ) {
  * @param occ Board global occupancy.
  * @return Bitboard of attacked squares.
  */
-static inline ncBitboard ncRookAttacks(int sq, ncBitboard occ) {
+static inline ncBitboard ncAttacksRook(int sq, ncBitboard occ) {
 	assert(ncSquareValid(sq));
 	return NC_ROOK_ATTACKS[sq][magic_index(occ & NC_ROOK_MASKS[sq], NC_ROOK_MAGICS[sq], NC_ROOK_BITS[sq])];
 }
@@ -123,7 +123,7 @@ static inline ncBitboard ncRookAttacks(int sq, ncBitboard occ) {
  * @param occ Board global occupancy.
  * @return Bitboard of attacked squares.
  */
-static inline ncBitboard ncQueenAttacks(int sq, ncBitboard occ) {
+static inline ncBitboard ncAttacksQueen(int sq, ncBitboard occ) {
 	assert(ncSquareValid(sq));
-	return ncRookAttacks(sq, occ) | ncBishopAttacks(sq, occ);
+	return ncAttacksRook(sq, occ) | ncAttacksBishop(sq, occ);
 }

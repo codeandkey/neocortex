@@ -40,6 +40,33 @@ static const int NC_GUARD[] =
 	1, -1
 };
 
+static const int NC_EVAL_PHASE_VALS[6] = {0, 1, 1, 2, 4, 0};
+
+static const int NC_EVAL_PHASE_TOTAL = \
+	NC_EVAL_PHASE_VALS[0] * 16 +
+	NC_EVAL_PHASE_VALS[1] * 4 +
+	NC_EVAL_PHASE_VALS[2] * 4 +
+	NC_EVAL_PHASE_VALS[3] * 4 +
+	NC_EVAL_PHASE_VALS[4] * 2 +
+	NC_EVAL_PHASE_VALS[5] * 2;
+
+static const int NC_EVAL_TEMPO_BONUS = 4;
+static const int NC_EVAL_CENTER_CONTROL = 1;
+static const int NC_EVAL_KING_SAFETY = 7;
+static const int NC_EVAL_PASSED_PAWNS = 11;
+static const int NC_EVAL_ADV_PASSEDPAWN = 8;
+static const int NC_EVAL_DEVELOPMENT = 15;
+static const int NC_EVAL_FIRST_RANK_KING_MG = 7;
+static const int NC_EVAL_PAWNS_PROT_KING_MG = 2;
+static const int NC_EVAL_EDGE_KNIGHTS = -3;
+static const int NC_EVAL_ISOLATED_PAWNS = -8;
+static const int NC_EVAL_BACKWARD_PAWNS = -8;
+static const int NC_EVAL_DOUBLED_PAWNS = -6;
+static const int NC_EVAL_PAWN_CHAIN = 2;
+
+static const int NC_EVAL_OPEN_FILE_ROOK = 8;
+static const int NC_EVAL_OPEN_FILE_QUEEN = 4;
+
 /**
  * Returns the MG material score for <pc>. Negative values are returned for
  * black material, and positive values for white.

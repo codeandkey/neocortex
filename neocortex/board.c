@@ -23,7 +23,7 @@ void ncBoardInit(ncBoard* b)
 	}
 }
 
-int ncBoardReadFen(ncBoard* b, const char* fen)
+int ncBoardFromFen(ncBoard* b, const char* fen)
 {
 	char localfen[80];
 	strncpy(localfen, fen, sizeof(localfen));
@@ -64,7 +64,7 @@ int ncBoardReadFen(ncBoard* b, const char* fen)
 
 void ncBoardStandard(ncBoard* b)
 {
-	ncBoardReadFen(b, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+	ncBoardFromFen(b, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 }
 
 void ncBoardPlace(ncBoard* b, ncSquare sq, ncPiece p)
@@ -140,6 +140,8 @@ int ncBoardToFen(ncBoard* b, char* out, int maxlen)
 	int head = 0;
 	char localbuf[80];
 
+	memset(localbuf, 0, sizeof localbuf);
+
 	for (int r = 7; r >= 0; --r) {
 		for (int f = 0; f < 8; ++f) {
 			ncSquare sq = ncSquareAt(r, f);
@@ -164,7 +166,7 @@ int ncBoardToFen(ncBoard* b, char* out, int maxlen)
 		if (r) localbuf[head++] += '/';
 	}
 
-	strncpy(localbuf, out, maxlen);
+	strncpy(out, localbuf, head);
 	return head < maxlen ? head : maxlen;
 }
 
@@ -199,12 +201,12 @@ ncBitboard ncBoardAttackers(ncBoard* b, ncSquare sq) {
 	ncBitboard rooks_queens = b->piece_occ[NC_ROOK] | b->piece_occ[NC_QUEEN];
 	ncBitboard bishops_queens = b->piece_occ[NC_BISHOP] | b->piece_occ[NC_QUEEN];
 
-	return (ncPawnAttacks(NC_WHITE, sq) & black_pawns) |
-		(ncPawnAttacks(NC_BLACK, sq) & white_pawns) |
-		(ncKnightAttacks(sq) & b->piece_occ[NC_KNIGHT]) |
-		(ncBishopAttacks(sq, b->global_occ) & bishops_queens) |
-		(ncRookAttacks(sq, b->global_occ) & rooks_queens) |
-		(ncKingAttacks(sq) & b->piece_occ[NC_KING]);
+	return (ncAttacksPawn(NC_WHITE, sq) & black_pawns) |
+		(ncAttacksPawn(NC_BLACK, sq) & white_pawns) |
+		(ncAttacksKnight(sq) & b->piece_occ[NC_KNIGHT]) |
+		(ncAttacksBishop(sq, b->global_occ) & bishops_queens) |
+		(ncAttacksRook(sq, b->global_occ) & rooks_queens) |
+		(ncAttacksKing(sq) & b->piece_occ[NC_KING]);
 }
 
 int ncBoardGuard(ncBoard* b, ncSquare sq) {
@@ -222,10 +224,10 @@ int ncBoardIsAttacked(ncBoard* b, ncBitboard mask, ncColor col) {
 	ncBitboard opp = b->color_occ[col];
 
 	while (mask) {
-		if (ncBoardAttackers(b, ncBitboardPop(&mask)) & opp) return 0;
+		if (ncBoardAttackers(b, ncBitboardPop(&mask)) & opp) return 1;
 	}
 
-	return 1;
+	return 0;
 }
 
 ncBitboard ncBoardAllspans(ncBoard* b, ncColor col) {
@@ -283,7 +285,7 @@ ncBitboard ncBoardIsolated(ncBoard* b, ncColor col) {
 	return out;
 }
 
-ncBitboard ncBoardBackwards(ncBoard* b, ncColor col) {
+ncBitboard ncBoardBackward(ncBoard* b, ncColor col) {
 	ncBitboard pawns = b->piece_occ[NC_PAWN] & b->color_occ[col];
 	ncBitboard stops = ncBitboardShift(pawns, (col == NC_WHITE) ? NC_NORTH : NC_SOUTH);
 

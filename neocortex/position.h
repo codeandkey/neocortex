@@ -41,11 +41,16 @@ typedef struct {
 } ncPosition;
 
 /**
+ * Constructs a standard position.
+ */
+void ncPositionInit(ncPosition* p);
+
+/**
  * Constructs a position from a FEN.
  *
  * @param fen Input FEN.
  */
-int ncPositionFromFen(ncPosition* p, std::string fen);
+int ncPositionFromFen(ncPosition* p, char* fen);
 
 /**
  * Converts a position to a FEN.
@@ -83,18 +88,16 @@ static inline int ncPositionGetCTM(ncPosition* p)
 int ncPositionMakeMove(ncPosition* p, ncMove move);
 
 /**
- * Unmakes a move. The move must match the last move made.
- *
- * @param move Last move.
+ * Unmakes the last move.
  */
-void ncPositionUnmakeMove(ncPosition* p, ncMove move);
+void ncPositionUnmakeMove(ncPosition* p);
 
 /**
  * Gets a mask of valid en passant squares.
  *
  * @return En-passant mask.
  */
-ncBitboard ncPositionEPMask(ncPosition* p)
+static inline ncBitboard ncPositionEPMask(ncPosition* p)
 {
 	ncSquare sq = p->ply[p->nply - 1].en_passant;
 	return ncSquareValid(sq) ? ncSquareMask(sq) : 0ULL;
@@ -105,7 +108,7 @@ ncBitboard ncPositionEPMask(ncPosition* p)
  *
  * @return Zobrist key.
  */
-ncHashKey ncPositionGetKey(ncPosition* p)
+static inline ncHashKey ncPositionGetKey(ncPosition* p)
 {
 	return p->ply[p->nply - 1].key;
 }
@@ -115,7 +118,7 @@ ncHashKey ncPositionGetKey(ncPosition* p)
  *
  * @return 1 if color to move is in check, 0 otherwise.
  */
-int ncPositionIsCheck(ncPosition* p)
+static inline int ncPositionIsCheck(ncPosition* p)
 {
 	return p->ply[p->nply - 1].check;
 }
@@ -125,7 +128,7 @@ int ncPositionIsCheck(ncPosition* p)
  *
  * @return 1 if a capture was made, 0 otherwise.
  */
-int ncPositionIsCapture(ncPosition* p)
+static inline int ncPositionIsCapture(ncPosition* p)
 {
 	return ncPieceValid(p->ply[p->nply - 1].captured_piece);
 }
@@ -135,7 +138,7 @@ int ncPositionIsCapture(ncPosition* p)
  *
  * @return 1 if last move was en passant, 0 otherwise.
  */
-int ncPositionIsEP(ncPosition* p)
+static inline int ncPositionIsEP(ncPosition* p)
 {
 	return p->ply[p->nply - 1].was_ep;
 }
@@ -193,7 +196,7 @@ int ncPositionEvaluate(ncPosition* p);
  *
  * @return Number of moves generated.
  */
-int ncPositionPLMoves(ncMove* dst, int max);
+int ncPositionPLMoves(ncPosition* p, ncMove* dst);
 
 /**
  * Gets evasion moves for a position.
@@ -226,7 +229,7 @@ int ncPositionSEECapture(ncPosition* p, ncMove capture);
  * @param sq Destination square.
  * @param col Attacking color.
  */
-int ncPositionSEE(ncSquare sq, ncColor col);
+int ncPositionSEE(ncPosition* p, ncSquare sq, ncColor col);
 
 /**
  * Get a printable debug dump of the position.

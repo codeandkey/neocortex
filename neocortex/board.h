@@ -17,18 +17,13 @@ typedef struct {
 	ncHashKey key;
 } ncBoard;
 
-int ncBoardReadFen(ncBoard* b, const char* fen);
+int ncBoardFromFen(ncBoard* b, const char* fen);
 void ncBoardStandard(ncBoard* b);
 void ncBoardPlace(ncBoard* b, ncSquare sq, ncPiece pc);
 ncPiece ncBoardRemove(ncBoard* b, ncSquare sq);
 ncPiece ncBoardReplace(ncBoard* b, ncSquare sq, ncPiece pc);
-int ncBoardWriteFen(ncBoard* b, char* dst, int max);
+int ncBoardToFen(ncBoard* b, char* dst, int max);
 int ncBoardWritePretty(ncBoard* b, char* dst, int max);
-ncBitboard ncBoardGlobalOcc(ncBoard* b);
-ncBitboard ncBoardColorOcc(ncBoard* b, ncColor color);
-ncBitboard ncBoardPieceOcc(ncBoard* b, ncPiece piece_type);
-ncPiece ncBoardGetPiece(ncBoard* b, ncSquare sq);
-ncHashKey ncBoardHashKey(ncBoard* b);
 ncBitboard ncBoardAttackers(ncBoard* b, ncSquare sq);
 int ncBoardGuard(ncBoard* b, ncSquare sq);
 int ncBoardIsAttacked(ncBoard* b, ncBitboard mask, ncColor col);
@@ -38,5 +33,41 @@ ncBitboard ncBoardFrontspans(ncBoard* b, ncColor color);
 ncBitboard ncBoardAttackspans(ncBoard* b, ncColor color);
 ncBitboard ncBoardIsolated(ncBoard* b, ncColor color);
 ncBitboard ncBoardBackward(ncBoard* b, ncColor color);
-int ncBoardMaterialMG(ncBoard* b);
-int ncBoardMaterialEG(ncBoard* b);
+static inline int ncBoardMaterialMG(ncBoard* b)
+{
+	return b->mat_mg;
+}
+
+static inline int ncBoardMaterialEG(ncBoard* b)
+{
+	return b->mat_eg;
+}
+
+static inline ncPiece ncBoardGetPiece(ncBoard* b, ncSquare sq)
+{
+	assert(ncSquareValid(sq));
+	return b->state[sq];
+}
+
+static inline ncBitboard ncBoardGlobalOcc(ncBoard* b)
+{
+	return b->global_occ;
+}
+
+static inline ncHashKey ncBoardHashKey(ncBoard* b)
+{
+	return b->key;
+}
+
+static inline ncBitboard ncBoardColorOcc(ncBoard* b, ncColor color)
+{
+	assert(ncColorValid(color));
+	return b->color_occ[color];
+}
+
+static inline ncBitboard ncBoardPieceOcc(ncBoard* b, ncPiece piece_type)
+{
+	assert(ncPieceTypeValid(piece_type));
+	return b->piece_occ[piece_type];
+}
+

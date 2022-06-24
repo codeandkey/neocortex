@@ -18,5 +18,10 @@
   "directory": "/home/jtst/git/neocortex/build/neocortex",
   "command": "/usr/bin/cc    -o CMakeFiles/neocortex.dir/zobrist.c.o -c /home/jtst/git/neocortex/neocortex/zobrist.c",
   "file": "/home/jtst/git/neocortex/neocortex/zobrist.c"
+},
+{
+  "directory": "/home/jtst/git/neocortex/build/neocortex",
+  "command": "/usr/bin/cc    -o CMakeFiles/neocortex.dir/position.c.o -c /home/jtst/git/neocortex/neocortex/position.c",
+  "file": "/home/jtst/git/neocortex/neocortex/position.c"
 }
 ]

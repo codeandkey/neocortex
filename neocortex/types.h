@@ -62,6 +62,11 @@ static const ncBitboard NC_NEIGHBOR_FILES[8] =
     NC_FILE_G
 };
 
+extern ncBitboard NC_BETWEEN[64][64];
+
+void ncBitboardInitBetween();
+ncBitboard ncBitboardBetween(ncSquare src, ncSquare dst);
+
 /**
  * Locates the position of the least significant '1' bit in a bitboard.
  * Equivalent to locating the "next" square in a set.
@@ -69,17 +74,44 @@ static const ncBitboard NC_NEIGHBOR_FILES[8] =
  * @param b Input bitboard. Must have at least one square set.
  * @return int Least significant square set in bitboard.
  */
-static inline int ncBitboardPop(ncBitboard* b)
+static inline int ncBitboardUnmask(ncBitboard b)
 {
     unsigned long pos;
     assert(b);
 
 #ifdef NC_WIN32 
-    _BitScanForward64(&pos, *b);
+    _BitScanForward64(&pos, b);
 #else
-    pos = __builtin_ctzll(*b);
+    pos = __builtin_ctzll(b);
 #endif
 
+    return (int) pos;
+}
+
+/**
+ * Returns the population count of a bitboard.
+ *
+ * @param b Input bitboard.
+ * @return Number of '1' bits in the input.
+ */
+static inline int ncBitboardPopcnt(ncBitboard b)
+{
+#ifdef NC_WIN32 
+    return __popcnt64(b);
+#else
+    return __builtin_popcountll(b);
+#endif
+}
+
+/**
+ * Pops a square from a bitboard.
+ *
+ * @param b Input bitboard. Must have at least one square set.
+ * @return int Least significant square set in bitboard.
+ */
+static inline int ncBitboardPop(ncBitboard* b)
+{
+    int pos = ncBitboardUnmask(*b);
     *b ^= (1ULL << pos);
     return (int) pos;
 }
@@ -179,7 +211,7 @@ static inline int ncSquareValid(ncSquare s)
 static inline int ncSquareFile(ncSquare s)
 {
     assert(ncSquareValid(s));
-    return s & 0x3;
+    return s % 8;
 }
 
 static inline ncBitboard ncSquareNeighborFiles(ncSquare sq)
@@ -197,4 +229,40 @@ static inline ncBitboard ncSquareMask(ncSquare s)
 {
     assert(ncSquareValid(s));
     return 1ULL << s;
+}
+
+static inline int ncMoveValid(ncMove mv)
+{
+    return mv > 0 && mv < 0xffff;
+}
+
+static inline ncMove ncMoveMake(ncSquare src, ncSquare dst)
+{
+    assert(ncSquareValid(src));
+    assert(ncSquareValid(dst));
+
+    return src << 6 | dst | 0xF000;
+}
+
+static inline ncMove ncMoveMakeP(ncSquare src, ncSquare dst, ncPiece ptype)
+{
+    assert(ncPieceTypeValid(ptype));
+    return src << 6 | dst | (ptype << 12); 
+}
+
+static inline ncSquare ncMoveSrc(ncMove mv)
+{
+    assert(ncMoveValid(mv));
+    return (mv >> 6) & 0x3f;
+}
+
+static inline ncSquare ncMoveDst(ncMove mv)
+{
+    assert(ncMoveValid(mv));
+    return mv & 0x3f;
+}
+
+static inline ncPiece ncMovePtype(ncMove mv)
+{
+    return (mv >> 12) & 0xF;
 }
