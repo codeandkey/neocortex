@@ -42,13 +42,7 @@ static const int NC_GUARD[] =
 
 static const int NC_EVAL_PHASE_VALS[6] = {0, 1, 1, 2, 4, 0};
 
-static const int NC_EVAL_PHASE_TOTAL = \
-	NC_EVAL_PHASE_VALS[0] * 16 +
-	NC_EVAL_PHASE_VALS[1] * 4 +
-	NC_EVAL_PHASE_VALS[2] * 4 +
-	NC_EVAL_PHASE_VALS[3] * 4 +
-	NC_EVAL_PHASE_VALS[4] * 2 +
-	NC_EVAL_PHASE_VALS[5] * 2;
+static const int NC_EVAL_PHASE_TOTAL = 4 + 4 + 8 + 8;
 
 static const int NC_EVAL_TEMPO_BONUS = 4;
 static const int NC_EVAL_CENTER_CONTROL = 1;
