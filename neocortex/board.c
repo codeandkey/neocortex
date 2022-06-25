@@ -30,21 +30,26 @@ int ncBoardFromFen(ncBoard* b, const char* fen)
 
 	ncBoardInit(b);
 
+	char* context = NULL;
+
 	int r = 7;
-	for (char* rank = strtok(localfen, "/"); rank; rank = strtok(NULL, "/"))
+	for (char* rank = strtok_s(localfen, "/", &context); rank; rank = strtok_s(NULL, "/", &context))
 	{
 		if (r < 0)
 			return -1;
 
-		int f;
-		for (f = 0; f < 8; ++f)
+		int f = 0;
+		for (char* c = rank; *c; ++c, ++f)
 		{
-			if (isdigit(rank[f])) 
+			if (!*c)
+				return -1;
+
+			if (isdigit(*c)) 
 			{
-				f += rank[f] - '1';
+				f += *c - '1';
 			} else
 			{
-				ncPiece decoded = ncPieceFromChar(rank[f]);
+				ncPiece decoded = ncPieceFromChar(*c);
 
 				if (decoded == NC_NULL)
 					return -1;
