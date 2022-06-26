@@ -6,12 +6,16 @@
  */
 
 #include "types.h"
+#include "zobrist.h"
 
 #include <assert.h>
 #include <stdlib.h>
 
-static int zobrist_initialized = 0;
-static ncHashKey piece_keys[64][12], castle_keys[16], en_passant_keys[8], black_to_move_key;
+int NC_ZOBRIST_INITIALIZED = 0;
+ncHashKey NC_ZOBRIST_PIECE_KEYS[64][12];
+ncHashKey NC_ZOBRIST_CASTLE_KEYS[16];
+ncHashKey NC_ZOBRIST_EP_KEYS[8];
+ncHashKey NC_ZOBRIST_BTM_KEY;
 
 /**
  * Generates a random Zobrist hash key.
@@ -29,47 +33,22 @@ static ncHashKey randKey()
 }
 
 void ncZobristInit() {
-	assert(!zobrist_initialized);
+	assert(!NC_ZOBRIST_INITIALIZED);
 
 	for (ncSquare sq = 0; sq < 64; ++sq) {
 		for (int p = 0; p < 12; ++p) {
-			piece_keys[sq][p] = randKey();
+			NC_ZOBRIST_PIECE_KEYS[sq][p] = randKey();
 		}
 	}
 
 	for (int castle = 0; castle < 16; ++castle) {
-		castle_keys[castle] = randKey();
+		NC_ZOBRIST_CASTLE_KEYS[castle] = randKey();
 	}
 
 	for (int file = 0; file < 8; ++file) {
-		en_passant_keys[file] = randKey();
+		NC_ZOBRIST_EP_KEYS[file] = randKey();
 	}
 
-	black_to_move_key = randKey();
-	zobrist_initialized = 1;
-}
-
-ncHashKey ncZobristPiece(ncSquare sq, int p) {
-	assert(zobrist_initialized);
-	assert(ncPieceValid(p));
-	assert(ncSquareValid(sq));
-
-	return piece_keys[sq][p];
-}
-
-ncHashKey ncZobristCastle(int rights) {
-	assert(zobrist_initialized);
-	return castle_keys[rights];
-}
-
-ncHashKey ncZobristEnPassant(ncSquare sq) {
-	assert(zobrist_initialized);
-	assert(ncSquareValid(sq));
-
-	return en_passant_keys[ncSquareFile(sq)];
-}
-
-ncHashKey ncZobristBlackToMove() {
-	assert(zobrist_initialized);
-	return black_to_move_key;
+	NC_ZOBRIST_BTM_KEY = randKey();
+	NC_ZOBRIST_INITIALIZED = 1;
 }

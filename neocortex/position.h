@@ -237,3 +237,12 @@ int ncPositionSEE(ncPosition* p, ncSquare sq, ncColor col);
  * @return Number of characters copied.
  */
 int ncPositionDump(ncPosition* p, char* out, int maxlen);
+
+/**
+ * Tests if the the position is a terminal. Returns the game result in <result>.
+ *
+ * @param pos Position
+ * @param result Pointer to result value
+ * @return 1 if terminal, 0 otherwis
+ */
+int ncPositionIsTerminal(ncPosition* pos, int* result);

@@ -8,6 +8,7 @@
 #include "position.h"
 #include "attacks.h"
 #include "eval.h"
+#include "types.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -33,7 +34,7 @@ void ncPositionInit(ncPosition* p)
 	p->ply[0].was_ep = 0;
 }
 
-int ncPositionFromFen(ncPosition* p, char* fen)
+int ncPositionFromFen(ncPosition* p, char* in_fen)
 {
 	p->nply = 1;
 	p->ply[0].captured_piece = NC_NULL;
@@ -44,14 +45,19 @@ int ncPositionFromFen(ncPosition* p, char* fen)
 	p->ply[0].was_ep = 0;
 	p->ply[0].key = 0;
 
+	char fen[100];
+	char* save = NULL;
+
+	strncpy(fen, in_fen, sizeof(fen));
+
 	// Board
-	if (ncBoardFromFen(&p->board, strtok(fen, " ")))
+	if (ncBoardFromFen(&p->board, strtok_r(fen, " ", &save)))
 		return -1;
 
 	p->ply[0].key ^= ncBoardHashKey(&p->board);
 
 	// Color to move
-	switch (*strtok(NULL, " "))
+	switch (*strtok_r(NULL, " ", &save))
 	{
 		case 'w':
 			p->ctm = NC_WHITE;
@@ -66,7 +72,7 @@ int ncPositionFromFen(ncPosition* p, char* fen)
 
 	// Castling rights
 
-	for (char* i = strtok(NULL, " "); *i; ++i)
+	for (char* i = strtok_r(NULL, " ", &save); *i; ++i)
 	{
 		if (!i)
 			return -1;
@@ -93,7 +99,7 @@ int ncPositionFromFen(ncPosition* p, char* fen)
 	p->ply[0].key ^= ncZobristCastle(p->ply[0].castle_rights);
 
 	// EP square
-	char* epsq = strtok(NULL, " ");
+	char* epsq = strtok_r(NULL, " ", &save);
 
 	if (!epsq)
 		return -1;
@@ -102,7 +108,7 @@ int ncPositionFromFen(ncPosition* p, char* fen)
 		p->ply[0].en_passant = ncSquareAt(epsq[1] - '1', epsq[0] - 'a');
 
 	// Halfmove clock
-	char* hmc = strtok(NULL, " ");
+	char* hmc = strtok_r(NULL, " ", &save);
 
 	if (!hmc)
 		return -1;
@@ -110,7 +116,7 @@ int ncPositionFromFen(ncPosition* p, char* fen)
 	p->ply[0].halfmove_clock = strtol(hmc, NULL, 10);
 
 	// Move number 
-	char* mn = strtok(NULL, " ");
+	char* mn = strtok_r(NULL, " ", &save);
 
 	if (!mn)
 		return -1;
@@ -151,9 +157,7 @@ int ncPositionToFen(ncPosition* p, char* fen, int maxlen) {
 	else
 		tmpfen[head++] = '-';
 
-	char nums[12];
 	snprintf(tmpfen + head, sizeof(tmpfen) - head, " %d %d", top->halfmove_clock, top->fullmove_number);
-
 	strncpy(fen, tmpfen, maxlen);
 
 	return head < maxlen ? head : maxlen;
@@ -162,6 +166,8 @@ int ncPositionToFen(ncPosition* p, char* fen, int maxlen) {
 int ncPositionMakeMove(ncPosition* p, ncMove move)
 {
 	assert(p->nply < NC_MAX_PLY);
+
+	ncPly* last = &p->ply[p->nply - 1];
 
 	// Copy ply
 	memcpy(&p->ply[p->nply], &p->ply[p->nply - 1], sizeof(ncPly));
@@ -182,8 +188,13 @@ int ncPositionMakeMove(ncPosition* p, ncMove move)
 	top->was_ep = 0;
 	top->was_castle = 0;
 
-	int dst_piece = ncBoardGetPiece(&p->board, ncMoveDst(move));
-	int src_piece = ncBoardRemove(&p->board, ncMoveSrc(move));
+	ncSquare src_sq = ncMoveSrc(move), dst_sq = ncMoveDst(move);
+
+	int src_piece = ncBoardRemove(&p->board, src_sq);
+	int dst_piece = ncBoardGetPiece(&p->board, dst_sq);
+
+	ncColor src_color = ncPieceColor(src_piece);
+	ncPiece src_type  = ncPieceType(src_piece);
 
 	assert(ncPieceColor(src_piece) == p->ctm);
 
@@ -191,10 +202,13 @@ int ncPositionMakeMove(ncPosition* p, ncMove move)
 		top->halfmove_clock = 0;
 
 	/* Check for EP capture */
-	if (ncPieceType(src_piece) == NC_PAWN && ncMoveDst(move) == top->en_passant) {
+	if (ncPieceType(src_piece) == NC_PAWN && dst_sq == last->en_passant) {
 		/* EP, need to remove piece */
-		int adv_dir = (p->ctm == NC_WHITE) ? NC_NORTH : NC_SOUTH;
-		int capture_square = top->en_passant - adv_dir;
+		int capture_square = ncSquareAt(
+			ncSquareRank(src_sq),
+			ncSquareFile(dst_sq)
+		);
+
  		int removed = ncBoardRemove(&p->board, capture_square);
 
 		top->captured_piece = removed;
@@ -435,7 +449,6 @@ int ncPositionPLMoves(ncPosition* p, ncMove* out)
 	/* Jumps */
 	ncBitboard npm_jumps = ncBitboardShift(pawns & starting_rank, adv_dir) & ~ncBoardGlobalOcc(&p->board);
 	npm_jumps = ncBitboardShift(npm_jumps, adv_dir) & ~ncBoardGlobalOcc(&p->board);
-	npm_jumps = 0;
 
 	while (npm_jumps) {
 		int dst = ncBitboardPop(&npm_jumps);
@@ -886,23 +899,8 @@ int ncPositionSEE(ncPosition* p, int sq, int attacking_col) {
 }
 
 int ncPositionEvaluate(ncPosition* p) {
-	int phase;
-	int development;
-	int center_control;
-	int material_mg;
-	int material_eg;
-	int king_safety;
-	int king_first_rank;
-	int pawns_protecting_king;
-	int passed_pawns;
-	int passed_pawn_adv;
-	int edge_knights;
-	int open_file_r;
-	int open_file_q;
-	int p_iso_pawns;
-	int p_bck_pawns;
-	int p_dbl_pawns;
-	int pawn_chain;
+	int opening = 0;
+	int endgame = 0;
 
 	int white_king_sq = ncBitboardUnmask(ncBoardColorOcc(&p->board, NC_WHITE) & ncBoardPieceOcc(&p->board, NC_KING));
 	int black_king_sq = ncBitboardUnmask(ncBoardColorOcc(&p->board, NC_BLACK) & ncBoardPieceOcc(&p->board, NC_KING));
@@ -910,39 +908,23 @@ int ncPositionEvaluate(ncPosition* p) {
 	ncBitboard wkattacks = ncAttacksKing(white_king_sq);
 	ncBitboard bkattacks = ncAttacksKing(black_king_sq);
 
-	/* Start evaluation */
-	int score = 0;
+	// Start evaluation
 
-	/* Compute game phase */
-	phase = NC_EVAL_PHASE_TOTAL;
+	// Material values
+	opening += ncBoardMaterialMG(&p->board);
+	endgame += ncBoardMaterialEG(&p->board);
 
-	for (int t = 0; t < 5; ++t) {
-		phase -= ncBitboardPopcnt(ncBoardPieceOcc(&p->board, t)) * NC_EVAL_PHASE_VALS[t];
+	// Center control
+	static const ncSquare CENTER[4] = { 27, 28, 35, 36 };
+
+	for (int i = 0; i < sizeof(CENTER) / sizeof(CENTER[0]); ++i)
+	{
+		int v = ncBoardGuard(&p->board, CENTER[i]);
+		opening += v * NC_EVAL_CENTER_CONTROL_MG;
+		endgame += v * NC_EVAL_CENTER_CONTROL_EG;
 	}
 
-	phase = (phase * 256) / NC_EVAL_PHASE_TOTAL;
-
-	/* Compute material values */
-	material_mg = (ncBoardMaterialMG(&p->board) * (256 - phase)) / 256;
-	material_eg = (ncBoardMaterialEG(&p->board) * phase) / 256;
-
-	score += material_mg;
-	score += material_eg;
-
-	/* Compute center square control */
-	static const ncSquare center_squares[4] = { 27, 28, 35, 36 };
-	center_control = 0;
-
-	for (int i = 0; i < 4; ++i) {
-		center_control += ncBoardGuard(&p->board, center_squares[i]);
-	}
-
-	center_control *= NC_EVAL_CENTER_CONTROL;
-	score += center_control;
-
-	/* Compute king safety */
-	king_safety = 0;
-
+	// King (un)safety
 	ncBitboard white_ksq = wkattacks;
 	ncBitboard black_ksq = bkattacks;
 
@@ -950,193 +932,188 @@ int ncPositionEvaluate(ncPosition* p) {
 		ncSquare ksq = ncBitboardPop(&white_ksq);
 		int gv = ncBoardGuard(&p->board, ksq);
 
-		/* don't incentivize overprotecting the king */
+		// Dont give points for overprotecting own king squares
 		if (gv > 0) {
 			gv = 0;
 		}
 
-		king_safety += gv;
+		opening += gv * NC_EVAL_KING_SAFETY_MG;
+		endgame += gv * NC_EVAL_KING_SAFETY_EG;
 	}
 
 	while (black_ksq) {
 		int ksq = ncBitboardPop(&black_ksq);
 		int gv = ncBoardGuard(&p->board, ksq);
 
-		/* don't incentivize overprotecting the king */
+		// Dont give points for overprotecting own king squares
 		if (gv < 0) {
 			gv = 0;
 		}
 
-		king_safety += gv;
+		opening += gv * NC_EVAL_KING_SAFETY_MG;
+		endgame += gv * NC_EVAL_KING_SAFETY_EG;
 	}
 
-	king_safety *= NC_EVAL_KING_SAFETY;
-	score += king_safety;
-
-	/* Evaluate development */
-	development = 0;
-
+	// Development
 	ncBitboard minor_pieces = ncBoardPieceOcc(&p->board, NC_KNIGHT) | ncBoardPieceOcc(&p->board, NC_BISHOP);
 
 	static const ncBitboard white_dev_ranks = NC_RANK_3 | NC_RANK_4 | NC_RANK_5;
 	static const ncBitboard black_dev_ranks = NC_RANK_4 | NC_RANK_5 | NC_RANK_6;
 
-	development += ncBitboardPopcnt(minor_pieces & ncBoardColorOcc(&p->board, NC_WHITE) & white_dev_ranks);
-	development -= ncBitboardPopcnt(minor_pieces & ncBoardColorOcc(&p->board, NC_BLACK) & black_dev_ranks);
+	int wdcount = ncBitboardPopcnt(minor_pieces & ncBoardColorOcc(&p->board, NC_WHITE) & white_dev_ranks);
+	int bdcount = ncBitboardPopcnt(minor_pieces & ncBoardColorOcc(&p->board, NC_BLACK) & black_dev_ranks);
 
-	development *= NC_EVAL_DEVELOPMENT;
-	score += development;
+	opening += wdcount * NC_EVAL_DEVELOPMENT_MG;
+	opening += bdcount * NC_EVAL_DEVELOPMENT_MG;
+	endgame += wdcount * NC_EVAL_DEVELOPMENT_EG;
+	endgame += bdcount * NC_EVAL_DEVELOPMENT_EG;
 
-	/* Penalty for edge knights */
-	edge_knights = 0;
-
+	// Edge knights
 	ncBitboard edge_knights_mask = ncBoardPieceOcc(&p->board, NC_KNIGHT) & (NC_FILE_A | NC_FILE_H);
 
-	edge_knights += ncBitboardPopcnt(edge_knights_mask & ncBoardColorOcc(&p->board, NC_WHITE));
-	edge_knights -= ncBitboardPopcnt(edge_knights_mask & ncBoardColorOcc(&p->board, NC_BLACK));
+	int nedgew = ncBitboardPopcnt(edge_knights_mask & ncBoardColorOcc(&p->board, NC_WHITE));
+	int nedgeb = ncBitboardPopcnt(edge_knights_mask & ncBoardColorOcc(&p->board, NC_BLACK));
 
-	edge_knights *= NC_EVAL_EDGE_KNIGHTS;
-	score += edge_knights;
+	opening += nedgew * NC_EVAL_DEVELOPMENT_MG;
+	opening += nedgeb * NC_EVAL_DEVELOPMENT_MG;
+	endgame += nedgew * NC_EVAL_DEVELOPMENT_EG;
+	endgame += nedgeb * NC_EVAL_DEVELOPMENT_EG;
 
-	/* Find passed pawns */
-	ncBitboard passers[2];
+	// Passed pawns
+	ncBitboard wpassed, bpassed;
 
-	passers[NC_WHITE] = ncBoardPassers(&p->board, NC_WHITE);
-	passers[NC_BLACK] = ncBoardPassers(&p->board, NC_BLACK);
+	wpassed = ncBoardPassers(&p->board, NC_WHITE);
+	bpassed = ncBoardPassers(&p->board, NC_BLACK);
 
-	/* Apply passed pawn bonus */
-	passed_pawns = 0;
+	// Passed pawn count bonus
+	opening += ncBitboardPopcnt(wpassed) * NC_EVAL_PASSED_PAWNS_MG;
+	opening += ncBitboardPopcnt(bpassed) * NC_EVAL_PASSED_PAWNS_MG;
+	endgame += ncBitboardPopcnt(wpassed) * NC_EVAL_PASSED_PAWNS_EG;
+	endgame += ncBitboardPopcnt(bpassed) * NC_EVAL_PASSED_PAWNS_EG;
 
-	passed_pawns += ncBitboardPopcnt(passers[NC_WHITE]);
-	passed_pawns -= ncBitboardPopcnt(passers[NC_BLACK]);
-
-	passed_pawns *= NC_EVAL_PASSED_PAWNS;
-	score += passed_pawns;
-
-	/* Apply bonus for king on first rank in MG */
-	king_first_rank = 0;
-	pawns_protecting_king = 0;
-
+	// First-rank kings
 	ncBitboard wkmask = ncSquareMask(white_king_sq);
 	ncBitboard bkmask = ncSquareMask(black_king_sq);
 
-	if (wkmask & NC_RANK_1) {
-		king_first_rank += 1;
-		pawns_protecting_king += ncBitboardPopcnt(wkattacks & ncBoardPieceOcc(&p->board, NC_PAWN) & NC_RANK_2);
+	if (ncSquareRank(white_king_sq) == 0)
+	{
+		opening += NC_EVAL_FIRST_RANK_KING_MG;
+		endgame += NC_EVAL_FIRST_RANK_KING_EG;
+		
+		int ppc = ncBitboardPopcnt(wkattacks & ncBoardColorOcc(&p->board, NC_WHITE) & ncBoardPieceOcc(&p->board, NC_PAWN) & NC_RANK_2);
+
+		opening += ppc * NC_EVAL_PAWNS_PROT_KING_MG;
+		endgame += ppc * NC_EVAL_PAWNS_PROT_KING_EG;
 	}
 
-	if (bkmask & NC_RANK_8) {
-		king_first_rank -= 1;
-		pawns_protecting_king -= ncBitboardPopcnt(bkattacks & ncBoardPieceOcc(&p->board, NC_PAWN) & NC_RANK_7);
+	if (ncSquareRank(black_king_sq) == 7)
+	{
+		opening -= NC_EVAL_FIRST_RANK_KING_MG;
+		endgame -= NC_EVAL_FIRST_RANK_KING_EG;
+		
+		int ppc = ncBitboardPopcnt(bkattacks & ncBoardColorOcc(&p->board, NC_BLACK) & ncBoardPieceOcc(&p->board, NC_PAWN) & NC_RANK_2);
+
+		opening -= ppc * NC_EVAL_PAWNS_PROT_KING_MG;
+		endgame -= ppc * NC_EVAL_PAWNS_PROT_KING_EG;
 	}
 
-	pawns_protecting_king *= NC_EVAL_PAWNS_PROT_KING_MG;
-	pawns_protecting_king *= (256 - phase);
-	pawns_protecting_king /= 256;
-
-	king_first_rank *= NC_EVAL_FIRST_RANK_KING_MG;
-	king_first_rank *= (256 - phase);
-	king_first_rank /= 256;
-
-	score += king_first_rank;
-	score += pawns_protecting_king;
-
-	/* Apply advance bonus for passed pawns */
+	// Advanced passed pawns
 	ncBitboard tmp_passers;
-	passed_pawn_adv = 0;
 
-	tmp_passers = passers[NC_WHITE];
+	tmp_passers = wpassed;
 	while (tmp_passers) {
 		int p = ncBitboardPop(&tmp_passers);
-		passed_pawn_adv += ncSquareRank(p);
+		int dist = ncSquareRank(p) - 1;
+
+		opening += dist * NC_EVAL_PASSED_PAWNS_MG;
+		endgame += dist * NC_EVAL_PASSED_PAWNS_MG;
 	}
 
-	tmp_passers = passers[NC_BLACK];
+	tmp_passers = bpassed;
 	while (tmp_passers) {
 		int p = ncBitboardPop(&tmp_passers);
-		passed_pawn_adv -= (7 - ncSquareRank(p));
+		int dist = 6 - ncSquareRank(p);
+
+		opening -= dist * NC_EVAL_PASSED_PAWNS_MG;
+		endgame -= dist * NC_EVAL_PASSED_PAWNS_MG;
 	}
 
-	passed_pawn_adv *= NC_EVAL_ADV_PASSEDPAWN;
-	score += passed_pawn_adv;
-
-	/* Apply file bonuses and penalties */
-	open_file_r = 0;
-	open_file_q = 0;
-	p_dbl_pawns = 0;
+	// File-based heuristics
+	ncBitboard file = NC_FILE_A;
 
 	for (int f = 0; f < 8; ++f) {
-		ncBitboard file = NC_FILE_A << f;
 		ncBitboard file_pawns = ncBoardPieceOcc(&p->board, NC_PAWN) & file;
+		file <<= 1;
 
 		if (!file_pawns) {
-			// Open file
-
+			// Open file control by rooks/queens
 			ncBitboard frooks = file & ncBoardPieceOcc(&p->board, NC_ROOK);
 			ncBitboard fqueens = file & ncBoardPieceOcc(&p->board, NC_QUEEN);
 
-			open_file_r += ncBitboardPopcnt(frooks & ncBoardColorOcc(&p->board, NC_WHITE));
-			open_file_q += ncBitboardPopcnt(fqueens & ncBoardColorOcc(&p->board, NC_WHITE));
-			open_file_r -= ncBitboardPopcnt(frooks & ncBoardColorOcc(&p->board, NC_BLACK));
-			open_file_q -= ncBitboardPopcnt(fqueens & ncBoardColorOcc(&p->board, NC_BLACK));
+			opening += ncBitboardPopcnt(frooks & ncBoardColorOcc(&p->board, NC_WHITE)) * NC_EVAL_OPEN_FILE_ROOK_MG;
+			endgame += ncBitboardPopcnt(frooks & ncBoardColorOcc(&p->board, NC_WHITE)) * NC_EVAL_OPEN_FILE_ROOK_EG;
+			opening += ncBitboardPopcnt(fqueens & ncBoardColorOcc(&p->board, NC_WHITE)) * NC_EVAL_OPEN_FILE_QUEEN_MG;
+			endgame += ncBitboardPopcnt(fqueens & ncBoardColorOcc(&p->board, NC_WHITE)) * NC_EVAL_OPEN_FILE_QUEEN_EG;
+			opening -= ncBitboardPopcnt(frooks & ncBoardColorOcc(&p->board, NC_BLACK)) * NC_EVAL_OPEN_FILE_ROOK_MG;
+			endgame -= ncBitboardPopcnt(frooks & ncBoardColorOcc(&p->board, NC_BLACK)) * NC_EVAL_OPEN_FILE_ROOK_EG;
+			opening -= ncBitboardPopcnt(fqueens & ncBoardColorOcc(&p->board, NC_BLACK)) * NC_EVAL_OPEN_FILE_QUEEN_MG;
+			endgame -= ncBitboardPopcnt(fqueens & ncBoardColorOcc(&p->board, NC_BLACK)) * NC_EVAL_OPEN_FILE_QUEEN_EG;
 		}
 
+		// Doubled pawns
 		int n_white_pawns = ncBitboardPopcnt(file_pawns & ncBoardColorOcc(&p->board, NC_WHITE));
 		int n_black_pawns = ncBitboardPopcnt(file_pawns & ncBoardColorOcc(&p->board, NC_BLACK));
 
-		if (n_white_pawns > 1) {
-			p_dbl_pawns += (n_white_pawns - 1);
-		}
-
-		if (n_black_pawns > 1) {
-			p_dbl_pawns -= (n_black_pawns - 1);
-		}
+		opening += (n_white_pawns - 1) * NC_EVAL_DOUBLED_PAWNS_MG;
+		endgame += (n_white_pawns - 1) * NC_EVAL_DOUBLED_PAWNS_EG;
+		opening -= (n_black_pawns - 1) * NC_EVAL_DOUBLED_PAWNS_MG;
+		endgame -= (n_black_pawns - 1) * NC_EVAL_DOUBLED_PAWNS_EG;
 	}
 
-	open_file_r *= NC_EVAL_OPEN_FILE_ROOK;
-	open_file_q *= NC_EVAL_OPEN_FILE_QUEEN;
-
-	score += open_file_r + open_file_q;
-
-	p_dbl_pawns *= NC_EVAL_DOUBLED_PAWNS;
-	score += p_dbl_pawns;
-
-	/* Apply bonus for chained pawns */
+	// Chained pawns
 	ncBitboard w_pawns = ncBoardPieceOcc(&p->board, NC_PAWN) & ncBoardColorOcc(&p->board, NC_WHITE);
 	ncBitboard b_pawns = ncBoardPieceOcc(&p->board, NC_PAWN) & ncBoardColorOcc(&p->board, NC_BLACK);
 
-	pawn_chain = 0;
+	ncBitboard wpawnchain = (ncBitboardShift(w_pawns & ~NC_FILE_A, NC_NORTHWEST) | ncBitboardShift(w_pawns & ~NC_FILE_H, NC_NORTHEAST)) & w_pawns;
+	ncBitboard bpawnchain = (ncBitboardShift(b_pawns & ~NC_FILE_A, NC_NORTHWEST) | ncBitboardShift(w_pawns & ~NC_FILE_H, NC_NORTHEAST)) & w_pawns;
 
-	pawn_chain += ncBitboardPopcnt((ncBitboardShift(w_pawns & ~NC_FILE_A, NC_NORTHWEST) | ncBitboardShift(w_pawns & ~NC_FILE_H, NC_NORTHEAST)) & w_pawns);
-	pawn_chain -= ncBitboardPopcnt((ncBitboardShift(b_pawns & ~NC_FILE_A, NC_SOUTHWEST) | ncBitboardShift(b_pawns & ~NC_FILE_H, NC_SOUTHEAST)) & b_pawns);
+	int nwpawnchain = ncBitboardPopcnt(wpawnchain);
+	int nbpawnchain = ncBitboardPopcnt(bpawnchain);
 
-	pawn_chain *= NC_EVAL_PAWN_CHAIN;
-	score += pawn_chain;
+	opening += nwpawnchain * NC_EVAL_PAWN_CHAIN_MG;
+	endgame += nwpawnchain * NC_EVAL_PAWN_CHAIN_EG;
+	opening -= nbpawnchain * NC_EVAL_PAWN_CHAIN_MG;
+	endgame -= nbpawnchain * NC_EVAL_PAWN_CHAIN_EG;
 
-	/* Apply penalty for isolated pawns */
-	p_iso_pawns = 0;
+	// Isolated pawns
+	int nwisolated = ncBitboardPopcnt(ncBoardIsolated(&p->board, NC_WHITE));
+	int nbisolated = ncBitboardPopcnt(ncBoardIsolated(&p->board, NC_BLACK));
 
-	p_iso_pawns += ncBitboardPopcnt(ncBoardIsolated(&p->board, NC_WHITE));
-	p_iso_pawns -= ncBitboardPopcnt(ncBoardIsolated(&p->board, NC_BLACK));
+	opening += nwisolated * NC_EVAL_ISOLATED_PAWNS_MG;
+	endgame += nwisolated * NC_EVAL_ISOLATED_PAWNS_EG;
+	opening -= nbisolated * NC_EVAL_ISOLATED_PAWNS_MG;
+	endgame -= nbisolated * NC_EVAL_ISOLATED_PAWNS_EG;
 
-	p_iso_pawns *= NC_EVAL_ISOLATED_PAWNS;
-	score += p_iso_pawns;
+	// Backward pawns
+	int nwbackward = ncBitboardPopcnt(ncBoardBackward(&p->board, NC_WHITE));
+	int nbbackward = ncBitboardPopcnt(ncBoardBackward(&p->board, NC_BLACK));
 
-	/* Apply penalty for backward pawns */
-	p_bck_pawns = 0;
+	opening += nwbackward * NC_EVAL_BACKWARD_PAWNS_MG;
+	endgame += nwbackward * NC_EVAL_BACKWARD_PAWNS_EG;
+	opening -= nbbackward * NC_EVAL_BACKWARD_PAWNS_MG;
+	endgame -= nbbackward * NC_EVAL_BACKWARD_PAWNS_EG;
 
-	p_bck_pawns += ncBitboardPopcnt(ncBoardBackward(&p->board, NC_WHITE));
-	p_bck_pawns -= ncBitboardPopcnt(ncBoardBackward(&p->board, NC_BLACK));
+	/* Compute game phase */
+	int phase = NC_EVAL_PHASE_TOTAL;
 
-	p_bck_pawns *= NC_EVAL_BACKWARD_PAWNS;
-	score += p_bck_pawns;
-
-	/* Flip eval if BTM */
-	if (p->ctm == NC_BLACK) {
-		score *= -1;
+	for (int t = 0; t < 5; ++t) {
+		phase -= ncBitboardPopcnt(ncBoardPieceOcc(&p->board, t)) * NC_EVAL_PHASE_VALS[t];
 	}
 
-	return score;
+	phase = (phase * 256) / NC_EVAL_PHASE_TOTAL;
+
+	// Taper eval
+	return ((opening * (256 - phase)) + (endgame * phase)) / 256;
 }
 
 int ncPositionNumRepetitions(ncPosition* p) {
@@ -1146,4 +1123,54 @@ int ncPositionNumRepetitions(ncPosition* p) {
 		res += (p->ply[i].key == p->ply[p->nply - 1].key);
 
 	return res;
+}
+
+int ncPositionIsTerminal(ncPosition* pos, int* result)
+{
+	// Check for terminal draws
+    if (pos->ply[pos->nply - 1].halfmove_clock >= 50)
+    {
+		*result = 0;
+        return 1;
+    }
+
+    if (ncPositionRepCount(pos) >= 3)
+    {
+		*result = 0;
+        return 1;
+    }
+
+	ncMove moves[NC_MAX_PL_MOVES];
+	int n_pl_moves;
+
+	n_pl_moves = ncPositionPLMoves(pos, moves);
+
+	for (int i = 0; i < n_pl_moves; ++i)
+	{
+		if (ncPositionMakeMove(pos, moves[i]))
+		{
+			ncPositionUnmakeMove(pos);
+			return 0;
+		}
+
+		ncPositionUnmakeMove(pos);
+	}
+	
+	if (!ncPositionIsCheck(pos))
+		*result = 0;
+
+	*result = (pos->ctm == NC_WHITE) ? -1 : 1;
+	return 1;
+}
+
+int ncPositionRepCount(ncPosition* p)
+{
+	int count = 0;
+	ncHashKey key = p->ply[p->nply - 1].key;
+
+	for (int i = p->nply - 2; i >= 0; --i)
+		if (p->ply[i].key == key)
+			++count;
+
+	return count;
 }

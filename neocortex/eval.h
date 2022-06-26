@@ -19,7 +19,6 @@ static const int NC_MATERIAL_MG[] =
 	1200, -1200
 };
 
-// TODO - adjust endgame material weighting
 static const int NC_MATERIAL_EG[] =
 {
 	100, -100,
@@ -41,25 +40,119 @@ static const int NC_GUARD[] =
 };
 
 static const int NC_EVAL_PHASE_VALS[6] = {0, 1, 1, 2, 4, 0};
-
 static const int NC_EVAL_PHASE_TOTAL = 4 + 4 + 8 + 8;
 
-static const int NC_EVAL_TEMPO_BONUS = 4;
-static const int NC_EVAL_CENTER_CONTROL = 1;
-static const int NC_EVAL_KING_SAFETY = 7;
-static const int NC_EVAL_PASSED_PAWNS = 11;
-static const int NC_EVAL_ADV_PASSEDPAWN = 8;
-static const int NC_EVAL_DEVELOPMENT = 15;
-static const int NC_EVAL_FIRST_RANK_KING_MG = 7;
-static const int NC_EVAL_PAWNS_PROT_KING_MG = 2;
-static const int NC_EVAL_EDGE_KNIGHTS = -3;
-static const int NC_EVAL_ISOLATED_PAWNS = -8;
-static const int NC_EVAL_BACKWARD_PAWNS = -8;
-static const int NC_EVAL_DOUBLED_PAWNS = -6;
-static const int NC_EVAL_PAWN_CHAIN = 2;
+#ifndef NC_EVAL_CENTER_CONTROL_MG
+#define NC_EVAL_CENTER_CONTROL_MG 20
+#endif
 
-static const int NC_EVAL_OPEN_FILE_ROOK = 8;
-static const int NC_EVAL_OPEN_FILE_QUEEN = 4;
+#ifndef NC_EVAL_CENTER_CONTROL_EG
+#define NC_EVAL_CENTER_CONTROL_EG 20
+#endif
+
+#ifndef NC_EVAL_KING_SAFETY_MG
+#define NC_EVAL_KING_SAFETY_MG 7
+#endif
+
+#ifndef NC_EVAL_KING_SAFETY_EG
+#define NC_EVAL_KING_SAFETY_EG 7
+#endif
+
+#ifndef NC_EVAL_PASSED_PAWNS_MG
+#define NC_EVAL_PASSED_PAWNS_MG 15
+#endif
+
+#ifndef NC_EVAL_PASSED_PAWNS_EG
+#define NC_EVAL_PASSED_PAWNS_EG 30
+#endif
+
+#ifndef NC_EVAL_ADV_PASSEDPAWN_MG
+#define NC_EVAL_ADV_PASSEDPAWN_MG 8
+#endif
+
+#ifndef NC_EVAL_ADV_PASSEDPAWN_EG
+#define NC_EVAL_ADV_PASSEDPAWN_EG 8
+#endif
+
+#ifndef NC_EVAL_DEVELOPMENT_MG
+#define NC_EVAL_DEVELOPMENT_MG 35
+#endif
+
+#ifndef NC_EVAL_DEVELOPMENT_EG
+#define NC_EVAL_DEVELOPMENT_EG 20
+#endif
+
+#ifndef NC_EVAL_FIRST_RANK_KING_MG
+#define NC_EVAL_FIRST_RANK_KING_MG 10
+#endif
+
+#ifndef NC_EVAL_FIRST_RANK_KING_EG
+#define NC_EVAL_FIRST_RANK_KING_EG -10
+#endif
+
+#ifndef NC_EVAL_PAWNS_PROT_KING_MG
+#define NC_EVAL_PAWNS_PROT_KING_MG 8
+#endif
+
+#ifndef NC_EVAL_PAWNS_PROT_KING_EG
+#define NC_EVAL_PAWNS_PROT_KING_EG 8
+#endif
+
+#ifndef NC_EVAL_EDGE_KNIGHTS_MG
+#define NC_EVAL_EDGE_KNIGHTS_MG -10
+#endif
+
+#ifndef NC_EVAL_EDGE_KNIGHTS_EG
+#define NC_EVAL_EDGE_KNIGHTS_EG -5
+#endif
+
+#ifndef NC_EVAL_ISOLATED_PAWNS_MG
+#define NC_EVAL_ISOLATED_PAWNS_MG -10
+#endif
+
+#ifndef NC_EVAL_ISOLATED_PAWNS_EG
+#define NC_EVAL_ISOLATED_PAWNS_EG -10
+#endif
+
+#ifndef NC_EVAL_BACKWARD_PAWNS_MG
+#define NC_EVAL_BACKWARD_PAWNS_MG 0
+#endif
+
+#ifndef NC_EVAL_BACKWARD_PAWNS_EG
+#define NC_EVAL_BACKWARD_PAWNS_EG 0
+#endif
+
+#ifndef NC_EVAL_DOUBLED_PAWNS_MG
+#define NC_EVAL_DOUBLED_PAWNS_MG -10
+#endif
+
+#ifndef NC_EVAL_DOUBLED_PAWNS_EG
+#define NC_EVAL_DOUBLED_PAWNS_EG -20
+#endif
+
+#ifndef NC_EVAL_PAWN_CHAIN_MG
+#define NC_EVAL_PAWN_CHAIN_MG 4
+#endif
+
+#ifndef NC_EVAL_PAWN_CHAIN_EG
+#define NC_EVAL_PAWN_CHAIN_EG 4
+#endif
+
+#ifndef NC_EVAL_OPEN_FILE_ROOK_MG
+#define NC_EVAL_OPEN_FILE_ROOK_MG 5
+#endif
+
+#ifndef NC_EVAL_OPEN_FILE_ROOK_EG
+#define NC_EVAL_OPEN_FILE_ROOK_EG 5
+#endif
+
+#ifndef NC_EVAL_OPEN_FILE_QUEEN_MG
+#define NC_EVAL_OPEN_FILE_QUEEN_MG 5
+#endif
+
+#ifndef NC_EVAL_OPEN_FILE_QUEEN_EG
+#define NC_EVAL_OPEN_FILE_QUEEN_EG 5
+#endif
 
 /**
  * Returns the MG material score for <pc>. Negative values are returned for

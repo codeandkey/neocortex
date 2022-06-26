@@ -33,7 +33,7 @@ int ncBoardFromFen(ncBoard* b, const char* fen)
 	char* context = NULL;
 
 	int r = 7;
-	for (char* rank = strtok_s(localfen, "/", &context); rank; rank = strtok_s(NULL, "/", &context))
+	for (char* rank = strtok_r(localfen, "/", &context); rank; rank = strtok_r(NULL, "/", &context))
 	{
 		if (r < 0)
 			return -1;

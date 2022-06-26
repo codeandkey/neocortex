@@ -1,7 +1,5 @@
 #pragma once
 
-#include "platform.h"
-
 #include <assert.h>
 #include <stdint.h>
 
@@ -79,7 +77,7 @@ static inline int ncBitboardUnmask(ncBitboard b)
     unsigned long pos;
     assert(b);
 
-#ifdef NC_WIN32 
+#ifdef _WIN32 
     _BitScanForward64(&pos, b);
 #else
     pos = __builtin_ctzll(b);
@@ -96,8 +94,8 @@ static inline int ncBitboardUnmask(ncBitboard b)
  */
 static inline int ncBitboardPopcnt(ncBitboard b)
 {
-#ifdef NC_WIN32 
-    return __popcnt64(b);
+#ifdef _WIN32 
+    return (int) __popcnt64(b);
 #else
     return __builtin_popcountll(b);
 #endif
@@ -116,7 +114,7 @@ static inline int ncBitboardPop(ncBitboard* b)
     return (int) pos;
 }
 
-static inline int ncBitboardShift(ncBitboard b, int dir)
+static inline ncBitboard ncBitboardShift(ncBitboard b, int dir)
 {
     return (dir > 0) ? b << dir : b >> -dir;
 }
@@ -189,6 +187,12 @@ static inline char ncPieceToChar(ncPiece p)
     return "PpNnBbRrQqKk"[p];
 }
 
+static inline char ncPieceTypeToChar(ncPiece p)
+{
+    assert(ncPieceValid(p));
+    return "pnbrqk"[p];
+}
+
 static inline ncPiece ncPieceType(ncPiece p)
 {
     assert(ncPieceValid(p));
@@ -205,7 +209,7 @@ static inline ncSquare ncSquareAt(int rank, int file)
 
 static inline int ncSquareValid(ncSquare s)
 {
-    return s >= 0 & s < 64;
+    return s >= 0 && s < 64;
 }
 
 static inline int ncSquareFile(ncSquare s)
@@ -265,4 +269,19 @@ static inline ncSquare ncMoveDst(ncMove mv)
 static inline ncPiece ncMovePtype(ncMove mv)
 {
     return (mv >> 12) & 0xF;
+}
+
+static inline void ncMoveUCI(ncMove mv, char* dst)
+{
+    assert(ncMoveValid(mv));
+
+    dst[0] = ncSquareFile(ncMoveSrc(mv)) + 'a';
+    dst[1] = ncSquareRank(ncMoveSrc(mv)) + '1';
+    dst[2] = ncSquareFile(ncMoveDst(mv)) + 'a';
+    dst[3] = ncSquareRank(ncMoveDst(mv)) + '1';
+
+    dst[4] = dst[5] = '\0';
+
+    if (ncPieceTypeValid(ncMovePtype(mv)))
+        dst[4] = ncPieceTypeToChar(ncMovePtype(mv));
 }

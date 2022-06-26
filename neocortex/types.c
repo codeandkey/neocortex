@@ -17,7 +17,7 @@ void ncBitboardInitBetween()
         while (dstsqs)
         {
             ncSquare dst = ncBitboardPop(&dstsqs);
-            ncBitboard between = ncSquareMask(src);
+			ncBitboard between = 0ULL;
 
             ncSquare start = src;
 
@@ -39,7 +39,7 @@ void ncBitboardInitBetween()
                 between |= ncSquareMask(start);
             }
 
-            NC_BETWEEN[src][dst] = between;
+            NC_BETWEEN[src][dst] = between & ~ncSquareMask(dst);
         }
     }
 

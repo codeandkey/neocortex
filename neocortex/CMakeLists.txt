@@ -1,1 +1,2 @@
-add_executable (neocortex neocortex.c attacks.c board.c zobrist.c position.c types.c)
+add_executable (neocortex neocortex.c attacks.c board.c zobrist.c position.c types.c search.c)
+target_link_libraries(neocortex m)

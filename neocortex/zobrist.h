@@ -9,6 +9,12 @@
 
 #include "types.h"
 
+extern int NC_ZOBRIST_INITIALIZED;
+extern ncHashKey NC_ZOBRIST_PIECE_KEYS[64][12];
+extern ncHashKey NC_ZOBRIST_CASTLE_KEYS[16];
+extern ncHashKey NC_ZOBRIST_EP_KEYS[8];
+extern ncHashKey NC_ZOBRIST_BTM_KEY;
+
 /**
  * Initializes Zobrist keys.
  * Must be called before querying any keys.
@@ -22,7 +28,13 @@ void ncZobristInit();
  * @param piece Input piece.
  * @return Zobrist key for piece on square.
  */
-ncHashKey ncZobristPiece(ncSquare sq, ncPiece piece);
+static inline ncHashKey ncZobristPiece(ncSquare sq, int p) {
+    assert(NC_ZOBRIST_INITIALIZED);
+    assert(ncPieceValid(p));
+    assert(ncSquareValid(sq));
+
+    return NC_ZOBRIST_PIECE_KEYS[sq][p];
+}
 
 /**
  * Gets the Zobrist key for a castle rights key.
