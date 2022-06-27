@@ -4,10 +4,10 @@
 #include "types.h"
 
 #define NC_SEARCH_EVAL_THRESHOLD 1000
-#define NC_SEARCH_EVAL_WEIGHT    0.85
+#define NC_SEARCH_EVAL_MAX       0.85
 
 #define NC_SEARCH_INFO_INTERVAL  1000
-#define NC_EXPLORATION 1.4f
+#define NC_EXPLORATION 1.1f
 
 typedef struct {
     int nps;

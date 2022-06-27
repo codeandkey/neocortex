@@ -272,7 +272,8 @@ void ncSearchSelect(ncPosition* pos, ncNode* root, ncNode* nodes, int* nnodes)
         int score = ncPositionEvaluate(pos);
         float value = (score / (float) NC_SEARCH_EVAL_THRESHOLD);
 
-        value *= NC_SEARCH_EVAL_WEIGHT;
+        value = fmax(value, -NC_SEARCH_EVAL_MAX);
+        value = fmin(value, NC_SEARCH_EVAL_MAX);
 
         ncSearchBackprop(newnode, value);
         ncPositionUnmakeMove(pos);
