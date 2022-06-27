@@ -5,6 +5,7 @@
 #include "position.h"
 #include "search.h"
 #include "types.h"
+#include "uci.h"
 
 typedef struct {
     int total;
@@ -47,34 +48,5 @@ int main(int argc, char** argv)
     ncPosition p;
     ncPositionInit(&p);
 
-	//if (ncPositionFromFen(&p, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"))
-	if (ncPositionFromFen(&p, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"))
-		abort();
-
-    int result;
-    int nnodes = 5000;
-
-    if (argc > 1)
-        nnodes = strtol(argv[1], NULL, 10);
-
-    while (!ncPositionIsTerminal(&p, &result))
-    {
-        ncMove move = ncSearch(&p, nnodes, 1.4f);
-
-        char uci[6];
-        ncMoveUCI(move, uci);
-
-        printf("move %s\n", uci);
-
-        ncPositionMakeMove(&p, move);
-
-        char fen[100];
-        ncPositionToFen(&p, fen, sizeof(fen));
-
-        printf("%s\n", fen);
-
-    }
-
-    printf("result %d\n", result);
-    return 0;
+    return ncUciStart();
 }

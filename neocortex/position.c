@@ -9,6 +9,7 @@
 #include "attacks.h"
 #include "eval.h"
 #include "types.h"
+#include "zobrist.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -746,7 +747,7 @@ void ncPositionOrderMoves(ncPosition* p, ncMove* moves, int num_moves) {
 		/* Assign move scores */
 
 		// SEE on basic captures
-		if (ncBoardColorOcc(&p->board, !p->ctm) & ncSquareMask(ncMoveDst(moves[i]))) scores[i] += ncPositionSEECapture(p, moves[i]);
+		if (ncPieceValid(ncBoardGetPiece(&p->board, ncMoveDst(moves[i])))) scores[i] += ncPositionSEECapture(p, moves[i]);
 
 		// SEE on EP captures
 		if (ncPieceType(ncBoardGetPiece(&p->board, ncMoveSrc(moves[i]))) == NC_PAWN && ncMoveDst(moves[i]) == p->ply[p->nply - 1].en_passant) scores[i] += ncPositionSEECapture(p, moves[i]);

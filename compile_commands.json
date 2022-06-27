@@ -1,27 +1,42 @@
 [
 {
   "directory": "/home/jtst/git/neocortex/build/neocortex",
-  "command": "/usr/bin/cc    -o CMakeFiles/neocortex.dir/neocortex.c.o -c /home/jtst/git/neocortex/neocortex/neocortex.c",
+  "command": "/usr/bin/cc   -O3 -DNDEBUG -o CMakeFiles/neocortex.dir/neocortex.c.o -c /home/jtst/git/neocortex/neocortex/neocortex.c",
   "file": "/home/jtst/git/neocortex/neocortex/neocortex.c"
 },
 {
   "directory": "/home/jtst/git/neocortex/build/neocortex",
-  "command": "/usr/bin/cc    -o CMakeFiles/neocortex.dir/attacks.c.o -c /home/jtst/git/neocortex/neocortex/attacks.c",
+  "command": "/usr/bin/cc   -O3 -DNDEBUG -o CMakeFiles/neocortex.dir/attacks.c.o -c /home/jtst/git/neocortex/neocortex/attacks.c",
   "file": "/home/jtst/git/neocortex/neocortex/attacks.c"
 },
 {
   "directory": "/home/jtst/git/neocortex/build/neocortex",
-  "command": "/usr/bin/cc    -o CMakeFiles/neocortex.dir/board.c.o -c /home/jtst/git/neocortex/neocortex/board.c",
+  "command": "/usr/bin/cc   -O3 -DNDEBUG -o CMakeFiles/neocortex.dir/board.c.o -c /home/jtst/git/neocortex/neocortex/board.c",
   "file": "/home/jtst/git/neocortex/neocortex/board.c"
 },
 {
   "directory": "/home/jtst/git/neocortex/build/neocortex",
-  "command": "/usr/bin/cc    -o CMakeFiles/neocortex.dir/zobrist.c.o -c /home/jtst/git/neocortex/neocortex/zobrist.c",
+  "command": "/usr/bin/cc   -O3 -DNDEBUG -o CMakeFiles/neocortex.dir/zobrist.c.o -c /home/jtst/git/neocortex/neocortex/zobrist.c",
   "file": "/home/jtst/git/neocortex/neocortex/zobrist.c"
 },
 {
   "directory": "/home/jtst/git/neocortex/build/neocortex",
-  "command": "/usr/bin/cc    -o CMakeFiles/neocortex.dir/position.c.o -c /home/jtst/git/neocortex/neocortex/position.c",
+  "command": "/usr/bin/cc   -O3 -DNDEBUG -o CMakeFiles/neocortex.dir/position.c.o -c /home/jtst/git/neocortex/neocortex/position.c",
   "file": "/home/jtst/git/neocortex/neocortex/position.c"
+},
+{
+  "directory": "/home/jtst/git/neocortex/build/neocortex",
+  "command": "/usr/bin/cc   -O3 -DNDEBUG -o CMakeFiles/neocortex.dir/types.c.o -c /home/jtst/git/neocortex/neocortex/types.c",
+  "file": "/home/jtst/git/neocortex/neocortex/types.c"
+},
+{
+  "directory": "/home/jtst/git/neocortex/build/neocortex",
+  "command": "/usr/bin/cc   -O3 -DNDEBUG -o CMakeFiles/neocortex.dir/search.c.o -c /home/jtst/git/neocortex/neocortex/search.c",
+  "file": "/home/jtst/git/neocortex/neocortex/search.c"
+},
+{
+  "directory": "/home/jtst/git/neocortex/build/neocortex",
+  "command": "/usr/bin/cc   -O3 -DNDEBUG -o CMakeFiles/neocortex.dir/uci.c.o -c /home/jtst/git/neocortex/neocortex/uci.c",
+  "file": "/home/jtst/git/neocortex/neocortex/uci.c"
 }
 ]

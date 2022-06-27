@@ -42,7 +42,11 @@ static inline ncHashKey ncZobristPiece(ncSquare sq, int p) {
  * @param rights Castle rights.
  * @return Associated Zobrist key.
  */
-ncHashKey ncZobristCastle(int rights);
+static inline ncHashKey ncZobristCastle(int rights) {
+    assert(rights >= 0 && rights < 16);
+
+    return NC_ZOBRIST_CASTLE_KEYS[rights];
+}
 
 /**
  * Gets the zobrist key for an en-passant state.
@@ -50,11 +54,17 @@ ncHashKey ncZobristCastle(int rights);
  * @param file Square for en-passant.
  * @return Associated Zobrist key.
  */
-ncHashKey ncZobristEnPassant(ncSquare sq);
+static inline ncHashKey ncZobristEnPassant(ncSquare sq)
+{
+	return NC_ZOBRIST_EP_KEYS[ncSquareFile(sq)];
+}
 
 /**
  * Gets the black-to-move Zobrist key.
  *
  * @return Zobrist key.
  */
-ncHashKey ncZobristBlackToMove();
+static inline ncHashKey ncZobristBlackToMove()
+{
+	return NC_ZOBRIST_BTM_KEY;
+}

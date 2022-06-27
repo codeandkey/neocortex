@@ -285,3 +285,28 @@ static inline void ncMoveUCI(ncMove mv, char* dst)
     if (ncPieceTypeValid(ncMovePtype(mv)))
         dst[4] = ncPieceTypeToChar(ncMovePtype(mv));
 }
+
+static inline ncMove ncMoveFromUci(char* uci)
+{
+    int srcfile, srcrank, dstfile, dstrank;
+    int ptype = 0xF;
+
+    srcfile = uci[0] - 'a';
+    srcrank = uci[1] - '1';
+    dstfile = uci[2] - 'a';
+    dstrank = uci[3] - '1';
+
+    if (uci[4])
+    {
+        ptype = ncPieceType(ncPieceFromChar(uci[4]));
+        if (!ncPieceTypeValid(ptype)) return -1;
+    }
+
+    if (srcfile < 0 || srcfile >= 8 || dstfile < 0 || dstfile >= 8) return -1;
+    if (srcrank < 0 || srcrank >= 8 || dstrank < 0 || dstrank >= 8) return -1;
+
+    ncSquare src = ncSquareAt(srcrank, srcfile);
+    ncSquare dst = ncSquareAt(dstrank, dstfile);
+
+    return src << 6 | dst | (ptype << 12); 
+}
