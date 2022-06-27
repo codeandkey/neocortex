@@ -149,7 +149,7 @@ void ncUciPosition(char* arg, char* context)
 
 void ncUciGo(char* arg, char* context)
 {
-    int nodes = 1000000;
+    int nodes = 50000000;
     int movetime = -1;
 
     while (arg)
@@ -199,5 +199,5 @@ void ncUciInfo(ncSearchInfo info)
     if (info.ctm == NC_BLACK)
         score *= -1;
 
-    printf("info score cp %d nodes %d nps %d time %d\n", score, info.nodes, info.nps, info.elapsed);
+    printf("info depth %d score cp %d nodes %d nps %d time %d\n", info.depth, score, info.nodes, info.nps, info.elapsed);
 }

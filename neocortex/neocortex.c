@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "attacks.h"
 #include "position.h"
@@ -41,6 +42,8 @@ void perft(ncPosition* pos, int d, perft_state* state)
 
 int main(int argc, char** argv)
 {
+    srand(time(NULL));
+
     ncZobristInit();
     ncAttacksInit();
     ncBitboardInitBetween();

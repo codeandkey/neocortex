@@ -19,6 +19,8 @@
 #define NC_MAX_PLY      512
 #define NC_SEE_ILLEGAL     -100000
 
+#define NC_EVAL_NOISE 100
+
 typedef struct {
 	ncMove last_move;
 	ncSquare en_passant;
