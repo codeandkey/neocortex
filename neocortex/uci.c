@@ -67,7 +67,7 @@ int ncUciStart()
         }
     }
 
-    fprintf(stderr, "Bye!\n");
+    printf("info string Bye!\n");
     return 0;
 }
 
@@ -194,10 +194,8 @@ void ncUciBestmove(ncMove move)
 
 void ncUciInfo(ncSearchInfo info)
 {
-    int score = info.score * 2000 - 1000;
-
-    if (info.ctm == NC_BLACK)
-        score *= -1;
-
-    printf("info depth %d score cp %d nodes %d nps %d time %d\n", info.depth, score, info.nodes, info.nps, info.elapsed);
+    if (info.mate_score)
+        printf("info depth %d score mate %d nodes %d nps %d time %d\n", info.depth, info.mate_score, info.nodes, info.nps, info.elapsed);
+    else
+        printf("info depth %d score cp %d nodes %d nps %d time %d\n", info.depth, info.score, info.nodes, info.nps, info.elapsed);
 }

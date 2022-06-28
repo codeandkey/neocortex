@@ -4,11 +4,12 @@
 #include "types.h"
 
 #define NC_SEARCH_WORKERS_MAX     16
-#define NC_SEARCH_WORKERS_DEFAULT 6
+#define NC_SEARCH_WORKERS_DEFAULT 1
 
 #define NC_SEARCH_MCTS 0
+#define NC_SEARCH_ALPHABETA 1
 
-#define NC_SEARCH_DEFAULT NC_SEARCH_MCTS
+#define NC_SEARCH_DEFAULT NC_SEARCH_ALPHABETA
 
 typedef struct {
     int nps;
@@ -16,7 +17,8 @@ typedef struct {
     int elapsed;
     int ctm;
     int depth;
-    float score;
+    int score;
+    int mate_score;
 } ncSearchInfo;
 
 typedef void (*ncFnBestmove)(ncMove);

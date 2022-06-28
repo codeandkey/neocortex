@@ -283,13 +283,12 @@ void* ncMctsRun(void* unused)
             inf.nps = (1000 * (long) (inf.nodes - lastnodes)) / (long) (milliseconds() - infotime);
             inf.ctm = ncPositionGetCTM(&pos);
             inf.depth = maxdepth;
-            inf.score = avg_score;
+
+            inf.score = (int) (avg_score * 1000.0f - 500.0f);
+            inf.mate_score = 0;
 
             lastnodes = inf.nodes;
             infotime = milliseconds();
-
-            if (inf.ctm == NC_BLACK)
-                inf.score = -inf.score;
 
             if (search_fn_info)
                 search_fn_info(inf);
