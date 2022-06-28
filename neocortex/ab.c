@@ -61,6 +61,7 @@ static ncTTNode search_tt[NC_AB_TT_SIZE];
 void* ncAlphaBetaMain(void*);
 void* ncAlphaBetaWorkerMain(void*);
 int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop, ncMove* pv, int* nodes);
+int ncAlphaBetaQ(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop, int* nodes);
 
 static inline long milliseconds()
 {
@@ -141,9 +142,6 @@ void* ncAlphaBetaWorkerMain(void* w)
     stop.lock = &self->lock;
     stop.dst = &self->stop;
 
-    ncIntSync nodes;
-    stop.lock = &self->lock;
-
     for (int d = 0;; ++d)
     {
         pthread_mutex_lock(&self->lock);
@@ -159,6 +157,30 @@ void* ncAlphaBetaWorkerMain(void* w)
         ncAlphaBeta(&self->position, d, NC_AB_LOSS, NC_AB_WIN, &stop, pv, &nodes);
     }
 
+    return NULL;
+}
+
+void* ncAlphaBetaTimeWatch(void* pstop)
+{
+    ncIntSync* stop = (ncIntSync*) pstop;
+
+    pthread_mutex_lock(&search_mutex);
+    int mtime = search_movetime;
+    pthread_mutex_unlock(&search_mutex);
+
+    if (mtime <= 0)
+        return NULL;
+
+    long starttime = milliseconds();
+
+    struct timespec tm;
+    tm.tv_sec = 0;
+    tm.tv_nsec = (long) 1000000 * 100;
+
+    while (milliseconds() - starttime < mtime && !ncIntSyncRead(stop))
+        nanosleep(&tm, NULL);
+
+    ncIntSyncWrite(stop, 1);
     return NULL;
 }
 
@@ -199,6 +221,9 @@ void* ncAlphaBetaMain(void* unused)
     search_stop_sync.lock = &search_mutex;
     search_stop_sync.dst = &search_stop;
 
+    pthread_t search_timer_thread;
+    pthread_create(&search_timer_thread, NULL, ncAlphaBetaTimeWatch, (void*) &search_stop_sync);
+
     for (int d = 0;; ++d)
     {
         if (search_iterations > 0 && total_nodes >= maxnodes)
@@ -216,6 +241,7 @@ void* ncAlphaBetaMain(void* unused)
         pthread_mutex_unlock(&search_mutex);
 
         ncSearchInfo inf;
+        memset(&inf, 0, sizeof(inf));
 
         int value = ncAlphaBeta(&pos, d, NC_AB_LOSS, NC_AB_WIN, &search_stop_sync, inf.pv, &total_nodes);
 
@@ -243,6 +269,9 @@ void* ncAlphaBetaMain(void* unused)
     }
     
     // Stop workers
+    ncIntSyncWrite(&search_stop_sync, 1);
+    pthread_join(search_timer_thread, NULL);
+
     for (int i = 0; i < num_search_workers - 1; ++i)
     {
         pthread_mutex_lock(&search_workers[i].lock);
@@ -272,6 +301,9 @@ int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop
 {
     ++*nodes;
 
+    for (int i = 0; i < depth; ++i)
+        pv[i] = NC_NULL;
+
     ncMove pv_move = NC_NULL;
 
     ncHashKey key = ncPositionGetKey(pos);
@@ -286,7 +318,10 @@ int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop
         {
             int val = tt->value;
             pthread_mutex_unlock(&tt->lock);
-            pv[0] = pv_move;
+
+            if (depth)
+                pv[0] = pv_move;
+
             return val;
         }
     }
@@ -294,6 +329,9 @@ int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop
 
     if (!depth)
     {
+        if (ncPositionIsCheck(pos) || ncPositionIsCapture(pos))
+            return ncAlphaBetaQ(pos, NC_AB_QDEPTH, alpha, beta, stop, nodes);
+
         int score = ncPositionEvaluate(pos);
 
         if (ncPositionGetCTM(pos) == NC_BLACK)
@@ -304,9 +342,7 @@ int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop
 
     ncMove moves[NC_MAX_PL_MOVES];
     int nmoves = ncPositionPLMoves(pos, moves);
-
-    for (int i = 0; i < depth; ++i)
-        pv[i] = NC_NULL;
+    ncPositionOrderMoves(pos, moves, nmoves);
 
     ncMove local_pv[depth - 1];
 
@@ -373,6 +409,68 @@ int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop
     tt->value = value;
     tt->depth = depth;
     pthread_mutex_unlock(&tt->lock);
+
+    return value;
+}
+
+int ncAlphaBetaQ(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop, int* nodes)
+{
+    ++*nodes;
+
+    if (!depth || (!ncPositionIsCheck(pos) && !ncPositionIsCapture(pos)))
+    {
+        int score = ncPositionEvaluate(pos);
+
+        if (ncPositionGetCTM(pos) == NC_BLACK)
+            return -score;
+
+        return score;
+    }
+
+    ncMove moves[NC_MAX_PL_MOVES];
+    int nmoves = ncPositionPLMovesQ(pos, moves);
+    ncPositionOrderMoves(pos, moves, nmoves);
+
+    int nlegal = 0;
+
+    for (int i = 0; i < nmoves; ++i)
+    {
+        if (!ncPositionMakeMove(pos, moves[i]))
+        {
+            ncPositionUnmakeMove(pos);
+            continue;
+        }
+
+        ++nlegal;
+
+        int score = ncAlphaBetaQ(pos, depth - 1, -beta, -alpha, stop, nodes);
+
+        ncPositionUnmakeMove(pos);
+
+        if (score == NC_AB_INCOMPLETE)
+            return NC_AB_INCOMPLETE;
+
+        if (ncIntSyncRead(stop))
+            return NC_AB_INCOMPLETE;
+
+        score = -score;
+
+        if (score > alpha)
+            alpha = score;
+
+        if (score >= beta)
+            return score;
+    }
+
+    int value = alpha;
+
+    if (!nlegal)
+    {
+        if (ncPositionIsCheck(pos))
+            value = NC_AB_LOSS;
+        else
+            value = 0;
+    }
 
     return value;
 }

@@ -740,8 +740,190 @@ int ncPositionPLEvasions(ncPosition* p, ncMove* out) {
 	return count;
 }
 
+int ncPositionPLMovesQ(ncPosition* p, ncMove* out)
+{
+	if (p->ply[p->nply - 1].check)
+		return ncPositionPLEvasions(p, out);
+
+	int count = 0;
+
+	ncBitboard ctm = ncBoardColorOcc(&p->board, p->ctm);
+	ncBitboard opp = ncBoardColorOcc(&p->board, !p->ctm);
+	
+	ncBitboard ep_mask = 0;
+	ncSquare ep_square = p->ply[p->nply - 1].en_passant;
+
+	if (ncSquareValid(ep_square)) {
+		ep_mask = ncSquareMask(ep_square);
+	}
+
+	/* Pawn moves */
+	ncBitboard pawns = ctm & ncBoardPieceOcc(&p->board, NC_PAWN);
+
+	ncBitboard promoting_rank = (p->ctm == NC_WHITE) ? NC_RANK_7 : NC_RANK_2;
+	ncBitboard starting_rank = (p->ctm == NC_WHITE) ? NC_RANK_2 : NC_RANK_7;
+
+	int adv_dir = (p->ctm == NC_WHITE) ? NC_NORTH : NC_SOUTH;
+	int left_dir = (p->ctm == NC_WHITE) ? NC_NORTHWEST : NC_SOUTHWEST;
+	int right_dir = (p->ctm == NC_WHITE) ? NC_NORTHEAST : NC_SOUTHEAST;
+	int cleft_dir = (p->ctm == NC_WHITE) ? NC_SOUTHWEST : NC_NORTHWEST;
+	int cright_dir = (p->ctm == NC_WHITE) ? NC_SOUTHEAST : NC_NORTHEAST;
+
+	ncBitboard promoting_pawns = pawns & promoting_rank;
+
+	ncBitboard oppking = opp & ncBoardPieceOcc(&p->board, NC_KING);
+	int ksq = ncBitboardUnmask(oppking);
+	ncBitboard pawnchecks = ncBitboardShift(oppking & ~NC_FILE_A, cleft_dir);
+	pawnchecks |= ncBitboardShift(oppking & ~NC_FILE_H, cright_dir);
+
+	ncBitboard knightchecks = ncAttacksKnight(ksq);
+	ncBitboard bishopchecks = ncAttacksBishop(ksq, ncBoardGlobalOcc(&p->board));
+	ncBitboard rookchecks = ncAttacksRook(ksq, ncBoardGlobalOcc(&p->board));
+
+	/* Promoting left captures */
+	ncBitboard promoting_left_cap = ncBitboardShift(promoting_pawns & ~NC_FILE_A, left_dir) & opp;
+
+	while (promoting_left_cap) {
+		int dst = ncBitboardPop(&promoting_left_cap);
+		out[count++] = ncMoveMakeP(dst - left_dir, dst, NC_QUEEN);
+		out[count++] = ncMoveMakeP(dst - left_dir, dst, NC_KNIGHT);
+		out[count++] = ncMoveMakeP(dst - left_dir, dst, NC_ROOK);
+		out[count++] = ncMoveMakeP(dst - left_dir, dst, NC_BISHOP);
+	}
+
+	/* Promoting right captures */
+	ncBitboard promoting_right_cap = ncBitboardShift(promoting_pawns & ~NC_FILE_H, right_dir) & opp;
+
+	while (promoting_right_cap) {
+		int dst = ncBitboardPop(&promoting_right_cap);
+		out[count++] = ncMoveMakeP(dst - right_dir, dst, NC_QUEEN);
+		out[count++] = ncMoveMakeP(dst - right_dir, dst, NC_KNIGHT);
+		out[count++] = ncMoveMakeP(dst - right_dir, dst, NC_ROOK);
+		out[count++] = ncMoveMakeP(dst - right_dir, dst, NC_BISHOP);
+	}
+
+	/* Promoting advances */
+	ncBitboard promoting_advances = ncBitboardShift(promoting_pawns, adv_dir) & ~ncBoardGlobalOcc(&p->board);
+
+	while (promoting_advances) {
+		int dst = ncBitboardPop(&promoting_advances);
+		out[count++] = ncMoveMakeP(dst - adv_dir, dst, NC_QUEEN);
+		out[count++] = ncMoveMakeP(dst - adv_dir, dst, NC_KNIGHT);
+		out[count++] = ncMoveMakeP(dst - adv_dir, dst, NC_ROOK);
+		out[count++] = ncMoveMakeP(dst - adv_dir, dst, NC_BISHOP);
+	}
+
+	/* Nonpromoting pawn moves */
+	ncBitboard npm_pawns = pawns & ~promoting_pawns;
+
+	/* Advancing checks */
+	ncBitboard npm_advance = ncBitboardShift(npm_pawns, adv_dir) & pawnchecks & ~ctm;
+
+	while (npm_advance) {
+		int dst = ncBitboardPop(&npm_advance);
+		out[count++] = ncMoveMake(dst - adv_dir, dst);
+	}
+
+	/* Jump checks */
+	ncBitboard npm_jumps = ncBitboardShift(pawns & starting_rank, adv_dir) & ~ncBoardGlobalOcc(&p->board);
+	npm_jumps = ncBitboardShift(npm_jumps, adv_dir) & ~ncBoardGlobalOcc(&p->board) & pawnchecks;
+
+	while (npm_jumps) {
+		int dst = ncBitboardPop(&npm_jumps);
+		out[count++] = ncMoveMake(dst - 2 * adv_dir, dst);
+	}
+
+	/* Left captures */
+	ncBitboard npm_left_cap = ncBitboardShift(npm_pawns & ~NC_FILE_A, left_dir) & (opp | ep_mask);
+
+	while (npm_left_cap) {
+		int dst = ncBitboardPop(&npm_left_cap);
+		out[count++] = ncMoveMake(dst - left_dir, dst);
+	}
+
+	/* Right captures */
+	ncBitboard npm_right_cap = ncBitboardShift(npm_pawns & ~NC_FILE_H, right_dir) & (opp | ep_mask);
+
+	while (npm_right_cap) {
+		int dst = ncBitboardPop(&npm_right_cap);
+		out[count++] = ncMoveMake(dst - right_dir, dst);
+	}
+
+	/* Queen captures and checks */
+	ncBitboard queens = ctm & ncBoardPieceOcc(&p->board, NC_QUEEN);
+	
+	while (queens) {
+		int src = ncBitboardPop(&queens);
+		ncBitboard moves = ncAttacksQueen(src, ncBoardGlobalOcc(&p->board)) & (opp | rookchecks | bishopchecks) & ~ctm;
+
+		while (moves) {
+			int dst = ncBitboardPop(&moves);
+			out[count++] = ncMoveMake(src, dst);
+		}
+	}
+
+	/* Rook captures and checks */
+	ncBitboard rooks = ctm & ncBoardPieceOcc(&p->board, NC_ROOK);
+
+	while (rooks) {
+		int src = ncBitboardPop(&rooks);
+		ncBitboard moves = ncAttacksRook(src, ncBoardGlobalOcc(&p->board)) & (opp | rookchecks) & ~ctm;
+
+		while (moves) {
+			int dst = ncBitboardPop(&moves);
+			out[count++] = ncMoveMake(src, dst);
+		}
+	}
+
+	/* Knight captures and checks */
+	ncBitboard knights = ctm & ncBoardPieceOcc(&p->board, NC_KNIGHT);
+
+	while (knights) {
+		int src = ncBitboardPop(&knights);
+		ncBitboard moves = ncAttacksKnight(src) & (opp | knightchecks) & ~ctm;
+
+		while (moves) {
+			int dst = ncBitboardPop(&moves);
+			out[count++] = ncMoveMake(src, dst);
+		}
+	}
+
+	/* Bishop captures and checks */
+	ncBitboard bishops = ctm & ncBoardPieceOcc(&p->board, NC_BISHOP);
+
+	while (bishops) {
+		int src = ncBitboardPop(&bishops);
+		ncBitboard moves = ncAttacksBishop(src, ncBoardGlobalOcc(&p->board)) & (opp | bishopchecks) & ~ctm;
+
+		while (moves) {
+			int dst = ncBitboardPop(&moves);
+			out[count++] = ncMoveMake(src, dst);
+		}
+	}
+
+	/* King captures */
+	ncBitboard kings = ctm & ncBoardPieceOcc(&p->board, NC_KING);
+
+	while (kings) {
+		int src = ncBitboardPop(&kings);
+		ncBitboard moves = ncAttacksKing(src) & opp;
+
+		while (moves) {
+			int dst = ncBitboardPop(&moves);
+			out[count++] = ncMoveMake(src, dst);
+		}
+	}
+
+	assert(count <= NC_MAX_PL_MOVES);
+	return count;
+}
+
 void ncPositionOrderMoves(ncPosition* p, ncMove* moves, int num_moves) {
-	int scores[NC_MAX_PL_MOVES] = { 0 };
+	// When ordering moves we bring captures to the front and order them by SEE value
+	// However, we want to leave the order of other moves UNCHANGED.
+
+	int scores[num_moves];
+	memset(scores, 0, sizeof(scores));
 
 	for (int i = 0; i < num_moves; ++i) {
 		/* Assign move scores */
@@ -753,26 +935,25 @@ void ncPositionOrderMoves(ncPosition* p, ncMove* moves, int num_moves) {
 		if (ncPieceType(ncBoardGetPiece(&p->board, ncMoveSrc(moves[i]))) == NC_PAWN && ncMoveDst(moves[i]) == p->ply[p->nply - 1].en_passant) scores[i] += ncPositionSEECapture(p, moves[i]);
 	}
 
-	/* Perform selection sort */
-	for (int i = 0; i < num_moves - 1; ++i) {
-		int m = scores[i];
-		int sind = i;
+	// Insertion sort by score
+	for (int i = 0; i < num_moves - 1; ++i)
+	{
+		// Check out-of-order
+		int left = i;
+		int right = i + 1;
 
-		for (int j = i + 1; j < num_moves; ++j) {
-			if (scores[j] > m) {
-				sind = j;
-				m = scores[j];
-			}
-		}
+		while (scores[left] < scores[right] && left >= 0)
+		{
+			int tmp_score = scores[right];
+			scores[right] = scores[left];
+			scores[left] = tmp_score;
 
-		if (sind != i) {
-			int tmp = scores[sind];
-			scores[sind] = scores[i];
-			scores[i] = tmp;
+			ncMove tmp_move = moves[right];
+			moves[right] = moves[left];
+			moves[left] = tmp_move;
 
-			ncMove tmove = moves[sind];
-			moves[sind] = moves[i];
-			moves[i] = tmove;
+			--left;
+			--right;
 		}
 	}
 }

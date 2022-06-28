@@ -47,7 +47,7 @@ static const int NC_EVAL_PHASE_TOTAL = 4 + 4 + 8 + 8;
 #endif
 
 #ifndef NC_EVAL_CENTER_CONTROL_EG
-#define NC_EVAL_CENTER_CONTROL_EG 20
+#define NC_EVAL_CENTER_CONTROL_EG 8
 #endif
 
 #ifndef NC_EVAL_KING_SAFETY_MG
@@ -55,7 +55,7 @@ static const int NC_EVAL_PHASE_TOTAL = 4 + 4 + 8 + 8;
 #endif
 
 #ifndef NC_EVAL_KING_SAFETY_EG
-#define NC_EVAL_KING_SAFETY_EG 7
+#define NC_EVAL_KING_SAFETY_EG 6
 #endif
 
 #ifndef NC_EVAL_PASSED_PAWNS_MG
@@ -115,11 +115,11 @@ static const int NC_EVAL_PHASE_TOTAL = 4 + 4 + 8 + 8;
 #endif
 
 #ifndef NC_EVAL_BACKWARD_PAWNS_MG
-#define NC_EVAL_BACKWARD_PAWNS_MG 0
+#define NC_EVAL_BACKWARD_PAWNS_MG -10
 #endif
 
 #ifndef NC_EVAL_BACKWARD_PAWNS_EG
-#define NC_EVAL_BACKWARD_PAWNS_EG 0
+#define NC_EVAL_BACKWARD_PAWNS_EG -10
 #endif
 
 #ifndef NC_EVAL_DOUBLED_PAWNS_MG

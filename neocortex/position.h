@@ -201,6 +201,16 @@ int ncPositionEvaluate(ncPosition* p);
 int ncPositionPLMoves(ncPosition* p, ncMove* dst);
 
 /**
+ * Gets the pseudolegal moves for the position (captures, checks, promotions, evasions (no castling)).
+ * 
+ * @param dst Buffer to fill with moves. Should be at least
+ * NC_MAX_PL_MOVES in length.
+ *
+ * @return Number of moves generated.
+ */
+int ncPositionPLMovesQ(ncPosition* p, ncMove* dst);
+
+/**
  * Gets evasion moves for a position.
  *
  * @param dst Buffer to fill with moves. Should be at least
