@@ -197,13 +197,13 @@ void* ncAlphaBetaMain(void* unused)
         }
         pthread_mutex_unlock(&search_mutex);
 
-        ncMove pv[d];
-        int value = ncAlphaBeta(&pos, d, NC_AB_LOSS, NC_AB_WIN, &search_stop_sync, pv);
+        ncSearchInfo inf;
+
+        int value = ncAlphaBeta(&pos, d, NC_AB_LOSS, NC_AB_WIN, &search_stop_sync, inf.pv);
 
         if (value == NC_AB_INCOMPLETE)
             break;
 
-        ncSearchInfo inf;
         inf.nodes = total_nodes;
         inf.elapsed = milliseconds() - starttime;
         inf.nps = (1000 * (long) (inf.nodes - lastnodes)) / (long) (1 + (milliseconds() - infotime));
@@ -221,7 +221,7 @@ void* ncAlphaBetaMain(void* unused)
         if (search_fn_info)
             search_fn_info(inf);
 
-        best_move = pv[0];
+        best_move = inf.pv[0];
     }
     
     // Stop workers

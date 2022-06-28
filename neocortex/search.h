@@ -5,11 +5,10 @@
 
 #define NC_SEARCH_WORKERS_MAX     16
 #define NC_SEARCH_WORKERS_DEFAULT 1
-
 #define NC_SEARCH_MCTS 0
 #define NC_SEARCH_ALPHABETA 1
-
 #define NC_SEARCH_DEFAULT NC_SEARCH_ALPHABETA
+#define NC_SEARCH_PV_MAX 128
 
 typedef struct {
     int nps;
@@ -19,6 +18,7 @@ typedef struct {
     int depth;
     int score;
     int mate_score;
+    ncMove pv[NC_SEARCH_PV_MAX];
 } ncSearchInfo;
 
 typedef void (*ncFnBestmove)(ncMove);

@@ -194,8 +194,21 @@ void ncUciBestmove(ncMove move)
 
 void ncUciInfo(ncSearchInfo info)
 {
-    if (info.mate_score)
-        printf("info depth %d score mate %d nodes %d nps %d time %d\n", info.depth, info.mate_score, info.nodes, info.nps, info.elapsed);
-    else
-        printf("info depth %d score cp %d nodes %d nps %d time %d\n", info.depth, info.score, info.nodes, info.nps, info.elapsed);
+    printf("info depth %d score", info.depth);
+    printf(" %s", info.mate_score ? "mate" : "cp");
+    printf(" %d", info.mate_score ? info.mate_score : info.score);
+    printf(" nodes %d nps %d time %d", info.nodes, info.nps, info.elapsed);
+
+    if (ncMoveValid(info.pv[0]))
+    {
+        printf(" pv");
+        for (int i = 0; ncMoveValid(info.pv[i]); ++i)
+        {
+            char uci[6];
+            ncMoveUCI(info.pv[i], uci);
+            printf(" %s", uci);
+        }
+    }
+
+    printf("\n");
 }
