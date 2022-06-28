@@ -10,6 +10,8 @@ typedef struct {
     int depth;
     int value;
     ncMove bestmove;
+    ncHashKey key;
+    pthread_mutex_t lock;
 } ncTTNode;
 
 typedef struct {
@@ -46,6 +48,7 @@ static int search_running;
 static int search_iterations;
 static int search_movetime;
 static int search_stop;
+static int search_tt_init;
 static ncPosition search_position;
 static ncFnBestmove search_cb_bestmove;
 static ncFnInfo search_fn_info;
@@ -53,10 +56,11 @@ static pthread_mutex_t search_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t search_thread;
 static ncAlphaBetaWorker search_workers[NC_SEARCH_WORKERS_MAX];
 static int num_search_workers = NC_SEARCH_WORKERS_DEFAULT;
+static ncTTNode search_tt[NC_AB_TT_SIZE];
 
 void* ncAlphaBetaMain(void*);
 void* ncAlphaBetaWorkerMain(void*);
-int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop, ncMove* pv);
+int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop, ncMove* pv, int* nodes);
 
 static inline long milliseconds()
 {
@@ -67,6 +71,16 @@ static inline long milliseconds()
 
 void ncAlphaBetaStart(int nodes, int movetime, ncFnBestmove bm, ncFnInfo info)
 {
+    if (!search_tt_init)
+    {
+        memset(search_tt, 0, sizeof search_tt);
+
+        for (int i = 0; i < NC_AB_TT_SIZE; ++i)
+            pthread_mutex_init(&search_tt[i].lock, NULL);
+
+        search_tt_init = 1;
+    }
+
     pthread_mutex_lock(&search_mutex);
     if (search_running)
     {
@@ -127,6 +141,9 @@ void* ncAlphaBetaWorkerMain(void* w)
     stop.lock = &self->lock;
     stop.dst = &self->stop;
 
+    ncIntSync nodes;
+    stop.lock = &self->lock;
+
     for (int d = 0;; ++d)
     {
         pthread_mutex_lock(&self->lock);
@@ -138,7 +155,8 @@ void* ncAlphaBetaWorkerMain(void* w)
         }
         pthread_mutex_unlock(&self->lock);
         ncMove pv[d];
-        ncAlphaBeta(&self->position, d, NC_AB_LOSS, NC_AB_WIN, &stop, pv);
+        int nodes;
+        ncAlphaBeta(&self->position, d, NC_AB_LOSS, NC_AB_WIN, &stop, pv, &nodes);
     }
 
     return NULL;
@@ -164,7 +182,7 @@ void* ncAlphaBetaMain(void* unused)
     long starttime = milliseconds();
     long infotime = starttime;
 
-    int lastnodes = 1;
+    int lastnodes = 0;
 
     // Spin up workers
     for (int i = 0; i < num_search_workers - 1; ++i)
@@ -199,7 +217,7 @@ void* ncAlphaBetaMain(void* unused)
 
         ncSearchInfo inf;
 
-        int value = ncAlphaBeta(&pos, d, NC_AB_LOSS, NC_AB_WIN, &search_stop_sync, inf.pv);
+        int value = ncAlphaBeta(&pos, d, NC_AB_LOSS, NC_AB_WIN, &search_stop_sync, inf.pv, &total_nodes);
 
         if (value == NC_AB_INCOMPLETE)
             break;
@@ -250,9 +268,29 @@ void* ncAlphaBetaMain(void* unused)
     return NULL;
 }
 
-int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop, ncMove* pv)
+int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop, ncMove* pv, int* nodes)
 {
-    // TODO: transposition table for ordering!
+    ++*nodes;
+
+    ncMove pv_move = NC_NULL;
+
+    ncHashKey key = ncPositionGetKey(pos);
+    ncTTNode* tt = &search_tt[key % NC_AB_TT_SIZE];
+    pthread_mutex_lock(&tt->lock);
+    if (tt->key == key && tt->depth >= depth)
+    {
+        // Set PV move
+        pv_move = tt->bestmove;
+
+        if (tt->depth >= depth)
+        {
+            int val = tt->value;
+            pthread_mutex_unlock(&tt->lock);
+            pv[0] = pv_move;
+            return val;
+        }
+    }
+    pthread_mutex_unlock(&tt->lock);
 
     if (!depth)
     {
@@ -272,6 +310,18 @@ int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop
 
     ncMove local_pv[depth - 1];
 
+    // Bring PV move to front if possible
+    if (ncMoveValid(pv_move))
+    {
+        for (int i = 1; i < nmoves; ++i)
+        if (moves[i] == pv_move)
+        {
+            moves[i] = moves[0];
+            moves[0] = pv_move;
+            break;
+        }
+    }
+
     for (int i = 0; i < nmoves; ++i)
     {
         if (!ncPositionMakeMove(pos, moves[i]))
@@ -283,7 +333,7 @@ int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop
         if (!ncMoveValid(pv[0]))
             pv[0] = moves[i];
 
-        int score = ncAlphaBeta(pos, depth - 1, -beta, -alpha, stop, local_pv);
+        int score = ncAlphaBeta(pos, depth - 1, -beta, -alpha, stop, local_pv, nodes);
 
         ncPositionUnmakeMove(pos);
 
@@ -306,15 +356,25 @@ int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop
             return score;
     }
 
+    int value = alpha;
+
     if (!ncMoveValid(pv[0]))
     {
         if (ncPositionIsCheck(pos))
-            return NC_AB_LOSS;
-        
-        return 0;
+            value = NC_AB_LOSS;
+        else
+            value = 0;
     }
 
-    return alpha;
+    // Update TT entry
+    pthread_mutex_lock(&tt->lock);
+    tt->key = key;
+    tt->bestmove = pv[0];
+    tt->value = value;
+    tt->depth = depth;
+    pthread_mutex_unlock(&tt->lock);
+
+    return value;
 }
 
 void ncAlphaBetaLoad(ncPosition* pos)
