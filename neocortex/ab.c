@@ -299,6 +299,10 @@ void* ncAlphaBetaMain(void* unused)
 
 int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop, ncMove* pv, int* nodes)
 {
+    // Check extension
+    if (ncPositionIsCheck(pos))
+        ++depth;
+
     ++*nodes;
 
     for (int i = 0; i < depth; ++i)
@@ -309,6 +313,7 @@ int ncAlphaBeta(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* stop
     ncHashKey key = ncPositionGetKey(pos);
     ncTTNode* tt = &search_tt[key % NC_AB_TT_SIZE];
     pthread_mutex_lock(&tt->lock);
+
     if (tt->key == key && tt->depth >= depth)
     {
         // Set PV move
@@ -429,7 +434,7 @@ int ncAlphaBetaQ(ncPosition* pos, int depth, int alpha, int beta, ncIntSync* sto
 
     ncMove moves[NC_MAX_PL_MOVES];
     int nmoves = ncPositionPLMovesQ(pos, moves);
-    ncPositionOrderMoves(pos, moves, nmoves);
+    //ncPositionOrderMoves(pos, moves, nmoves);
 
     int nlegal = 0;
 

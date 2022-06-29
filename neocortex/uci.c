@@ -1,4 +1,5 @@
 #include "uci.h"
+#include "eval.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,7 @@
 
 void ncUciPosition(char* arg, char* context);
 void ncUciGo(char* arg, char* context);
+void ncUciSetOption(char* arg, char* context);
 
 void ncUciBestmove(ncMove move);
 void ncUciInfo(ncSearchInfo info);
@@ -31,6 +33,11 @@ int ncUciStart()
 
     printf("id name neocortex 2.0\n");
     printf("id author Justin Stanley <jtst@iastate.edu>\n");
+
+    // Show eval options
+    for (int i = 0; i < ncEvalNumOptions(); ++i)
+        printf("option name %s type spin min -100 max 100\n", ncEvalOptionStr(i));
+
     printf("info string GLHF!\n");
     printf("uciok\n");
     printf("isready\n");
@@ -58,6 +65,8 @@ int ncUciStart()
             ncUciPosition(arg, context);
         else if (!strcmp("go", command))
             ncUciGo(arg, context);
+        else if (!strcmp("setoption", command))
+            ncUciSetOption(arg, context);
         else if (!strcmp("stop", command))
             ncSearchStop();
         else
@@ -211,4 +220,43 @@ void ncUciInfo(ncSearchInfo info)
     }
 
     printf("\n");
+}
+
+void ncUciSetOption(char* arg, char* context)
+{
+    if (!arg || strcmp(arg, "name"))
+    {
+        printf("info string setoption: expected 'name'\n");
+        return;
+    }
+
+    char* name = strtok_r(NULL, " \t\n", &context);
+
+    if (!name)
+    {
+        printf("info string setoption: expected option name\n");
+        return;
+    }
+
+    arg = strtok_r(NULL, " \t\n", &context);
+
+    if (!arg || strcmp(arg, "value"))
+    {
+        printf("info string setoption: expected 'value'\n");
+        return;
+    }
+
+    char* value = strtok_r(NULL, " \t\n", &context);
+
+    if (!value)
+    {
+        printf("info string setoption: expected option value\n");
+        return;
+    }
+
+    if (ncEvalSetOption(name, strtol(value, NULL, 10)))
+    {
+        printf("info string setoption: error setting option %s = %s\n", name, value);
+        return;
+    }
 }
